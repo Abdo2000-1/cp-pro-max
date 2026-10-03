@@ -517,6 +517,7 @@ interface TeethChartProps {
   toothRestorations?: Record<number, RestorationType>;
   onAssignRestoration?: (tooth: number, type: RestorationType) => void;
   onClearAll?: () => void;
+  onSelectionChange?: (selected: number[], restorations: Record<number, RestorationType>) => void;
   readonly?: boolean;
   activeService?: string;
   showToolbar?: boolean;
@@ -531,11 +532,28 @@ export function TeethChart({
   toothRestorations = {},
   onAssignRestoration,
   onClearAll,
+  onSelectionChange,
   readonly = false,
   showToolbar = true,
   className = ''
 }: TeethChartProps) {
-  const activeSelected = selected ?? selectedTeeth ?? [];
+  const propSelected = selected ?? selectedTeeth;
+  const [internalSelected, setInternalSelected] = useState<number[]>(propSelected || []);
+  const [localRestorations, setLocalRestorations] = useState<Record<number, RestorationType>>({
+    14: 'implant',
+    15: 'crown',
+    16: 'crown',
+    ...toothRestorations
+  });
+
+  // Sync internal selected when external prop changes
+  React.useEffect(() => {
+    if (propSelected !== undefined) {
+      setInternalSelected(propSelected);
+    }
+  }, [propSelected]);
+
+  const activeSelected = propSelected !== undefined ? propSelected : internalSelected;
   const handleToggle = onToggle ?? onToggleTooth;
 
   const [system, setSystem] = useState<ToothSystem>('universal');
@@ -543,30 +561,65 @@ export function TeethChart({
   const [hoveredTooth, setHoveredTooth] = useState<ToothOdontoData | null>(null);
 
   // Grouped into the standard 4 quadrants
-  // Viewer Left (Patient Right):
-  const upperRight = ODONTO_DATABASE.filter(t => t.quadrant === 'UR'); // 1 to 8 (Left to Right: 1 at far left, 8 at midline)
-  const lowerRight = ODONTO_DATABASE.filter(t => t.quadrant === 'LR'); // 32 to 25 (Left to Right: 32 at far left, 25 at midline)
-  
-  // Viewer Right (Patient Left):
-  const upperLeft  = ODONTO_DATABASE.filter(t => t.quadrant === 'UL'); // 9 to 16 (Left to Right: 9 at midline, 16 at far right)
-  const lowerLeft  = ODONTO_DATABASE.filter(t => t.quadrant === 'LL'); // 24 to 17 (Left to Right: 24 at midline, 17 at far right)
+  const upperRight = ODONTO_DATABASE.filter(t => t.quadrant === 'UR');
+  const lowerRight = ODONTO_DATABASE.filter(t => t.quadrant === 'LR');
+  const upperLeft  = ODONTO_DATABASE.filter(t => t.quadrant === 'UL');
+  const lowerLeft  = ODONTO_DATABASE.filter(t => t.quadrant === 'LL');
 
   const handleToothClick = (tooth: ToothOdontoData) => {
-    if (readonly || !handleToggle) return;
+    if (readonly) return;
     const num = tooth.universal;
-    handleToggle(num);
-    if (!activeSelected.includes(num) && onAssignRestoration) {
-      onAssignRestoration(num, selectedTool);
+    const isAlreadySelected = activeSelected.includes(num);
+
+    if (!isAlreadySelected) {
+      // 1. Tooth not selected -> Select it and assign active tool
+      const nextSelected = [...activeSelected, num];
+      const nextRestorations = { ...localRestorations, [num]: selectedTool };
+      setInternalSelected(nextSelected);
+      setLocalRestorations(nextRestorations);
+      if (onSelectionChange) {
+        onSelectionChange(nextSelected, nextRestorations);
+      } else {
+        handleToggle?.(num);
+      }
+      onAssignRestoration?.(num, selectedTool);
+    } else {
+      // 2. Tooth already selected -> Check if clicking with same tool or different tool
+      const currentRes = localRestorations[num] || toothRestorations[num] || 'crown';
+      if (currentRes === selectedTool) {
+        // Same tool clicked again -> Unselect it cleanly!
+        const nextSelected = activeSelected.filter(t => t !== num);
+        const nextRestorations = { ...localRestorations };
+        delete nextRestorations[num];
+        setInternalSelected(nextSelected);
+        setLocalRestorations(nextRestorations);
+        if (onSelectionChange) {
+          onSelectionChange(nextSelected, nextRestorations);
+        } else {
+          handleToggle?.(num);
+        }
+      } else {
+        // Different tool clicked -> Update its category to the new tool without unselecting!
+        const nextRestorations = { ...localRestorations, [num]: selectedTool };
+        setLocalRestorations(nextRestorations);
+        onAssignRestoration?.(num, selectedTool);
+        if (onSelectionChange) {
+          onSelectionChange(activeSelected, nextRestorations);
+        }
+      }
     }
   };
 
   const handleSelectBatch = (type: 'all' | 'upper' | 'lower' | 'smile' | 'posteriors' | 'clear') => {
-    if (readonly || (!handleToggle && !onClearAll)) return;
+    if (readonly) return;
     if (type === 'clear') {
-      if (onClearAll) {
-        onClearAll();
-      } else if (handleToggle) {
-        [...activeSelected].forEach(num => handleToggle(num));
+      const prev = [...activeSelected];
+      setInternalSelected([]);
+      setLocalRestorations({});
+      onClearAll?.();
+      onSelectionChange?.([], {});
+      if (!onClearAll && !onSelectionChange && handleToggle) {
+        prev.forEach(n => handleToggle(n));
       }
       return;
     }
@@ -578,20 +631,55 @@ export function TeethChart({
     if (type === 'smile') targets = ODONTO_DATABASE.filter(t => t.isAnterior);
     if (type === 'posteriors') targets = ODONTO_DATABASE.filter(t => !t.isAnterior);
 
-    targets.forEach(t => {
-      if (!activeSelected.includes(t.universal) && handleToggle) {
-        handleToggle(t.universal);
-        if (onAssignRestoration) {
-          onAssignRestoration(t.universal, selectedTool);
-        }
+    const targetNums = targets.map(t => t.universal);
+    const allSelected = targetNums.every(n => activeSelected.includes(n));
+
+    let nextSelected: number[];
+    let nextRestorations = { ...localRestorations };
+
+    if (allSelected) {
+      // Toggle OFF: remove all targetNums
+      nextSelected = activeSelected.filter(n => !targetNums.includes(n));
+      targetNums.forEach(n => {
+        delete nextRestorations[n];
+      });
+      if (!onSelectionChange && handleToggle) {
+        targetNums.forEach(n => {
+          if (activeSelected.includes(n)) handleToggle(n);
+        });
       }
-    });
+    } else {
+      // Toggle ON: add all targetNums
+      nextSelected = Array.from(new Set([...activeSelected, ...targetNums]));
+      targetNums.forEach(n => {
+        if (!nextRestorations[n]) {
+          nextRestorations[n] = selectedTool;
+        }
+      });
+      if (!onSelectionChange && handleToggle) {
+        targetNums.forEach(n => {
+          if (!activeSelected.includes(n)) handleToggle(n);
+        });
+      }
+    }
+
+    setInternalSelected(nextSelected);
+    setLocalRestorations(nextRestorations);
+    onSelectionChange?.(nextSelected, nextRestorations);
   };
 
   const renderToothCard = (tooth: ToothOdontoData, arch: 'upper' | 'lower') => {
     const isSelected = activeSelected.includes(tooth.universal);
-    const assignedRes = isSelected ? (toothRestorations[tooth.universal] || selectedTool) : undefined;
+    const assignedRes = isSelected 
+      ? (localRestorations[tooth.universal] || toothRestorations[tooth.universal] || 'crown') 
+      : undefined;
     const displayNum = system === 'universal' ? tooth.universal : tooth.fdi;
+
+    // Distinctive border and highlight based on individual tooth's assigned category
+    const resConfig = assignedRes ? RESTORATION_TYPES.find(r => r.id === assignedRes) : null;
+    const activeBorderClass = resConfig 
+      ? `${resConfig.bgColor} ring-2 ring-current ${resConfig.textColor} shadow-md` 
+      : 'bg-cyan-500/10 ring-2 ring-cyan-400 shadow-md';
 
     return (
       <div
@@ -601,7 +689,7 @@ export function TeethChart({
         onMouseLeave={() => setHoveredTooth(null)}
         className={`group relative flex flex-col items-center justify-between p-1 rounded-xl cursor-pointer transition-all duration-150 select-none ${
           isSelected
-            ? 'bg-cyan-500/10 dark:bg-cyan-500/15 ring-2 ring-cyan-400 shadow-md shadow-cyan-500/20'
+            ? activeBorderClass
             : 'hover:bg-slate-100/80 dark:hover:bg-slate-800/60'
         }`}
       >
