@@ -1437,37 +1437,99 @@ export default function Flow() {
       </div>
 
       {/* 5. FLOATING TOOLTIP FOR HOVERED SERVICE TAG (PORTAL OVERLAY) */}
-      {hoveredService && (
-        <div
-          className="fixed z-50 pointer-events-none p-3 rounded-xl bg-slate-950/95 text-white border border-slate-700/80 shadow-2xl backdrop-blur-md max-w-xs space-y-1.5 text-[11px]"
-          style={{
-            left: Math.min(window.innerWidth - 280, Math.max(10, hoveredService.x - 110)),
-            top: Math.max(10, hoveredService.y - 125),
-          }}
-        >
-          <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-1.5">
-            <span className={`px-1.5 py-0.5 rounded font-black text-[9.5px] border bg-transparent ${getServiceTagStyle(hoveredService.service.typeCode)}`}>
-              {hoveredService.service.typeCode}
-            </span>
-            <span className="font-extrabold text-white text-[11px] truncate">
-              {hoveredService.service.title} {hoveredService.service.subtitle ? `(${hoveredService.service.subtitle})` : ''}
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-1 text-[10px] text-slate-300">
-            <div>Format: <strong className="text-white">{hoveredService.service.format}</strong></div>
-            <div>Amount: <strong className="text-emerald-400">${hoveredService.service.amount}.00</strong></div>
-            <div>Maxilla: <strong className="text-white">{hoveredService.service.maxilla}</strong></div>
-            <div>Mandible: <strong className="text-white">{hoveredService.service.mandible}</strong></div>
-          </div>
-          <div className="text-[10px] text-slate-400 truncate">
-            Bill To: <span className="text-slate-200">{hoveredService.service.billTo}</span>
-          </div>
-          <div className="flex items-center justify-between pt-1 border-t border-slate-800 text-[10px]">
-            <span className="text-slate-400">Status:</span>
-            <span className="font-bold text-sky-400">{hoveredService.service.actionLabel}</span>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {hoveredService && (() => {
+          const tooltipWidth = 340;
+          const tooltipHeight = 185;
+          const xPos = Math.min(window.innerWidth - tooltipWidth - 16, Math.max(16, hoveredService.x - tooltipWidth / 2));
+          const isNearTop = hoveredService.y < tooltipHeight + 20;
+          const yPos = isNearTop ? hoveredService.y + 28 : hoveredService.y - tooltipHeight - 10;
+
+          return (
+            <motion.div
+              key="service-tooltip"
+              initial={{ opacity: 0, scale: 0.95, y: isNearTop ? -6 : 6 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: isNearTop ? -4 : 4 }}
+              transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
+              className="fixed z-50 pointer-events-none p-4 rounded-2xl bg-white/95 dark:bg-[#0c1322]/95 text-slate-800 dark:text-slate-100 border border-slate-200/90 dark:border-slate-700/80 shadow-2xl shadow-sky-950/15 dark:shadow-black/70 backdrop-blur-md w-84 sm:w-[340px] space-y-2.5 text-xs"
+              style={{
+                left: xPos,
+                top: yPos,
+              }}
+            >
+              {/* Header: Service Badge + Full Title */}
+              <div className="flex items-start justify-between gap-2.5 border-b border-slate-100 dark:border-slate-800 pb-2.5">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className={`px-2 py-0.5 rounded-lg font-black text-[10px] tracking-tight border bg-transparent shrink-0 ${getServiceTagStyle(hoveredService.service.typeCode)}`}>
+                    {hoveredService.service.typeCode}
+                  </span>
+                  <div className="min-w-0">
+                    <h4 className="font-extrabold text-slate-900 dark:text-white text-xs truncate leading-snug">
+                      {hoveredService.service.title}
+                    </h4>
+                    {hoveredService.service.subtitle && (
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block truncate">
+                        {hoveredService.service.subtitle}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-xs shrink-0">
+                  ${hoveredService.service.amount}.00
+                </span>
+              </div>
+
+              {/* Technical & Anatomical Grid */}
+              <div className="grid grid-cols-2 gap-2 text-[11px]">
+                <div className="p-2 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/50 dark:border-slate-800/80 space-y-0.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Format</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200 truncate block">
+                    {hoveredService.service.format || 'Standard CAD'}
+                  </span>
+                </div>
+
+                <div className="p-2 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/50 dark:border-slate-800/80 space-y-0.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Anatomical Site</span>
+                  <div className="flex items-center gap-1 font-bold text-[10.5px]">
+                    <span className={hoveredService.service.maxilla !== 'None' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400'}>
+                      Max: {hoveredService.service.maxilla}
+                    </span>
+                    <span className="text-slate-300 dark:text-slate-600">•</span>
+                    <span className={hoveredService.service.mandible !== 'None' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'}>
+                      Mand: {hoveredService.service.mandible}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bill To */}
+              <div className="text-[11px] p-2 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/50 dark:border-slate-800/80 space-y-0.5">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Bill To Account</span>
+                <span className="text-slate-700 dark:text-slate-300 font-semibold truncate block">
+                  {hoveredService.service.billTo}
+                </span>
+              </div>
+
+              {/* Status Footer */}
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+                <span className="text-slate-500 dark:text-slate-400 font-bold">Clinical Status:</span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border bg-transparent flex items-center gap-1.5 ${
+                  hoveredService.service.hasActionAlert
+                    ? 'border-amber-500/50 text-amber-700 dark:text-amber-400'
+                    : 'border-sky-500/50 text-sky-700 dark:text-sky-400'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${
+                    hoveredService.service.hasActionAlert ? 'bg-amber-500' : 'bg-sky-500'
+                  }`} />
+                  <span>{hoveredService.service.actionLabel}</span>
+                </span>
+              </div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
 
     </div>
   );
