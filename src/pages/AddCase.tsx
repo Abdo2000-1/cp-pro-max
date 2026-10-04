@@ -21,7 +21,6 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { TeethChart } from '@/components/ui/TeethChart';
-import { UIStateSwitcher, UIStateType } from '@/components/ui/UIStateSwitcher';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -30,8 +29,7 @@ import { store } from '@/services/store';
 export default function AddCase() {
   const navigate = useNavigate();
 
-  // Interactive UI State switcher for evaluation
-  const [uiState, setUiState] = useState<UIStateType>('normal');
+  const [uiState, setUiState] = useState<'normal' | 'loading' | 'empty' | 'error'>('normal');
 
   // Multi-step navigation
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -143,14 +141,6 @@ export default function AddCase() {
           </p>
         </div>
 
-        {/* State Switcher for demonstration */}
-        <div className="flex items-center gap-2">
-          <UIStateSwitcher
-            state={uiState}
-            onChange={(s) => setUiState(s)}
-            label="View State"
-          />
-        </div>
       </div>
 
       {/* Simulated States */}

@@ -11,7 +11,6 @@ import {
   Printer,
   ChevronDown
 } from 'lucide-react';
-import { UIStateSwitcher, UIStateType } from '@/components/ui/UIStateSwitcher';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -43,7 +42,7 @@ const SAMPLE_TASK47_ROWS: Task47Row[] = [
 ];
 
 export default function Task47ModelWorkReport() {
-  const [uiState, setUiState] = useState<UIStateType>('normal');
+  const [uiState, setUiState] = useState<'normal' | 'loading' | 'empty' | 'error'>('normal');
   const [selectedOperator, setSelectedOperator] = useState<string>('-1');
   const [fromDate, setFromDate] = useState('2026-09-01');
   const [toDate, setToDate] = useState('2026-10-03');
@@ -93,13 +92,8 @@ export default function Task47ModelWorkReport() {
           </p>
         </div>
 
-        {/* State Switcher & Print */}
+        {/* Print */}
         <div className="flex items-center gap-2">
-          <UIStateSwitcher
-            state={uiState}
-            onChange={(s) => setUiState(s)}
-            label="Report State"
-          />
 
           <button
             onClick={() => window.print()}

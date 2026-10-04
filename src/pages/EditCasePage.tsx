@@ -17,7 +17,6 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { TeethChart } from '@/components/ui/TeethChart';
-import { UIStateSwitcher, UIStateType } from '@/components/ui/UIStateSwitcher';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -30,7 +29,7 @@ export default function EditCasePage() {
   // URL Target: task=EditCase&thisID=523486&rep=1&mod=1&conv=1&tp=1&sg=1...
   const thisID = searchParams.get('thisID') || '523486';
 
-  const [uiState, setUiState] = useState<UIStateType>('normal');
+  const [uiState, setUiState] = useState<'normal' | 'loading' | 'empty' | 'error'>('normal');
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Preloaded data for Case #523486
@@ -95,13 +94,8 @@ export default function EditCasePage() {
           </div>
         </div>
 
-        {/* State Switcher & Controls */}
+        {/* Controls */}
         <div className="flex items-center gap-2">
-          <UIStateSwitcher
-            state={uiState}
-            onChange={(s) => setUiState(s)}
-            label="Edit State"
-          />
 
           <button
             type="button"

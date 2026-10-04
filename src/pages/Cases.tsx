@@ -13,7 +13,6 @@ import { PriorityBadge } from '@/components/ui/PriorityBadge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { UIStateSwitcher, type UIStateType } from '@/components/ui/UIStateSwitcher';
 import { timeAgo, formatCurrency } from '@/utils/format';
 import { api } from '@/services/api';
 import { useFetch } from '@/hooks/useFetch';
@@ -34,7 +33,7 @@ export default function Cases() {
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [simulatedState, setSimulatedState] = useState<UIStateType>('normal');
+  const [simulatedState, setSimulatedState] = useState<'normal' | 'loading' | 'empty' | 'error'>('normal');
   
   const cases = useStore(s => s.getCases());
   const { currentPage, setCurrentPage } = useTableState();
@@ -101,13 +100,6 @@ export default function Cases() {
         </div>
       </div>
 
-      {/* State Switcher Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
-        <UIStateSwitcher state={simulatedState} onChange={setSimulatedState} label="Simulate Cases View State" />
-        <span className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:inline">
-          Toggle <b>Loading</b>, <b>Empty</b>, or <b>Error</b> status in real-time
-        </span>
-      </div>
 
       {simulatedState === 'loading' ? (
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800 shadow-sm">

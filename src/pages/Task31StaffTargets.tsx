@@ -11,10 +11,8 @@ import {
   Printer,
   ChevronDown,
   Award,
-  TrendingUp,
-  Percent
+  TrendingUp
 } from 'lucide-react';
-import { UIStateSwitcher, UIStateType } from '@/components/ui/UIStateSwitcher';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -45,7 +43,7 @@ const SAMPLE_STAFF: StaffTargetRow[] = [
 ];
 
 export default function Task31StaffTargets() {
-  const [uiState, setUiState] = useState<UIStateType>('normal');
+  const [uiState, setUiState] = useState<'normal' | 'loading' | 'empty' | 'error'>('normal');
   const [selectedDept, setSelectedDept] = useState<string>('ALL');
   const [selectedQuarter, setSelectedQuarter] = useState<string>('Q3 (Jul - Sep)');
   const [search, setSearch] = useState('');
@@ -93,13 +91,8 @@ export default function Task31StaffTargets() {
           </p>
         </div>
 
-        {/* State Switcher & Export */}
+        {/* Export */}
         <div className="flex items-center gap-2">
-          <UIStateSwitcher
-            state={uiState}
-            onChange={(s) => setUiState(s)}
-            label="Matrix State"
-          />
 
           <button
             onClick={() => window.print()}

@@ -33,7 +33,6 @@ import {
 } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { PriorityBadge } from '@/components/ui/PriorityBadge';
-import { UIStateSwitcher, UIStateType } from '@/components/ui/UIStateSwitcher';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -62,7 +61,22 @@ export default function OrderDetailsPage() {
   );
 
   // Safe fallback if order is custom or not yet seeded
-  const displayOrder = foundOrder || {
+  const isCase504901 = paramId.includes('504901');
+  const displayOrder = foundOrder || (isCase504901 ? {
+    id: '504901',
+    orderNumber: '#504901',
+    patientName: 'Test Add order',
+    doctorName: 'Dr. Bishoy Mina',
+    clinicName: 'California Imaging Diagnostics Hub',
+    restoration: 'coDiagnostiX Treatment Plan & Intra-Oral Scan',
+    shade: 'Universal',
+    status: 'Design' as OrderStatus,
+    priority: 'Urgent' as Priority,
+    dueDate: '2026-10-08',
+    amount: 200,
+    notes: 'Inter. 2026-09-28 • Urgent: No Scans Uploaded for Intra-Oral component. Waiting for IO file.',
+    receivedAt: 'Mon Sep 28 14:13:07 -0400'
+  } : {
     id: paramId,
     orderNumber: paramId.startsWith('ord-') ? `ORD-2024-${paramId.replace('ord-', '').padStart(3, '0')}` : `#${paramId}`,
     patientName: 'Alex Morgan',
@@ -76,9 +90,9 @@ export default function OrderDetailsPage() {
     amount: 485,
     notes: 'Verify nerve canal clearance at tooth #19 site. Use Straumann 3.5mm BLX sleeves.',
     receivedAt: '2026-09-28'
-  };
+  });
 
-  const [uiState, setUiState] = useState<UIStateType>('normal');
+  const [uiState, setUiState] = useState<'normal' | 'loading' | 'empty' | 'error'>('normal');
   const [activeTab, setActiveTab] = useState<'overview' | 'suborders' | '3dviewer' | 'history'>('overview');
 
   // Interactive 3D / DICOM Multi-Planar Viewer controls
@@ -169,14 +183,8 @@ export default function OrderDetailsPage() {
           </div>
         </div>
 
-        {/* State Switcher & Edit Action */}
+        {/* Actions Bar */}
         <div className="flex items-center gap-2 flex-wrap">
-          <UIStateSwitcher
-            state={uiState}
-            onChange={(s) => setUiState(s)}
-            label="Details State"
-          />
-
           <button
             type="button"
             onClick={() => navigate(`/edit-case?thisID=${paramId}`)}

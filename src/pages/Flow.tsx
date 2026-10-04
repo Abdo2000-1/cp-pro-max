@@ -1041,20 +1041,20 @@ export default function Flow() {
                           </td>
 
                           {/* 20. Action */}
-                          <td className="py-2.5 px-1.5 text-center" onClick={(e) => e.stopPropagation()}>
+                          <td className="py-2.5 px-1 text-center" onClick={(e) => e.stopPropagation()}>
                             {hasActionAlert ? (
-                              <div className="bg-red-600 text-white px-1 py-0.5 rounded font-black text-[9px] leading-tight shadow-xs">
+                              <div className="bg-gradient-to-br from-red-600/95 via-rose-600/95 to-red-700/95 backdrop-blur-md text-white px-1.5 py-1 rounded-lg font-black text-[9px] leading-tight border border-red-400/60 shadow-md shadow-red-500/25">
                                 <div>No Scans</div>
                                 <button
                                   type="button"
                                   onClick={() => navigate(`/order-details?ID=${order.orderNum}`)}
-                                  className="underline hover:text-amber-200 cursor-pointer block text-[8px]"
+                                  className="mt-0.5 px-1 py-0.5 rounded bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/40 text-amber-100 hover:text-white cursor-pointer block mx-auto text-[8px] font-bold transition-all shadow-2xs"
                                 >
                                   {alertService?.actionButtonText || 'Upload'}
                                 </button>
                               </div>
                             ) : (
-                              <span className="inline-block px-1.5 py-0.5 rounded font-bold text-[9px] bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/30 truncate max-w-full">
+                              <span className="inline-block px-1.5 py-0.5 rounded-full font-bold text-[9px] bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30 truncate max-w-full backdrop-blur-xs">
                                 {primaryService?.actionLabel || 'In Progress'}
                               </span>
                             )}
@@ -1162,8 +1162,8 @@ export default function Flow() {
                                                 key={sub.id}
                                                 className={`text-xs font-medium transition-colors ${
                                                   sub.typeCode === 'IO'
-                                                    ? 'bg-[#ffff77] dark:bg-yellow-950/40 text-slate-900 dark:text-yellow-100 font-bold'
-                                                    : 'bg-white dark:bg-[#0b101d] text-slate-800 dark:text-slate-200'
+                                                    ? 'bg-amber-300/35 dark:bg-yellow-500/20 backdrop-blur-md border-y border-amber-400/60 shadow-xs text-slate-900 dark:text-yellow-100 font-bold hover:bg-amber-300/50 dark:hover:bg-yellow-500/30'
+                                                    : 'bg-white/90 dark:bg-[#0b101d]/90 backdrop-blur-sm text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900/60'
                                                 }`}
                                               >
                                                 {/* 1. Sub index */}
@@ -1176,18 +1176,22 @@ export default function Flow() {
                                                   {order.scanCenter}
                                                 </td>
                                                 <td className="py-2.5 px-1.5 text-[10px] text-slate-500 italic truncate">
-                                                  {order.doctorName}
+                                                  <span className="text-[#ea580c] font-bold">{order.doctorName}</span>
                                                 </td>
                                                 <td className="py-2.5 px-1.5 text-[10px] text-slate-500 italic truncate">
-                                                  {order.patientName}
+                                                  <span className="font-semibold text-slate-800 dark:text-slate-200">{order.patientName}</span>
                                                 </td>
-                                                <td className="py-2.5 px-1 text-center text-[9px] text-slate-400">
-                                                  {order.isLocked ? '🔒' : '🔓'}
+                                                <td className="py-2.5 px-1 text-center text-[9px]">
+                                                  {order.isLocked ? (
+                                                    <span className="inline-block w-3 h-3 rotate-45 bg-emerald-500 text-white text-[7px] leading-3 text-center shadow-xs">🔒</span>
+                                                  ) : (
+                                                    <span className="inline-block w-3 h-3 rotate-45 bg-rose-600 text-white text-[7px] leading-3 text-center shadow-xs">🔓</span>
+                                                  )}
                                                 </td>
-                                                <td className="py-2.5 px-1 text-center text-[9px] text-slate-400 truncate">
+                                                <td className="py-2.5 px-1 text-center text-[9px] text-slate-500 truncate" title={order.notes}>
                                                   {order.notes}
                                                 </td>
-                                                <td className="py-2.5 px-1 text-center text-[9px] font-mono text-slate-400 truncate">
+                                                <td className="py-2.5 px-1 text-center text-[9px] font-mono text-slate-500 truncate">
                                                   {order.archiveDate}
                                                 </td>
                                                 <td className="py-2.5 px-0.5 text-center text-slate-400">
@@ -1197,32 +1201,32 @@ export default function Flow() {
                                                 {/* 9. Order Name & Icon (100% Match with Screenshot) */}
                                                 <td className="py-2.5 px-2">
                                                   <div className="flex flex-col items-start gap-0.5">
-                                                    <span className="font-extrabold text-[11px]">
+                                                    <span className="font-extrabold text-[11px] text-slate-900 dark:text-white">
                                                       {sub.title}
                                                     </span>
                                                     <div className="flex items-center gap-1 text-[9.5px] font-mono">
                                                       {sub.typeCode === 'IO' && (
-                                                        <span className="text-amber-800 dark:text-amber-300 font-bold flex items-center gap-0.5">
-                                                          <Wrench size={11} className="text-amber-700" />
+                                                        <span className="px-1.5 py-0.5 rounded-full bg-amber-500/25 dark:bg-yellow-400/20 text-amber-900 dark:text-yellow-200 font-extrabold flex items-center gap-1 border border-amber-500/40 shadow-xs">
+                                                          <Wrench size={10} className="text-amber-800 dark:text-yellow-300" />
                                                           <span>IO Scan</span>
                                                         </span>
                                                       )}
                                                       {sub.typeCode === 'TP' && (
-                                                        <span className="text-cyan-700 dark:text-cyan-400 font-bold flex items-center gap-0.5">
+                                                        <span className="px-1.5 py-0.5 rounded-full bg-cyan-500/15 dark:bg-cyan-400/20 text-cyan-800 dark:text-cyan-300 font-bold flex items-center gap-1 border border-cyan-500/30">
                                                           <span>🛠️</span>
-                                                          <span>{sub.subtitle || 'Later'}</span>
+                                                          <span>{sub.subtitle || 'coDiagnostiX'}</span>
                                                         </span>
                                                       )}
                                                       {sub.typeCode === 'FMP' && (
-                                                        <span className="text-orange-600 dark:text-orange-400 font-bold flex items-center gap-0.5">
+                                                        <span className="px-1.5 py-0.5 rounded-full bg-orange-500/15 dark:bg-orange-400/20 text-orange-800 dark:text-orange-300 font-bold flex items-center gap-1 border border-orange-500/30">
                                                           <Sparkles size={10} />
                                                           <span>FMP</span>
                                                         </span>
                                                       )}
                                                       {sub.typeCode === 'SG' && (
-                                                        <span className="text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-0.5">
+                                                        <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/15 dark:bg-emerald-400/20 text-emerald-800 dark:text-emerald-300 font-bold flex items-center gap-1 border border-emerald-500/30">
                                                           <CheckCircle2 size={10} />
-                                                          <span>CAM</span>
+                                                          <span>CAM Print</span>
                                                         </span>
                                                       )}
                                                     </div>
@@ -1230,31 +1234,31 @@ export default function Flow() {
                                                 </td>
 
                                                 {/* 10. Bill To */}
-                                                <td className="py-2.5 px-1.5 text-[10px] truncate" title={sub.billTo}>
+                                                <td className="py-2.5 px-1.5 text-[10px] text-slate-700 dark:text-slate-300 truncate" title={sub.billTo}>
                                                   {sub.billTo}
                                                 </td>
 
                                                 {/* 11. Max. */}
                                                 <td className="py-2.5 px-1 text-center font-bold text-[10px]">
-                                                  <span className={sub.maxilla === 'Yes' || sub.maxilla === 'Quadrant' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}>
+                                                  <span className={sub.maxilla === 'Yes' || sub.maxilla === 'Quadrant' ? 'text-emerald-600 dark:text-emerald-400 font-black' : 'text-slate-400'}>
                                                     {sub.maxilla}
                                                   </span>
                                                 </td>
 
                                                 {/* 12. Mand. */}
                                                 <td className="py-2.5 px-1 text-center font-bold text-[10px]">
-                                                  <span className={sub.mandible === 'Yes' || sub.mandible === 'Mandible' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}>
+                                                  <span className={sub.mandible === 'Yes' || sub.mandible === 'Mandible' ? 'text-emerald-600 dark:text-emerald-400 font-black' : 'text-slate-400'}>
                                                     {sub.mandible}
                                                   </span>
                                                 </td>
 
                                                 {/* 13. Format */}
-                                                <td className="py-2.5 px-1 text-center font-mono text-[10px] truncate" title={sub.format}>
+                                                <td className="py-2.5 px-1 text-center font-mono text-[10px] text-slate-600 dark:text-slate-400 truncate" title={sub.format}>
                                                   {sub.format}
                                                 </td>
 
                                                 {/* 14. Amount */}
-                                                <td className="py-2.5 px-1.5 text-right font-mono font-black text-[11px]">
+                                                <td className="py-2.5 px-1.5 text-right font-mono font-black text-[11px] text-slate-900 dark:text-white">
                                                   ${sub.amount}.00
                                                 </td>
 
@@ -1283,30 +1287,30 @@ export default function Flow() {
                                                   {sub.chargedOn}
                                                 </td>
 
-                                                {/* 20. Action (Exact Red Alert Box) */}
-                                                <td className="py-2 px-1.5 text-center">
+                                                {/* 20. Action (Modern Glassmorphic Red Alert Box) */}
+                                                <td className="py-2 px-1 text-center">
                                                   {sub.hasActionAlert ? (
-                                                    <div className="bg-red-600 hover:bg-red-700 text-white p-1 rounded font-black text-[9px] leading-tight shadow-xs">
+                                                    <div className="bg-gradient-to-br from-red-600/95 via-rose-600/95 to-red-700/95 backdrop-blur-md text-white p-1 rounded-lg font-black text-[9px] leading-tight border border-red-400/60 shadow-md shadow-red-500/25">
                                                       <div>{sub.actionLabel}</div>
                                                       {sub.actionButtonText && (
                                                         <button
                                                           type="button"
                                                           onClick={() => navigate(`/order-details?ID=${order.orderNum}`)}
-                                                          className="underline hover:text-amber-200 cursor-pointer block mt-0.5 mx-auto text-[8px]"
+                                                          className="mt-0.5 px-1.5 py-0.5 rounded bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/40 text-amber-100 hover:text-white cursor-pointer block mx-auto text-[8px] font-bold transition-all shadow-2xs"
                                                         >
                                                           {sub.actionButtonText}
                                                         </button>
                                                       )}
                                                     </div>
                                                   ) : (
-                                                    <span className="inline-block px-1.5 py-0.5 rounded font-bold text-[9px] bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/30 truncate max-w-full">
+                                                    <span className="inline-block px-1.5 py-0.5 rounded-full font-bold text-[9px] bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30 truncate max-w-full backdrop-blur-xs">
                                                       {sub.actionLabel}
                                                     </span>
                                                   )}
                                                 </td>
 
                                                 {/* 21. Change Request */}
-                                                <td className="py-2.5 px-1 text-center font-mono text-[10px] text-rose-600 font-bold">
+                                                <td className="py-2.5 px-1 text-center font-mono text-[10px] text-rose-600 dark:text-rose-400 font-bold">
                                                   {sub.changeRequest}
                                                 </td>
 
