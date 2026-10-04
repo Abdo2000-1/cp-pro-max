@@ -127,7 +127,6 @@ export default function App() {
             </Route>
             <Route path="*" element={<Navigate to="/flow" replace />} />
           </Routes>
-          <StateInspectorFloat />
         </LanguageProvider>
       </ThemeProvider>
     </BrowserRouter>
