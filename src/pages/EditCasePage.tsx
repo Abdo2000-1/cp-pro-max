@@ -17,6 +17,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { TeethChart } from '@/components/ui/TeethChart';
+import { UIStateSwitcher, type UIStateType } from '@/components/ui/UIStateSwitcher';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -94,8 +95,13 @@ export default function EditCasePage() {
           </div>
         </div>
 
-        {/* Controls */}
+        {/* State Switcher & Controls */}
         <div className="flex items-center gap-2">
+          <UIStateSwitcher
+            state={uiState}
+            onChange={(s) => setUiState(s)}
+            label="Edit State"
+          />
 
           <button
             type="button"

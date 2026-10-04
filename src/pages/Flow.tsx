@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -45,6 +45,11 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import {
+  MASTER_WORKFLOW_ORDERS,
+  MasterWorkflowOrder,
+  SubServiceItem
+} from '@/data/flowMockData';
 
 // Web Audio API helper for smooth, light swoosh sound effect on expand/collapse
 function playSwooshSound(isExpanding: boolean) {
@@ -84,50 +89,115 @@ function playSwooshSound(isExpanding: boolean) {
   }
 }
 
-// Sub-Service Item matching the exact columns in the user reference image
-export interface SubServiceItem {
-  id: string;
-  type: 'Intra-Oral' | 'Treatment Plan' | 'Surgical Guide' | 'Temp Restoration' | 'Model Work' | 'Radiology Report';
-  typeCode: 'IO' | 'TP' | 'SG' | 'FMP' | 'MOD' | 'RAD';
-  title: string;              // e.g. "Intra-Oral" or "Treatment Plan"
-  subtitle?: string;          // e.g. "Later"
-  billTo: string;             // e.g. "Bishoy Mina CC: Master, 9903"
-  maxilla: string;            // "Yes" | "Quadrant" | "None"
-  mandible: string;           // "No" | "None" | "Mandible"
-  format: string;             // "coDiagnostiX"
-  amount: number;             // e.g. 0 or 200 or 575
-  vouchers: string;           // "N/A"
-  receivedTime: string;       // "Mon Sep 28 14.13.07 -0400"
-  sentTime: string;           // "Not Yet"
-  updateTime: string;         // "No Updates"
-  chargedOn: string;          // "Not Yet"
-  hasActionAlert: boolean;    // true for red alert box
-  actionLabel: string;        // "No Scans Uploaded"
-  actionButtonText?: string;  // "Upload IO File" or "Upload"
-  changeRequest: string;      // "-" or "Revised"
-  csTask: {
-    status: 'Assign' | 'Assigned';
-    assignee?: string;        // "shrouk"
-    time?: string;            // "2026-09-28 14:14 -0400"
-  };
-}
+// Source badge styling rules matching official specification:
+// Sender Tools (Vatech, Planmeca, Jmorita, Prexion) -> Black badge
+// CaseXchange -> White badge
+// Via CP -> Purple badge
+// Via Connect -> Magenta badge
+export const getSourceBadgeStyle = (source: string) => {
+  const s = (source || '').toLowerCase();
+  if (
+    s.includes('vatech') ||
+    s.includes('planmeca') ||
+    s.includes('jmorita') ||
+    s.includes('prexion') ||
+    s.includes('sender')
+  ) {
+    return 'bg-black text-white border border-slate-700 shadow-2xs font-extrabold';
+  }
+  if (s.includes('casexchange') || s.includes('xchange')) {
+    return 'bg-white text-slate-900 border border-slate-300 dark:border-slate-600 shadow-2xs font-black';
+  }
+  if (s.includes('cp')) {
+    return 'bg-purple-600 text-white shadow-2xs font-extrabold';
+  }
+  if (s.includes('connect')) {
+    return 'bg-fuchsia-600 text-white shadow-2xs font-extrabold';
+  }
+  return 'bg-slate-700 text-white font-extrabold';
+};
 
-// Master Order containing its metadata and linked services
-export interface MasterWorkflowOrder {
-  id: string;
-  serial: number;
-  orderNum: string;
-  source: 'Via CP' | 'Via Connect';
-  scanCenter: string;
-  doctorName: string;
-  doctorSub: string;         // e.g. "TE"
-  patientName: string;
-  patientSub: string;        // e.g. "Add SG Date"
-  isLocked: boolean;
-  notes: string;             // e.g. "Inter. 2026-09-28"
-  archiveDate: string;       // e.g. "2026-09-28"
-  services: SubServiceItem[];
-}
+// Workflow status badge renderer matching official clinical workflow matrix:
+// Both scans: IO/TP IN PROGRESS (Yellow), SG REVIEWING ORDER (Blue)
+// No CBCT: TP NO SCANS (Red Alert Box), IO PENDING (Orange)
+// No STL: TP IN PROGRESS (Yellow), IO NO SCANS (Red Alert Box)
+// Sleeve/Guide design & printing: IN PROGRESS (Yellow)
+export const renderActionStatusBadge = (
+  label: string,
+  isAlert: boolean,
+  buttonText?: string,
+  onAction?: (e: React.MouseEvent) => void
+) => {
+  if (isAlert) {
+    return (
+      <div className="bg-gradient-to-br from-red-600 via-rose-600 to-red-700 backdrop-blur-md text-white px-1.5 py-1 rounded-lg font-black text-[9px] leading-tight border border-red-400 shadow-xs shadow-red-500/25">
+        <div>{label || 'No Scans'}</div>
+        {buttonText && (
+          <button
+            type="button"
+            onClick={onAction}
+            className="mt-0.5 px-1 py-0.5 rounded bg-white/20 hover:bg-white/30 backdrop-blur-xs border border-white/40 text-amber-100 hover:text-white cursor-pointer block mx-auto text-[8px] font-bold transition-all shadow-2xs"
+          >
+            {buttonText}
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  const l = (label || '').toLowerCase();
+  if (
+    l.includes('in progress') ||
+    l.includes('sleeve design') ||
+    l.includes('guide design') ||
+    l.includes('printing') ||
+    l.includes('planning') ||
+    l.includes('production')
+  ) {
+    return (
+      <span className="inline-block px-1.5 py-0.5 rounded-full font-black text-[9px] bg-amber-300 dark:bg-amber-400 text-amber-950 border border-amber-400 shadow-2xs truncate max-w-full">
+        {label}
+      </span>
+    );
+  }
+
+  if (l.includes('pending')) {
+    return (
+      <span className="inline-block px-1.5 py-0.5 rounded-full font-black text-[9px] bg-amber-500 text-white border border-amber-600 shadow-2xs truncate max-w-full">
+        {label}
+      </span>
+    );
+  }
+
+  if (l.includes('review') || l.includes('reviewing') || l.includes('waiting confirmation')) {
+    return (
+      <span className="inline-block px-1.5 py-0.5 rounded-full font-black text-[9px] bg-sky-500 text-white border border-sky-600 shadow-2xs truncate max-w-full">
+        {label}
+      </span>
+    );
+  }
+
+  if (
+    l.includes('signed') ||
+    l.includes('dispatched') ||
+    l.includes('shipped') ||
+    l.includes('complete') ||
+    l.includes('delivered') ||
+    l.includes('approved')
+  ) {
+    return (
+      <span className="inline-block px-1.5 py-0.5 rounded-full font-black text-[9px] bg-emerald-500 text-white border border-emerald-600 shadow-2xs truncate max-w-full">
+        {label}
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-block px-1.5 py-0.5 rounded-full font-bold text-[9px] bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-600 truncate max-w-full">
+      {label}
+    </span>
+  );
+};
 
 export interface ServiceFilterState {
   rep: boolean;
@@ -259,294 +329,17 @@ export default function Flow() {
 
   const activeServicesCount = Object.values(servicesFilter).filter(Boolean).length;
 
-  // Build authentic multi-service workflow orders matching Image 1 exact screenshot
-  const enrichedOrders: MasterWorkflowOrder[] = useMemo(() => {
-    return [
-      // 1. Exact Order 504901 from User Image (Via CP, Bishoy Mina, Intra-Oral + 2x TP)
-      {
-        id: '504901',
-        serial: 1,
-        orderNum: '504901',
-        source: 'Via CP',
-        scanCenter: 'None',
-        doctorName: 'Bishoy Mina',
-        doctorSub: 'TE',
-        patientName: 'Test Add order',
-        patientSub: 'Add SG Date',
-        isLocked: true,
-        notes: 'Inter. 2026-09-28',
-        archiveDate: '2026-09-28',
-        services: [
-          {
-            id: 'srv-101',
-            type: 'Intra-Oral',
-            typeCode: 'IO',
-            title: 'Intra-Oral',
-            billTo: 'Bishoy Mina CC: Master, 9903',
-            maxilla: 'Yes',
-            mandible: 'No',
-            format: 'coDiagnostiX',
-            amount: 0,
-            vouchers: 'N/A',
-            receivedTime: 'Mon Sep 28 14.13.07 -0400',
-            sentTime: 'Not Yet',
-            updateTime: 'No Updates',
-            chargedOn: 'Not Yet',
-            hasActionAlert: true,
-            actionLabel: 'No Scans Uploaded',
-            actionButtonText: 'Upload IO File',
-            changeRequest: '-',
-            csTask: { status: 'Assigned', assignee: 'shrouk', time: '2026-09-28 14:14 -0400' }
-          },
-          {
-            id: 'srv-102',
-            type: 'Treatment Plan',
-            typeCode: 'TP',
-            title: 'Treatment Plan',
-            subtitle: 'Later',
-            billTo: 'Bishoy Mina CC: Master, 9903',
-            maxilla: 'Quadrant',
-            mandible: 'None',
-            format: 'coDiagnostiX',
-            amount: 200,
-            vouchers: 'N/A',
-            receivedTime: 'Mon Sep 28 14.13.07 -0400',
-            sentTime: 'Not Yet',
-            updateTime: 'No Updates',
-            chargedOn: 'Not Yet',
-            hasActionAlert: true,
-            actionLabel: 'No Scans Uploaded',
-            actionButtonText: 'Upload',
-            changeRequest: 'Revised',
-            csTask: { status: 'Assign' }
-          },
-          {
-            id: 'srv-103',
-            type: 'Treatment Plan',
-            typeCode: 'TP',
-            title: 'Treatment Plan #2 (Mandible)',
-            subtitle: 'Later',
-            billTo: 'Bishoy Mina CC: Master, 9903',
-            maxilla: 'None',
-            mandible: 'Quadrant',
-            format: 'coDiagnostiX',
-            amount: 200,
-            vouchers: 'N/A',
-            receivedTime: 'Mon Sep 28 14.13.07 -0400',
-            sentTime: 'Not Yet',
-            updateTime: 'No Updates',
-            chargedOn: 'Not Yet',
-            hasActionAlert: false,
-            actionLabel: 'In Planning',
-            changeRequest: '-',
-            csTask: { status: 'Assign' }
-          }
-        ]
-      },
+  // Use complete 36-case dataset representing all sender tools, CaseXchange, CP, Connect, and clinical workflows
+  const enrichedOrders: MasterWorkflowOrder[] = MASTER_WORKFLOW_ORDERS;
 
-      // 2. Exact Order 504900 from User Image (Via Connect, Rashad Hussein, Temp Restoration FMP)
-      {
-        id: '504900',
-        serial: 2,
-        orderNum: '504900',
-        source: 'Via Connect',
-        scanCenter: 'None',
-        doctorName: 'Rashad Hussein',
-        doctorSub: 'Add SG Date',
-        patientName: 'patient RH',
-        patientSub: 'Unlock',
-        isLocked: false,
-        notes: 'SALES Rashad',
-        archiveDate: '2026-09-22',
-        services: [
-          {
-            id: 'srv-201',
-            type: 'Temp Restoration',
-            typeCode: 'FMP',
-            title: 'Temp Restoration',
-            subtitle: 'FMP',
-            billTo: 'Rashad Hussein CC: VISA, 9903',
-            maxilla: 'None',
-            mandible: 'Mandible',
-            format: 'None',
-            amount: 575,
-            vouchers: 'N/A',
-            receivedTime: 'Tue Sep 22 15:52:43 -0400',
-            sentTime: 'Not Yet',
-            updateTime: 'No Updates',
-            chargedOn: 'Not Yet',
-            hasActionAlert: true,
-            actionLabel: 'No Scans Uploaded',
-            actionButtonText: 'Upload scans\nFill FMP Form',
-            changeRequest: '-',
-            csTask: { status: 'Assign' }
-          },
-          {
-            id: 'srv-202',
-            type: 'Surgical Guide',
-            typeCode: 'SG',
-            title: 'Surgical Guide',
-            subtitle: 'CAM Print',
-            billTo: 'Rashad Hussein CC: VISA, 9903',
-            maxilla: 'None',
-            mandible: 'Mandible',
-            format: 'coDiagnostiX',
-            amount: 285,
-            vouchers: 'N/A',
-            receivedTime: 'Tue Sep 22 15:52:43 -0400',
-            sentTime: 'Not Yet',
-            updateTime: 'Sep 23 10:15',
-            chargedOn: 'Not Yet',
-            hasActionAlert: false,
-            actionLabel: 'Queued for CAM Print',
-            changeRequest: '-',
-            csTask: { status: 'Assigned', assignee: 'omar', time: '2026-09-23 09:30' }
-          }
-        ]
-      },
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
 
-      // 3. Order ORD-2024-003 (Dr. Marcus Vance, Multi-TP + Surgical Guide)
-      {
-        id: 'ord-3',
-        serial: 3,
-        orderNum: 'ORD-2024-003',
-        source: 'Via CP',
-        scanCenter: 'Align Chicago Hub',
-        doctorName: 'Dr. Marcus Vance',
-        doctorSub: 'NY Smile Center',
-        patientName: 'Arthur Pendelton',
-        patientSub: 'Add SG Date',
-        isLocked: false,
-        notes: 'Bone density 650 HU',
-        archiveDate: '2026-10-15',
-        services: [
-          {
-            id: 'srv-301',
-            type: 'Treatment Plan',
-            typeCode: 'TP',
-            title: 'Treatment Plan #1 (Maxilla)',
-            subtitle: 'Co-Dx Plan',
-            billTo: 'NY Smile Center (Account #1428)',
-            maxilla: 'Yes',
-            mandible: 'No',
-            format: 'coDiagnostiX',
-            amount: 200,
-            vouchers: '1',
-            receivedTime: 'Sep 28 09:30',
-            sentTime: 'Sep 28 14:15',
-            updateTime: 'Sep 28 17:00',
-            chargedOn: 'Sep 28 18:30',
-            hasActionAlert: false,
-            actionLabel: 'Plan Approved',
-            changeRequest: 'CR-104',
-            csTask: { status: 'Assigned', assignee: 'Sarah K.', time: '2026-09-28 11:00' }
-          },
-          {
-            id: 'srv-302',
-            type: 'Treatment Plan',
-            typeCode: 'TP',
-            title: 'Treatment Plan #2 (Mandible)',
-            subtitle: 'Dual TP',
-            billTo: 'NY Smile Center (Account #1428)',
-            maxilla: 'No',
-            mandible: 'Yes',
-            format: 'coDiagnostiX',
-            amount: 200,
-            vouchers: 'N/A',
-            receivedTime: 'Sep 28 09:30',
-            sentTime: 'Not Yet',
-            updateTime: 'Sep 29 11:20',
-            chargedOn: 'Not Yet',
-            hasActionAlert: false,
-            actionLabel: 'In Planning',
-            changeRequest: '-',
-            csTask: { status: 'Assigned', assignee: 'Alex M.', time: '2026-09-29 09:15' }
-          },
-          {
-            id: 'srv-303',
-            type: 'Surgical Guide',
-            typeCode: 'SG',
-            title: 'Surgical Guide (VeloGuide)',
-            subtitle: 'Tooth-Supported',
-            billTo: 'NY Smile Center (Account #1428)',
-            maxilla: 'Yes',
-            mandible: 'No',
-            format: 'coDiagnostiX / STL',
-            amount: 85,
-            vouchers: 'N/A',
-            receivedTime: 'Sep 28 09:30',
-            sentTime: 'Not Yet',
-            updateTime: 'Sep 29 12:00',
-            chargedOn: 'Not Yet',
-            hasActionAlert: false,
-            actionLabel: 'CAM 3D Print',
-            changeRequest: '-',
-            csTask: { status: 'Assign' }
-          }
-        ]
-      },
-
-      // 4. Order 504895 (Dr. Sarah Connor, Radiology Report + Models)
-      {
-        id: '504895',
-        serial: 4,
-        orderNum: '504895',
-        source: 'Via CP',
-        scanCenter: 'Boston Diagnostics',
-        doctorName: 'Dr. Sarah Connor',
-        doctorSub: 'TE',
-        patientName: 'Emma Watson',
-        patientSub: 'Add SG Date',
-        isLocked: true,
-        notes: 'Impaction review',
-        archiveDate: '2026-10-02',
-        services: [
-          {
-            id: 'srv-401',
-            type: 'Radiology Report',
-            typeCode: 'RAD',
-            title: 'Full Radiology Report',
-            subtitle: 'CBCT Review',
-            billTo: 'Boston Diagnostics Lab',
-            maxilla: 'Yes',
-            mandible: 'Yes',
-            format: 'PDF Report',
-            amount: 170,
-            vouchers: 'N/A',
-            receivedTime: 'Sep 25 10:00',
-            sentTime: 'Sep 25 15:45',
-            updateTime: 'Sep 25 16:00',
-            chargedOn: 'Sep 25 17:00',
-            hasActionAlert: false,
-            actionLabel: 'Report Signed',
-            changeRequest: '-',
-            csTask: { status: 'Assigned', assignee: 'Dr. Radiologist', time: '2026-09-25 14:00' }
-          },
-          {
-            id: 'srv-402',
-            type: 'Model Work',
-            typeCode: 'MOD',
-            title: '3D Printed Study Models',
-            subtitle: 'Model Work',
-            billTo: 'Boston Diagnostics Lab',
-            maxilla: 'Yes',
-            mandible: 'Yes',
-            format: 'STL 3D Print',
-            amount: 150,
-            vouchers: 'N/A',
-            receivedTime: 'Sep 25 10:00',
-            sentTime: 'Sep 26 09:00',
-            updateTime: 'Sep 26 10:00',
-            chargedOn: 'Sep 26 11:00',
-            hasActionAlert: false,
-            actionLabel: 'Dispatched',
-            changeRequest: '-',
-            csTask: { status: 'Assign' }
-          }
-        ]
-      }
-    ];
-  }, []);
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, viewFilter, servicesFilter]);
 
   // Filtered orders according to search and view modes
   const filteredOrders = useMemo(() => {
@@ -573,6 +366,12 @@ export default function Flow() {
       return true;
     });
   }, [enrichedOrders, search, viewFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / pageSize));
+  const paginatedOrders = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredOrders.slice(start, start + pageSize);
+  }, [filteredOrders, currentPage, pageSize]);
 
   return (
     <div className="space-y-4 w-full min-w-0">
@@ -867,7 +666,7 @@ export default function Flow() {
                     </td>
                   </tr>
                 ) : (
-                  filteredOrders.map((order) => {
+                  paginatedOrders.map((order) => {
                     const isExpanded = expandedOrders.has(order.id);
                     const tpCount = order.services.filter((s) => s.typeCode === 'TP').length;
                     const hasActionAlert = order.services.some((s) => s.hasActionAlert);
@@ -904,9 +703,7 @@ export default function Flow() {
                                 <span className="font-mono font-black text-amber-600 dark:text-amber-500 text-[11px]">
                                   {order.orderNum}
                                 </span>
-                                <span className={`inline-block px-1 py-0.1 rounded text-[8px] font-black uppercase tracking-wider ${
-                                  order.source === 'Via CP' ? 'bg-purple-600 text-white' : 'bg-purple-700 text-white'
-                                }`}>
+                                <span className={`inline-block px-1 py-0.5 rounded text-[8px] tracking-wider uppercase ${getSourceBadgeStyle(order.source)}`}>
                                   {order.source}
                                 </span>
                               </div>
@@ -1042,21 +839,14 @@ export default function Flow() {
 
                           {/* 20. Action */}
                           <td className="py-2.5 px-1 text-center" onClick={(e) => e.stopPropagation()}>
-                            {hasActionAlert ? (
-                              <div className="bg-gradient-to-br from-red-600/95 via-rose-600/95 to-red-700/95 backdrop-blur-md text-white px-1.5 py-1 rounded-lg font-black text-[9px] leading-tight border border-red-400/60 shadow-md shadow-red-500/25">
-                                <div>No Scans</div>
-                                <button
-                                  type="button"
-                                  onClick={() => navigate(`/order-details?ID=${order.orderNum}`)}
-                                  className="mt-0.5 px-1 py-0.5 rounded bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/40 text-amber-100 hover:text-white cursor-pointer block mx-auto text-[8px] font-bold transition-all shadow-2xs"
-                                >
-                                  {alertService?.actionButtonText || 'Upload'}
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="inline-block px-1.5 py-0.5 rounded-full font-bold text-[9px] bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30 truncate max-w-full backdrop-blur-xs">
-                                {primaryService?.actionLabel || 'In Progress'}
-                              </span>
+                            {renderActionStatusBadge(
+                              hasActionAlert ? (alertService?.actionLabel || 'No Scans') : (primaryService?.actionLabel || 'In Progress'),
+                              hasActionAlert,
+                              alertService?.actionButtonText || 'Upload',
+                              (e) => {
+                                e.stopPropagation();
+                                navigate(`/order-details?ID=${order.orderNum}`);
+                              }
                             )}
                           </td>
 
@@ -1287,25 +1077,16 @@ export default function Flow() {
                                                   {sub.chargedOn}
                                                 </td>
 
-                                                {/* 20. Action (Modern Glassmorphic Red Alert Box) */}
+                                                {/* 20. Action */}
                                                 <td className="py-2 px-1 text-center">
-                                                  {sub.hasActionAlert ? (
-                                                    <div className="bg-gradient-to-br from-red-600/95 via-rose-600/95 to-red-700/95 backdrop-blur-md text-white p-1 rounded-lg font-black text-[9px] leading-tight border border-red-400/60 shadow-md shadow-red-500/25">
-                                                      <div>{sub.actionLabel}</div>
-                                                      {sub.actionButtonText && (
-                                                        <button
-                                                          type="button"
-                                                          onClick={() => navigate(`/order-details?ID=${order.orderNum}`)}
-                                                          className="mt-0.5 px-1.5 py-0.5 rounded bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/40 text-amber-100 hover:text-white cursor-pointer block mx-auto text-[8px] font-bold transition-all shadow-2xs"
-                                                        >
-                                                          {sub.actionButtonText}
-                                                        </button>
-                                                      )}
-                                                    </div>
-                                                  ) : (
-                                                    <span className="inline-block px-1.5 py-0.5 rounded-full font-bold text-[9px] bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30 truncate max-w-full backdrop-blur-xs">
-                                                      {sub.actionLabel}
-                                                    </span>
+                                                  {renderActionStatusBadge(
+                                                    sub.actionLabel,
+                                                    sub.hasActionAlert,
+                                                    sub.actionButtonText,
+                                                    (e) => {
+                                                      e.stopPropagation();
+                                                      navigate(`/order-details?ID=${order.orderNum}`);
+                                                    }
                                                   )}
                                                 </td>
 
@@ -1369,14 +1150,14 @@ export default function Flow() {
                                               </div>
 
                                               {/* Action Alert */}
-                                              {sub.hasActionAlert ? (
-                                                <span className="px-2 py-0.5 rounded bg-red-600 text-white font-black text-[10px]">
-                                                  {sub.actionLabel}
-                                                </span>
-                                              ) : (
-                                                <span className="px-2 py-0.5 rounded bg-sky-500/10 text-sky-600 font-bold text-[10px]">
-                                                  {sub.actionLabel}
-                                                </span>
+                                              {renderActionStatusBadge(
+                                                sub.actionLabel,
+                                                sub.hasActionAlert,
+                                                sub.actionButtonText,
+                                                (e) => {
+                                                  e.stopPropagation();
+                                                  navigate(`/order-details?ID=${order.orderNum}`);
+                                                }
                                               )}
                                             </div>
 
@@ -1445,14 +1226,66 @@ export default function Flow() {
             </table>
           </div>
 
-          {/* Table Footer */}
-          <div className="p-3 bg-slate-100 dark:bg-slate-900 border-t border-slate-300 dark:border-slate-800 text-xs font-bold text-slate-600 dark:text-slate-400 flex flex-wrap items-center justify-between gap-2">
-            <span>
-              Total Cases: <strong>{filteredOrders.length}</strong> • All 22 Legacy Columns (Concise & Detailed)
-            </span>
-            <span className="font-mono text-[#0284c7] dark:text-sky-400">
-              Stationary Rows • Silky Smooth Slide-Down & Slide-Up • Zero Horizontal Scroll
-            </span>
+          {/* Table Footer with Accessible Modern Pagination */}
+          <div className="p-3 bg-slate-100 dark:bg-slate-900 border-t border-slate-300 dark:border-slate-800 text-xs font-bold text-slate-600 dark:text-slate-400 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-800 dark:text-slate-200">
+                Showing <strong className="text-sky-600 dark:text-sky-400">{filteredOrders.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}</strong> to <strong className="text-sky-600 dark:text-sky-400">{Math.min(currentPage * pageSize, filteredOrders.length)}</strong> of <strong className="text-slate-900 dark:text-white">{filteredOrders.length}</strong> Cases
+              </span>
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+              >
+                Previous
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={`page-${page}`}
+                  type="button"
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-7 h-7 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                    currentPage === page
+                      ? 'bg-[#0284c7] text-white shadow-xs'
+                      : 'border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+              >
+                Next
+              </button>
+            </div>
+
+            {/* Page Size Selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-slate-500">Rows per page:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="text-xs font-bold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={36}>All (36)</option>
+              </select>
+            </div>
           </div>
 
         </div>

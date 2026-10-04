@@ -19,6 +19,7 @@ import { Select } from '@/components/ui/Select';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { UIStateSwitcher, type UIStateType } from '@/components/ui/UIStateSwitcher';
 import { Button } from '@/components/ui/Button';
 import { timeAgo, formatCurrency, formatDate } from '@/utils/format';
 import { useStore } from '@/hooks/useStore';
@@ -137,6 +138,13 @@ export default function Orders() {
         </div>
       </div>
 
+      {/* State Switcher Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
+        <UIStateSwitcher state={simulatedState} onChange={setSimulatedState} label="Simulate Orders View State" />
+        <span className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:inline">
+          Use the buttons to preview <b>Loading</b>, <b>Empty</b>, or <b>Error</b> states in real-time
+        </span>
+      </div>
 
       {/* Conditional State Rendering */}
       {simulatedState === 'loading' ? (

@@ -550,62 +550,204 @@ export default function OrderDetailsPage() {
                 </div>
               </div>
 
-              {/* 3-View Multi-Planar Canvas */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {/* 1. Axial Slice View */}
-                <div className="aspect-video bg-slate-950 rounded-xl border border-slate-800 relative flex items-center justify-center overflow-hidden">
-                  <div className="absolute top-2 left-2 text-[10px] font-mono text-sky-400 bg-slate-900/80 px-2 py-0.5 rounded border border-sky-500/30">
-                    Axial Plane (Z: {sliceIndex * 0.25}mm)
+              {/* Explanatory Clinical Header for Co-Diagnostix CAD/CAM Review */}
+              <div className="p-3 rounded-xl bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-900/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-lg bg-[#0284c7] text-white">
+                    <Layers size={16} />
                   </div>
-                  <div className="absolute bottom-2 right-2 text-[10px] font-mono text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded">
-                    Density: {windowPreset === 'bone' ? '780 HU' : '45 HU'}
-                  </div>
-                  {/* Visual Slice Graphic */}
-                  <div
-                    className="w-36 h-36 rounded-full border border-sky-500/40 flex items-center justify-center transition-transform"
-                    style={{ transform: `scale(${zoomLevel / 100})` }}
-                  >
-                    <div className="w-24 h-24 rounded-full border-2 border-dashed border-sky-400/60 animate-pulse flex items-center justify-center text-[10px] text-sky-300 font-mono">
-                      Arch #{displayOrder.orderNumber}
-                    </div>
+                  <div>
+                    <h4 className="font-black text-slate-900 dark:text-white">
+                      Co-Diagnostix™ Clinical CAD Inspection • Case #{displayOrder.orderNumber}
+                    </h4>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-300">
+                      Multi-planar CBCT voxel cross-sections & surgical guide STL alignment for <strong>Site #19 (Straumann BLT Ø4.1x10mm)</strong>
+                    </p>
                   </div>
                 </div>
 
-                {/* 2. Sagittal / Cross-Section View */}
-                <div className="aspect-video bg-slate-950 rounded-xl border border-slate-800 relative flex items-center justify-center overflow-hidden">
-                  <div className="absolute top-2 left-2 text-[10px] font-mono text-[#ea580c] bg-slate-900/80 px-2 py-0.5 rounded border border-orange-500/30">
-                    Sagittal Cross-Section (X: 88mm)
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                    <CheckCircle2 size={11} />
+                    <span>Nerve Safe Margin: 3.2mm</span>
+                  </span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-500/10 text-purple-700 dark:text-purple-300 font-bold border border-purple-500/20">
+                    Sleeve: 9.0mm Offset
+                  </span>
+                </div>
+              </div>
+
+              {/* 3-View Multi-Planar Canvas with Authentic Clinical Geometry */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {/* 1. Axial Slice View (Dental Arch & CBCT Bone Density) */}
+                <div className="aspect-video bg-[#070b14] rounded-xl border border-slate-800 relative flex flex-col items-center justify-center overflow-hidden p-3">
+                  <div className="absolute top-2 left-2 text-[10px] font-mono text-sky-400 bg-slate-900/90 px-2 py-0.5 rounded border border-sky-500/30 flex items-center gap-1">
+                    <span>Axial Plane (Z: {(sliceIndex * 0.25).toFixed(2)}mm)</span>
                   </div>
-                  <div className="absolute bottom-2 right-2 text-[10px] font-mono text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded">
+                  <div className="absolute bottom-2 right-2 text-[10px] font-mono text-emerald-400 bg-slate-900/90 px-2 py-0.5 rounded border border-emerald-500/30">
+                    Bone Density: {windowPreset === 'bone' ? '850 HU (D2)' : '45 HU (Soft)'}
+                  </div>
+
+                  {/* Anatomical Dental Arch Graphic with Tooth #19 Target */}
+                  <div
+                    className="relative w-44 h-36 flex items-center justify-center transition-transform"
+                    style={{ transform: `scale(${zoomLevel / 100})` }}
+                  >
+                    {/* Mandibular Arch Curve */}
+                    <svg viewBox="0 0 160 120" className="w-full h-full">
+                      {/* Cortical Bone Contour */}
+                      <path
+                        d="M 25 100 C 25 40, 135 40, 135 100"
+                        fill="none"
+                        stroke="#0284c7"
+                        strokeWidth="10"
+                        strokeOpacity="0.25"
+                        strokeLinecap="round"
+                      />
+                      <path
+                        d="M 25 100 C 25 40, 135 40, 135 100"
+                        fill="none"
+                        stroke="#38bdf8"
+                        strokeWidth="2"
+                        strokeDasharray="4 2"
+                      />
+                      {/* Teeth Outlines */}
+                      <circle cx="35" cy="85" r="7" fill="#1e293b" stroke="#94a3b8" strokeWidth="1.5" />
+                      <circle cx="45" cy="65" r="7" fill="#1e293b" stroke="#94a3b8" strokeWidth="1.5" />
+                      {/* Target Site #19 Implant with Crosshairs */}
+                      <circle cx="62" cy="50" r="9" fill="#0284c7" fillOpacity="0.4" stroke="#ea580c" strokeWidth="2" />
+                      <line x1="62" y1="36" x2="62" y2="64" stroke="#ea580c" strokeWidth="1.5" />
+                      <line x1="48" y1="50" x2="76" y2="50" stroke="#ea580c" strokeWidth="1.5" />
+                      <circle cx="80" cy="45" r="6" fill="#1e293b" stroke="#94a3b8" strokeWidth="1.5" />
+                      <circle cx="98" cy="50" r="7" fill="#1e293b" stroke="#94a3b8" strokeWidth="1.5" />
+                      <circle cx="115" cy="65" r="7" fill="#1e293b" stroke="#94a3b8" strokeWidth="1.5" />
+                      <circle cx="125" cy="85" r="7" fill="#1e293b" stroke="#94a3b8" strokeWidth="1.5" />
+                      <text x="62" y="28" fill="#ea580c" fontSize="8" fontWeight="bold" textAnchor="middle">Site #19</text>
+                    </svg>
+                  </div>
+                </div>
+
+                {/* 2. Sagittal / Cross-Section View (Mandible Bone, Implant & Nerve Canal) */}
+                <div className="aspect-video bg-[#070b14] rounded-xl border border-slate-800 relative flex flex-col items-center justify-center overflow-hidden p-3">
+                  <div className="absolute top-2 left-2 text-[10px] font-mono text-[#ea580c] bg-slate-900/90 px-2 py-0.5 rounded border border-orange-500/30 flex items-center gap-1">
+                    <span>Cross-Section (Site #19)</span>
+                  </div>
+                  <div className="absolute bottom-2 right-2 text-[10px] font-mono text-slate-300 bg-slate-900/90 px-2 py-0.5 rounded">
                     Sleeve Offset: 9.0mm
                   </div>
-                  {/* Implant Silhouette */}
+
+                  {/* Cross-section Bone Contour with Implant & Nerve */}
                   <div
-                    className="w-24 h-32 border-2 border-emerald-500/60 rounded-xl flex flex-col items-center justify-center text-[10px] text-emerald-300 font-mono transition-transform"
+                    className="relative w-44 h-36 flex items-center justify-center transition-transform"
                     style={{ transform: `scale(${zoomLevel / 100})` }}
                   >
-                    <div className="w-12 h-6 border-b-2 border-emerald-400/80 text-center text-[9px]">Sleeve</div>
-                    <div className="w-8 h-16 bg-emerald-500/20 border border-emerald-400/50 rounded-b mt-1 flex items-center justify-center text-[9px]">
-                      3.5x10
-                    </div>
+                    <svg viewBox="0 0 160 120" className="w-full h-full">
+                      {/* Mandibular Cross-Section Bone Envelope */}
+                      <path
+                        d="M 50 25 C 65 18, 95 18, 110 25 C 115 50, 110 95, 80 110 C 50 95, 45 50, 50 25 Z"
+                        fill="#0f172a"
+                        stroke="#38bdf8"
+                        strokeWidth="2"
+                        strokeOpacity="0.7"
+                      />
+                      {/* Trabecular Bone Pattern */}
+                      <path
+                        d="M 58 35 C 70 30, 90 30, 102 35 C 105 55, 100 85, 80 98 C 60 85, 55 55, 58 35 Z"
+                        fill="#0284c7"
+                        fillOpacity="0.1"
+                        stroke="#0284c7"
+                        strokeWidth="1"
+                        strokeDasharray="2 2"
+                      />
+                      {/* Surgical Guide Titanium Sleeve */}
+                      <rect x="71" y="8" width="18" height="10" rx="1" fill="#94a3b8" stroke="#f1f5f9" strokeWidth="1.5" />
+                      <line x1="71" y1="18" x2="89" y2="18" stroke="#38bdf8" strokeWidth="1" />
+                      {/* Straumann BLT Implant Outline Ø4.1 x 10mm */}
+                      <polygon points="73,18 87,18 85,58 75,58" fill="#10b981" fillOpacity="0.3" stroke="#10b981" strokeWidth="1.8" />
+                      <line x1="74" y1="26" x2="86" y2="26" stroke="#10b981" strokeWidth="1" />
+                      <line x1="75" y1="34" x2="85" y2="34" stroke="#10b981" strokeWidth="1" />
+                      <line x1="76" y1="42" x2="84" y2="42" stroke="#10b981" strokeWidth="1" />
+                      <line x1="77" y1="50" x2="83" y2="50" stroke="#10b981" strokeWidth="1" />
+                      {/* Inferior Alveolar Nerve Canal (IAN) in Glowing Red */}
+                      <circle cx="80" cy="78" r="6" fill="#dc2626" fillOpacity="0.7" stroke="#f87171" strokeWidth="1.5" className="animate-pulse" />
+                      {/* Safety Distance Line */}
+                      <line x1="80" y1="58" x2="80" y2="72" stroke="#fbbf24" strokeWidth="1.2" strokeDasharray="2 2" />
+                      <text x="92" y="68" fill="#fbbf24" fontSize="7" fontWeight="bold">3.2mm</text>
+                      <text x="80" y="93" fill="#f87171" fontSize="7" fontWeight="bold" textAnchor="middle">IAN Nerve</text>
+                    </svg>
                   </div>
                 </div>
 
-                {/* 3. 3D Surface Surgical Guide Mesh */}
-                <div className="aspect-video bg-slate-950 rounded-xl border border-slate-800 relative flex items-center justify-center overflow-hidden">
-                  <div className="absolute top-2 left-2 text-[10px] font-mono text-purple-400 bg-slate-900/80 px-2 py-0.5 rounded border border-purple-500/30">
-                    3D Surface Guide Mesh (STL)
+                {/* 3. 3D Surface Surgical Guide Mesh (STL Render) */}
+                <div className="aspect-video bg-[#070b14] rounded-xl border border-slate-800 relative flex flex-col items-center justify-center overflow-hidden p-3">
+                  <div className="absolute top-2 left-2 text-[10px] font-mono text-purple-400 bg-slate-900/90 px-2 py-0.5 rounded border border-purple-500/30 flex items-center gap-1">
+                    <span>3D Guide Mesh (STL)</span>
                   </div>
-                  <div className="absolute bottom-2 right-2 text-[10px] font-mono text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded">
-                    Angle: {rotationAngle}°
+                  <div className="absolute bottom-2 right-2 text-[10px] font-mono text-slate-300 bg-slate-900/90 px-2 py-0.5 rounded">
+                    Rotation: {rotationAngle}°
                   </div>
+
                   <div
-                    className="w-36 h-24 bg-gradient-to-tr from-sky-600/30 via-indigo-600/30 to-purple-600/30 border border-sky-400/50 rounded-2xl flex flex-col items-center justify-center text-[10px] text-white font-bold transition-all"
+                    className="relative w-44 h-36 flex items-center justify-center transition-all duration-300"
                     style={{ transform: `scale(${zoomLevel / 100}) rotate(${rotationAngle}deg)` }}
                   >
-                    <Box size={22} className="text-sky-300 mb-1" />
-                    <span>Surgical Guide STL</span>
-                    <span className="text-[9px] font-mono text-sky-200">12,450 Triangles</span>
+                    <svg viewBox="0 0 160 120" className="w-full h-full">
+                      {/* Surgical Guide Body */}
+                      <path
+                        d="M 30 75 C 30 45, 130 45, 130 75 C 130 90, 110 88, 80 88 C 50 88, 30 90, 30 75 Z"
+                        fill="#0284c7"
+                        fillOpacity="0.35"
+                        stroke="#38bdf8"
+                        strokeWidth="2"
+                      />
+                      {/* Seating Inspection Windows */}
+                      <ellipse cx="48" cy="62" rx="6" ry="4" fill="#0f172a" stroke="#38bdf8" strokeWidth="1.2" />
+                      <ellipse cx="112" cy="62" rx="6" ry="4" fill="#0f172a" stroke="#38bdf8" strokeWidth="1.2" />
+                      {/* Guide Cylinder / Metal Sleeve Housing */}
+                      <ellipse cx="78" cy="55" rx="10" ry="6" fill="#3b82f6" fillOpacity="0.6" stroke="#93c5fd" strokeWidth="1.8" />
+                      <circle cx="78" cy="55" r="4" fill="#0f172a" stroke="#fbbf24" strokeWidth="1.5" />
+                      <text x="80" y="105" fill="#94a3b8" fontSize="8" fontWeight="bold" textAnchor="middle">
+                        Tooth-Supported Template
+                      </text>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* Real Co-Diagnostix Treatment Plan Specifications Card */}
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-2.5">
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 size={14} className="text-emerald-500" />
+                    <span className="font-extrabold text-xs text-slate-900 dark:text-white">
+                      Co-Diagnostix™ Surgical Plan Parameters • Certified by Dr. Bishoy Mina
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono text-slate-500">
+                    Project File: CAFX_504901_BishoyMina.caf
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                  <div className="p-2 rounded-lg bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-slate-800">
+                    <span className="text-[10px] text-slate-400 block font-bold uppercase">Implant Model</span>
+                    <span className="font-bold text-slate-900 dark:text-white">Straumann® BLT</span>
+                    <span className="text-[10px] font-mono text-[#0284c7] block">Ø4.1mm RC x 10mm</span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-slate-800">
+                    <span className="text-[10px] text-slate-400 block font-bold uppercase">Guide Sleeve</span>
+                    <span className="font-bold text-slate-900 dark:text-white">T-Sleeve Straumann</span>
+                    <span className="text-[10px] font-mono text-purple-600 dark:text-purple-400 block">Height: 5mm • H: 9.0mm</span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-slate-800">
+                    <span className="text-[10px] text-slate-400 block font-bold uppercase">Anatomical Site</span>
+                    <span className="font-bold text-slate-900 dark:text-white">Tooth #19</span>
+                    <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 block">Mandibular 1st Molar</span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-slate-800">
+                    <span className="text-[10px] text-slate-400 block font-bold uppercase">Guide Template</span>
+                    <span className="font-bold text-slate-900 dark:text-white">Tooth-Borne CAM</span>
+                    <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 block">3 Inspection Windows</span>
                   </div>
                 </div>
               </div>

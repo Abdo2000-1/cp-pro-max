@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   TrendingUp,
@@ -89,6 +89,124 @@ export default function QuarterTargetsReport() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedQuarter, setSelectedQuarter] = useState<'all' | 'Q1' | 'Q2' | 'Q3' | 'Q4'>('all');
+
+  // Dynamically reactive data driving all charts, KPIs and progress gauges based on selectedQuarter
+  const currentQuarterStats = useMemo(() => {
+    switch (selectedQuarter) {
+      case 'Q1':
+        return {
+          cases: '2,580',
+          quotaMet: '+107.5%',
+          target: '2,400 cases',
+          revenue: '$387.0K',
+          revYoy: '+7.4% YoY',
+          guides: '1,120',
+          guidesQc: '99.1% QC pass',
+          turnaround: '24.1h',
+          slaDiff: '-2.5h faster',
+          fulfillment: '107.5%',
+          chartData: [QUARTER_DATA[0]],
+          monthlyData: [
+            { month: 'Jan', actual: 820, target: 800 },
+            { month: 'Feb', actual: 860, target: 800 },
+            { month: 'Mar', actual: 900, target: 800 }
+          ],
+          modality: [
+            { name: 'Surgical Guides (CAM)', value: 1120, color: '#0284c7' },
+            { name: 'Co-Diagnostix TP Plans', value: 890, color: '#ea580c' },
+            { name: '3D Printed Models', value: 570, color: '#8b5cf6' }
+          ]
+        };
+      case 'Q2':
+        return {
+          cases: '2,840',
+          quotaMet: '+105.2%',
+          target: '2,700 cases',
+          revenue: '$426.0K',
+          revYoy: '+9.1% YoY',
+          guides: '1,250',
+          guidesQc: '99.3% QC pass',
+          turnaround: '23.0h',
+          slaDiff: '-3.1h faster',
+          fulfillment: '105.2%',
+          chartData: [QUARTER_DATA[1]],
+          monthlyData: [
+            { month: 'Apr', actual: 920, target: 900 },
+            { month: 'May', actual: 950, target: 900 },
+            { month: 'Jun', actual: 970, target: 900 }
+          ],
+          modality: [
+            { name: 'Surgical Guides (CAM)', value: 1250, color: '#0284c7' },
+            { name: 'Co-Diagnostix TP Plans', value: 960, color: '#ea580c' },
+            { name: '3D Printed Models', value: 630, color: '#8b5cf6' }
+          ]
+        };
+      case 'Q3':
+        return {
+          cases: '3,150',
+          quotaMet: '+105.0%',
+          target: '3,000 cases',
+          revenue: '$472.5K',
+          revYoy: '+10.8% YoY',
+          guides: '1,410',
+          guidesQc: '99.5% QC pass',
+          turnaround: '21.8h',
+          slaDiff: '-4.6h faster',
+          fulfillment: '105.0%',
+          chartData: [QUARTER_DATA[2]],
+          monthlyData: [
+            { month: 'Jul', actual: 980, target: 950 },
+            { month: 'Aug', actual: 1040, target: 1000 },
+            { month: 'Sep', actual: 1130, target: 1050 }
+          ],
+          modality: [
+            { name: 'Surgical Guides (CAM)', value: 1410, color: '#0284c7' },
+            { name: 'Co-Diagnostix TP Plans', value: 1040, color: '#ea580c' },
+            { name: '3D Printed Models', value: 700, color: '#8b5cf6' }
+          ]
+        };
+      case 'Q4':
+        return {
+          cases: '3,200',
+          quotaMet: '+97.0%',
+          target: '3,300 cases',
+          revenue: '$480.0K',
+          revYoy: '+6.5% YoY',
+          guides: '1,390',
+          guidesQc: '99.6% QC pass',
+          turnaround: '20.6h',
+          slaDiff: '-5.2h faster',
+          fulfillment: '97.0%',
+          chartData: [QUARTER_DATA[3]],
+          monthlyData: [
+            { month: 'Oct', actual: 1060, target: 1100 },
+            { month: 'Nov', actual: 1120, target: 1100 },
+            { month: 'Dec', actual: 1020, target: 1100 }
+          ],
+          modality: [
+            { name: 'Surgical Guides (CAM)', value: 1390, color: '#0284c7' },
+            { name: 'Co-Diagnostix TP Plans', value: 1110, color: '#ea580c' },
+            { name: '3D Printed Models', value: 700, color: '#8b5cf6' }
+          ]
+        };
+      default:
+        return {
+          cases: '11,770',
+          quotaMet: '+104.2%',
+          target: '11,400 cases',
+          revenue: '$1.76M',
+          revYoy: '+8.5% YoY',
+          guides: '5,170',
+          guidesQc: '99.4% QC pass',
+          turnaround: '22.4h',
+          slaDiff: '-4.2h faster',
+          fulfillment: '104.2%',
+          chartData: QUARTER_DATA,
+          monthlyData: MONTHLY_PROGRESS,
+          modality: MODALITY_BREAKDOWN
+        };
+    }
+  }, [selectedQuarter]);
 
   // Power BI tenant embed URL (defaults to Microsoft Power BI Public Report)
   const [powerBiEmbedUrl, setPowerBiEmbedUrl] = useState(
@@ -299,17 +417,17 @@ export default function QuarterTargetsReport() {
                 <div className="bg-white dark:bg-[#0b101d] p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
                   <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Cases Produced</span>
                   <div className="flex items-baseline gap-2 mt-1">
-                    <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">11,770</span>
-                    <span className="text-xs font-bold text-emerald-500">+104.2%</span>
+                    <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">{currentQuarterStats.cases}</span>
+                    <span className="text-xs font-bold text-emerald-500">{currentQuarterStats.quotaMet}</span>
                   </div>
-                  <span className="text-[10px] text-slate-400 block mt-0.5">Target: 11,400 cases</span>
+                  <span className="text-[10px] text-slate-400 block mt-0.5">Target: {currentQuarterStats.target}</span>
                 </div>
 
                 <div className="bg-white dark:bg-[#0b101d] p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
                   <span className="text-[10px] uppercase font-bold text-slate-400 block">Quarterly Gross Revenue</span>
                   <div className="flex items-baseline gap-2 mt-1">
-                    <span className="text-2xl font-black text-[#0284c7] dark:text-sky-400 font-mono">$1.76M</span>
-                    <span className="text-xs font-bold text-emerald-500">+8.5% YoY</span>
+                    <span className="text-2xl font-black text-[#0284c7] dark:text-sky-400 font-mono">{currentQuarterStats.revenue}</span>
+                    <span className="text-xs font-bold text-emerald-500">{currentQuarterStats.revYoy}</span>
                   </div>
                   <span className="text-[10px] text-slate-400 block mt-0.5">Average case: $149.80</span>
                 </div>
@@ -317,8 +435,8 @@ export default function QuarterTargetsReport() {
                 <div className="bg-white dark:bg-[#0b101d] p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
                   <span className="text-[10px] uppercase font-bold text-slate-400 block">Surgical Guides Printed</span>
                   <div className="flex items-baseline gap-2 mt-1">
-                    <span className="text-2xl font-black text-[#ea580c] dark:text-orange-400 font-mono">5,170</span>
-                    <span className="text-xs font-bold text-emerald-500">99.4% QC pass</span>
+                    <span className="text-2xl font-black text-[#ea580c] dark:text-orange-400 font-mono">{currentQuarterStats.guides}</span>
+                    <span className="text-xs font-bold text-emerald-500">{currentQuarterStats.guidesQc}</span>
                   </div>
                   <span className="text-[10px] text-slate-400 block mt-0.5">Straumann & Custom Sleeves</span>
                 </div>
@@ -326,8 +444,8 @@ export default function QuarterTargetsReport() {
                 <div className="bg-white dark:bg-[#0b101d] p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
                   <span className="text-[10px] uppercase font-bold text-slate-400 block">Average Lab Turnaround</span>
                   <div className="flex items-baseline gap-2 mt-1">
-                    <span className="text-2xl font-black text-amber-500 font-mono">22.4h</span>
-                    <span className="text-xs font-bold text-emerald-500">-4.2h faster</span>
+                    <span className="text-2xl font-black text-amber-500 font-mono">{currentQuarterStats.turnaround}</span>
+                    <span className="text-xs font-bold text-emerald-500">{currentQuarterStats.slaDiff}</span>
                   </div>
                   <span className="text-[10px] text-slate-400 block mt-0.5">Express SLAs met: 98.8%</span>
                 </div>
@@ -342,7 +460,7 @@ export default function QuarterTargetsReport() {
                     <div>
                       <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         <BarChart3 size={15} className="text-[#0284c7]" />
-                        <span>Target vs. Achieved Production by Quarter (Q1 - Q4)</span>
+                        <span>Target vs. Achieved Production ({selectedQuarter === 'all' ? 'FY2026' : selectedQuarter})</span>
                       </h3>
                       <span className="text-[11px] text-slate-400">Total volume across Surgical Guides, Treatment Plans, and Models</span>
                     </div>
@@ -350,7 +468,7 @@ export default function QuarterTargetsReport() {
 
                   <div className="h-64 w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={QUARTER_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <BarChart data={currentQuarterStats.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
                         <XAxis dataKey="quarter" tick={{ fontSize: 11 }} />
                         <YAxis tick={{ fontSize: 11 }} />
@@ -377,7 +495,7 @@ export default function QuarterTargetsReport() {
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
-                          data={MODALITY_BREAKDOWN}
+                          data={currentQuarterStats.modality}
                           cx="50%"
                           cy="50%"
                           innerRadius={50}
@@ -385,7 +503,7 @@ export default function QuarterTargetsReport() {
                           paddingAngle={4}
                           dataKey="value"
                         >
-                          {MODALITY_BREAKDOWN.map((entry, index) => (
+                          {currentQuarterStats.modality.map((entry: any, index: number) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
                         </Pie>
@@ -395,7 +513,7 @@ export default function QuarterTargetsReport() {
                   </div>
 
                   <div className="space-y-1.5 pt-1 text-xs">
-                    {MODALITY_BREAKDOWN.map((item, idx) => (
+                    {currentQuarterStats.modality.map((item: any, idx: number) => (
                       <div key={idx} className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
                           <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
@@ -414,7 +532,7 @@ export default function QuarterTargetsReport() {
                 <div className="flex justify-between items-center">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                      Monthly Run Rate & Target Envelope (Jul - Dec Trend)
+                      Monthly Run Rate & Target Envelope ({selectedQuarter === 'all' ? 'FY2026 Trend' : selectedQuarter})
                     </h3>
                     <span className="text-[11px] text-slate-400">Actual deliveries vs forecast growth curve</span>
                   </div>
@@ -425,7 +543,7 @@ export default function QuarterTargetsReport() {
 
                 <div className="h-56 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={MONTHLY_PROGRESS} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <AreaChart data={currentQuarterStats.monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <defs>
                         <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#0284c7" stopOpacity={0.4}/>
