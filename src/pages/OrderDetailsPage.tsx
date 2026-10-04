@@ -29,7 +29,12 @@ import {
   ZoomOut,
   Sliders,
   Sparkles,
-  Printer
+  Printer,
+  Mail,
+  Share2,
+  Paperclip,
+  CheckSquare,
+  Radio
 } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { PriorityBadge } from '@/components/ui/PriorityBadge';
@@ -39,6 +44,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { DicomMprViewer } from '@/components/dicom/DicomMprViewer';
 import { useStore } from '@/hooks/useStore';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { MASTER_WORKFLOW_ORDERS, MasterWorkflowOrder, SubServiceItem } from '@/data/flowMockData';
 import type { OrderStatus, Priority } from '@/types';
 
 export default function OrderDetailsPage() {
@@ -46,491 +52,643 @@ export default function OrderDetailsPage() {
   const navigate = useNavigate();
   const { t } = useLanguage();
 
-  // URL Params matching: OrderDetails.php?xid=1016;reg=1;u=1;modID=288004;ID=677201 or ?id=ord-3
-  const paramId = searchParams.get('ID') || searchParams.get('id') || 'ord-3';
+  // URL Params matching: OrderDetails.php?xid=1016;reg=1;u=1;modID=288004;ID=504901 or ?ID=504901
+  const paramId = searchParams.get('ID') || searchParams.get('id') || '504901';
   const modId = searchParams.get('modID') || '288004';
   const xid = searchParams.get('xid') || '1016';
 
-  // Retrieve actual store orders dynamically
-  const orders = useStore((s) => s.getOrders());
-  const foundOrder = orders.find(
+  // Find matching case in MASTER_WORKFLOW_ORDERS for complete realistic business data
+  const flowOrder = MASTER_WORKFLOW_ORDERS.find(
     (o) =>
-      o.id.toLowerCase() === paramId.toLowerCase() ||
-      o.orderNumber.toLowerCase() === paramId.toLowerCase() ||
-      o.id.toLowerCase().includes(paramId.toLowerCase()) ||
-      o.orderNumber.toLowerCase().includes(paramId.toLowerCase())
-  );
+      o.orderNum === paramId ||
+      o.id === paramId ||
+      paramId.includes(o.orderNum) ||
+      o.orderNum.includes(paramId)
+  ) || MASTER_WORKFLOW_ORDERS[0];
 
-  // Safe fallback if order is custom or not yet seeded
-  const isCase504901 = paramId.includes('504901');
-  const displayOrder = foundOrder || (isCase504901 ? {
-    id: '504901',
-    orderNumber: '#504901',
-    patientName: 'Test Add order',
-    doctorName: 'Dr. Bishoy Mina',
-    clinicName: 'California Imaging Diagnostics Hub',
-    restoration: 'coDiagnostiX Treatment Plan & Intra-Oral Scan',
-    shade: 'Universal',
-    status: 'Design' as OrderStatus,
-    priority: 'Urgent' as Priority,
-    dueDate: '2026-10-08',
+  // The primary service title serves as the main hook
+  const primaryService = flowOrder.services[0] || {
+    title: 'Treatment Plan & Surgical Guide',
+    format: 'coDiagnostiX',
+    typeCode: 'TP',
+    actionLabel: 'IN PROGRESS',
     amount: 200,
-    notes: 'Inter. 2026-09-28 • Urgent: No Scans Uploaded for Intra-Oral component. Waiting for IO file.',
-    receivedAt: 'Mon Sep 28 14:13:07 -0400'
-  } : {
-    id: paramId,
-    orderNumber: paramId.startsWith('ord-') ? `ORD-2024-${paramId.replace('ord-', '').padStart(3, '0')}` : `#${paramId}`,
-    patientName: 'Alex Morgan',
-    doctorName: 'Dr. Marcus Vance',
-    clinicName: 'NY Smile Center (Align Chicago Hub)',
-    restoration: 'Tooth-Supported Surgical Guide',
-    shade: 'Universal',
-    status: 'Design' as OrderStatus,
-    priority: 'Urgent' as Priority,
-    dueDate: '2026-10-08',
-    amount: 485,
-    notes: 'Verify nerve canal clearance at tooth #19 site. Use Straumann 3.5mm BLX sleeves.',
-    receivedAt: '2026-09-28'
-  });
+    billTo: 'California Diagnostics CC: Master, 9903'
+  };
 
   const [uiState, setUiState] = useState<'normal' | 'loading' | 'empty' | 'error'>('normal');
-  const [activeTab, setActiveTab] = useState<'overview' | 'suborders' | '3dviewer' | 'history'>('overview');
+  const [activeTab, setActiveTab] = useState<'prescription' | '3dviewer' | 'suborders'>('prescription');
 
-  // Interactive 3D / DICOM Multi-Planar Viewer controls
-  const [sliceIndex, setSliceIndex] = useState(240);
-  const [windowPreset, setWindowPreset] = useState<'bone' | 'soft' | 'enamel'>('bone');
-  const [rotationAngle, setRotationAngle] = useState(45);
-  const [zoomLevel, setZoomLevel] = useState(100);
-  const [downloadNotification, setDownloadNotification] = useState<string | null>(null);
+  // Form Fields matching Image 1
+  const [drSpecialRequest, setDrSpecialRequest] = useState<string>('');
+  const [scSpecialRequest, setScSpecialRequest] = useState<string>('General');
+  const [scSpecialValue, setScSpecialValue] = useState<string>('0');
+  const [clientNote, setClientNote] = useState<string>('');
+  const [registrationType, setRegistrationType] = useState<'option1' | 'option2'>('option1');
+  const [specialPreShippingOld, setSpecialPreShippingOld] = useState<string>('Standard courier delivery to main clinic address.');
+  const [specialPreShippingNew, setSpecialPreShippingNew] = useState<string>('');
 
-  // Internal history & technician notes
-  const [notes, setNotes] = useState([
+  // Internal Case Note (Old) Table Data (Exact Image 1 columns)
+  const [oldNotes, setOldNotes] = useState([
     {
       id: 1,
-      author: 'Alex M. (Operator #1016)',
-      role: 'Senior CAD Specialist',
-      date: '2 hours ago',
-      text: displayOrder.notes || 'DICOM conversion completed. Tooth #14 bone density analyzed at 650 HU.'
+      by: 'shrouk',
+      to: 'CS',
+      timeSent: '2026/Sep/28 02:14',
+      history: '@cs please call the dr to check for the office working hours',
+      attach: 'View'
     },
     {
       id: 2,
-      author: displayOrder.doctorName,
-      role: 'Prescribing Clinician',
-      date: 'Yesterday, 16:40',
-      text: 'Approved treatment plan revision 2. Sleeve offset calibrated to 9.0mm from implant head.'
-    },
-    {
-      id: 3,
-      author: 'System PACS Gateway',
-      role: 'Automated Diagnostic Ingest',
-      date: '3 days ago',
-      text: `High-resolution CBCT slice archive uploaded from ${displayOrder.clinicName} (512 slices).`
+      by: 'shrouk',
+      to: 'CS',
+      timeSent: '2026/Sep/28 02:13',
+      history: 'test add IH',
+      attach: '-'
     }
   ]);
-  const [newNote, setNewNote] = useState('');
 
-  const handleAddNote = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newNote.trim()) return;
-    setNotes([
-      {
-        id: Date.now(),
-        author: 'Jessica Ruiz (Lab Director)',
-        role: 'Current Operator',
-        date: 'Just now',
-        text: newNote
-      },
-      ...notes
-    ]);
-    setNewNote('');
+  // Composer Form State for New Internal Case Note
+  const [newInternalNote, setNewInternalNote] = useState<string>('');
+  const [mailToSelected, setMailToSelected] = useState<Set<string>>(new Set(['CS']));
+  const [ihTaskSelected, setIhTaskSelected] = useState<string>('CS');
+  const [isRushTask, setIsRushTask] = useState<boolean>(false);
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+
+  // Departments for "Send mail to" (12 options from Image 1)
+  const MAIL_DEPARTMENTS = [
+    'CS', 'Sales', 'TP', 'Ops', 'Finance', 'Guides',
+    'Restorations', 'Production', 'Boston', 'Scanning Techs', 'CAD/CAM', 'QMS'
+  ];
+
+  // Departments for "Send IH task" (11 options from Image 1)
+  const IH_TASK_DEPARTMENTS = [
+    'CS', 'Sales', 'TP', 'Ops', 'Finance', 'Guides assembly',
+    'Restorations EG', 'Production', 'Boston', 'Scanning Techs', 'CAD/CAM'
+  ];
+
+  const toggleMailDept = (dept: string) => {
+    setMailToSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(dept)) next.delete(dept);
+      else next.add(dept);
+      return next;
+    });
   };
 
-  const handleDownloadFile = (fileName: string) => {
-    setDownloadNotification(`Preparing secure PACS download for "${fileName}"...`);
-    setTimeout(() => {
-      setDownloadNotification(null);
-    }, 2800);
+  const handlePostInternalNote = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newInternalNote.trim()) return;
+
+    const now = new Date();
+    const formattedDate = `${now.getFullYear()}/${now.toLocaleString('en', { month: 'short' })}/${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    const newEntry = {
+      id: Date.now(),
+      by: 'Jessica Ruiz',
+      to: ihTaskSelected,
+      timeSent: formattedDate,
+      history: `${isRushTask ? '[RUSH] ' : ''}${newInternalNote.trim()}`,
+      attach: '-'
+    };
+
+    setOldNotes([newEntry, ...oldNotes]);
+    setNewInternalNote('');
+    setFeedbackMessage('Internal Case Note appended and dispatched successfully!');
+    setTimeout(() => setFeedbackMessage(null), 3500);
+  };
+
+  // Uploading Files state
+  const [selectedFileName, setSelectedFileName] = useState<string>('');
+  const [uploadedFilesList, setUploadedFilesList] = useState([
+    { name: `${flowOrder.patientName.replace(/\s+/g, '_')}_CBCT_Raw.zip`, size: '142 MB', type: 'DICOM Archive' },
+    { name: 'Maxilla_Optical_Scan.stl', size: '18 MB', type: 'STL Mesh' },
+    { name: 'Mandible_Optical_Scan.stl', size: '16 MB', type: 'STL Mesh' }
+  ]);
+
+  const handleFileUpload = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFileName) return;
+    setUploadedFilesList([
+      { name: selectedFileName, size: '24 MB', type: 'Clinical Upload' },
+      ...uploadedFilesList
+    ]);
+    setSelectedFileName('');
+    setFeedbackMessage('File uploaded and linked to order archives!');
+    setTimeout(() => setFeedbackMessage(null), 3000);
   };
 
   return (
-    <div className="space-y-4 w-full min-w-0">
+    <div className="space-y-4 w-full min-w-0 pb-12 select-none">
       
-      {/* 1. Header Bar with Back Button, Case Number, and Action Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-[#0b101d] p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/flow')}
-            className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
-            title="Return to Production Flow"
-          >
-            <ArrowLeft size={16} />
-          </button>
-
-          <div>
+      {/* ------------------------------------------------------------- */}
+      {/* 1. PRIMARY EYE HOOK (أول حاجة تيجي عليها العين: اسم السيرفيس) */}
+      {/* ------------------------------------------------------------- */}
+      <div className="bg-gradient-to-r from-sky-900/40 via-[#0b101d] to-slate-900/60 p-5 rounded-3xl border border-sky-500/30 shadow-xl space-y-3">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          
+          <div className="space-y-1.5">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
-                Case {displayOrder.orderNumber}
-              </h1>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#0284c7]/10 text-[#0284c7] dark:text-sky-400 border border-[#0284c7]/25">
-                modID: {modId} • Operator #{xid}
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-black border border-sky-500/50 text-sky-400 bg-sky-500/10">
+                PRIMARY SERVICE HOOK
               </span>
-              <StatusBadge status={displayOrder.status} />
-              <PriorityBadge priority={displayOrder.priority} />
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold border border-purple-500/50 text-purple-400 bg-transparent">
+                {flowOrder.source}
+              </span>
+              {isRushTask && (
+                <span className="px-2 py-0.5 rounded text-[10px] font-black border border-rose-500 text-rose-500 bg-rose-500/10 animate-pulse">
+                  ⚡ RUSH ORDER
+                </span>
+              )}
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Legacy Endpoint: <code className="text-[#0284c7] dark:text-sky-400 font-mono">OrderDetails.php?xid={xid};modID={modId};ID={paramId}</code>
-            </p>
-          </div>
-        </div>
 
-        {/* Actions Bar */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => navigate(`/edit-case?thisID=${paramId}`)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0284c7] hover:bg-sky-600 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
-          >
-            <Edit size={14} />
-            <span>Edit Case</span>
-          </button>
+            {/* Giant Service Name Hook */}
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              {primaryService.title} <span className="text-sky-400 font-bold text-xl">({primaryService.format || 'coDiagnostiX™'})</span>
+            </h1>
+
+            {/* Sub-services pills row */}
+            <div className="flex items-center gap-2 flex-wrap pt-0.5">
+              <span className="text-xs font-bold text-slate-400">Included Modules:</span>
+              {flowOrder.services.map((sub, sIdx) => (
+                <span
+                  key={sub.id || sIdx}
+                  className="px-2 py-0.5 rounded-lg text-xs font-bold border border-slate-700 bg-slate-900/80 text-slate-200 flex items-center gap-1.5"
+                >
+                  <span className="text-sky-400 font-mono font-black text-[10px]">{sub.typeCode}</span>
+                  <span>{sub.title}</span>
+                  <span className="text-emerald-400 font-mono text-[10.5px]">${sub.amount}.00</span>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Quick Order ID & Clinician Pill */}
+          <div className="flex flex-row lg:flex-col items-end justify-between lg:justify-center gap-2 shrink-0">
+            <div className="text-right">
+              <div className="text-[11px] font-mono text-slate-400">Order Reference</div>
+              <div className="text-2xl font-black font-mono text-amber-500">#{flowOrder.orderNum}</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate('/flow')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-700 hover:border-sky-500 text-slate-300 text-xs font-bold transition-all cursor-pointer bg-transparent"
+            >
+              <ArrowLeft size={13} />
+              <span>Back to Flow</span>
+            </button>
+          </div>
+
         </div>
       </div>
 
-      {/* Download Alert Toast */}
+      {/* Feedback Toast */}
       <AnimatePresence>
-        {downloadNotification && (
+        {feedbackMessage && (
           <motion.div
-            initial={{ opacity: 0, y: -8 }}
+            initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2"
+            exit={{ opacity: 0, y: -6 }}
+            className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/40 text-emerald-400 text-xs font-bold flex items-center gap-2"
           >
-            <CheckCircle2 size={15} />
-            <span>{downloadNotification}</span>
+            <CheckCircle2 size={16} />
+            <span>{feedbackMessage}</span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Simulated UI States (All 100% Functional) */}
-      {uiState === 'loading' && (
-        <div className="bg-white dark:bg-[#0b101d] rounded-2xl border border-slate-200 dark:border-slate-800 p-8">
-          <LoadingState text={`Fetching 3D DICOM Slices & Sub-Orders for Case #${displayOrder.orderNumber}...`} />
-        </div>
-      )}
+      {/* ------------------------------------------------------------- */}
+      {/* 2. SECTION NAVIGATION TABS */}
+      {/* ------------------------------------------------------------- */}
+      <div className="flex border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0b101d] rounded-2xl p-1 gap-1 text-xs font-bold">
+        <button
+          type="button"
+          onClick={() => setActiveTab('prescription')}
+          className={`flex items-center gap-2 py-2.5 px-4 rounded-xl transition-all cursor-pointer ${
+            activeTab === 'prescription'
+              ? 'border border-sky-500/60 text-sky-600 dark:text-sky-400 bg-sky-500/10'
+              : 'border border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <FileText size={15} />
+          <span>Official Prescription & Case Dispatch (Image 1)</span>
+        </button>
 
-      {uiState === 'error' && (
-        <div className="bg-white dark:bg-[#0b101d] rounded-2xl border border-slate-200 dark:border-slate-800 p-8">
-          <ErrorState
-            title="Order Fetch Timeout (404 / 500)"
-            message={`Unable to locate record for OrderID #${paramId} in secondary PACS cluster.`}
-            code="ERR_ORDER_NOT_FOUND_404"
-            onRetry={() => setUiState('normal')}
-          />
-        </div>
-      )}
+        <button
+          type="button"
+          onClick={() => setActiveTab('3dviewer')}
+          className={`flex items-center gap-2 py-2.5 px-4 rounded-xl transition-all cursor-pointer ${
+            activeTab === '3dviewer'
+              ? 'border border-sky-500/60 text-sky-600 dark:text-sky-400 bg-sky-500/10'
+              : 'border border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <Box size={15} />
+          <span>3D DICOM CAD & Co-Diagnostix™ Viewer</span>
+        </button>
 
-      {uiState === 'empty' && (
-        <div className="bg-white dark:bg-[#0b101d] rounded-2xl border border-slate-200 dark:border-slate-800 p-8">
-          <EmptyState
-            title="Case Record Unassigned"
-            description="This order has not yet been initialized with scanning center files or surgical parameters."
-            action={
-              <button
-                onClick={() => setUiState('normal')}
-                className="px-4 py-2 rounded-xl bg-[#0284c7] text-white font-bold text-xs"
-              >
-                Reload Live Record
-              </button>
-            }
-          />
-        </div>
-      )}
+        <button
+          type="button"
+          onClick={() => setActiveTab('suborders')}
+          className={`flex items-center gap-2 py-2.5 px-4 rounded-xl transition-all cursor-pointer ${
+            activeTab === 'suborders'
+              ? 'border border-sky-500/60 text-sky-600 dark:text-sky-400 bg-sky-500/10'
+              : 'border border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <Layers size={15} />
+          <span>Sub-Orders Matrix ({flowOrder.services.length})</span>
+        </button>
+      </div>
 
-      {/* Normal Live State */}
-      {uiState === 'normal' && (
+      {/* ------------------------------------------------------------- */}
+      {/* TAB 1: EXACT IMAGE 1 PRESCRIPTION & CASE DISPATCH WORKFLOW    */}
+      {/* ------------------------------------------------------------- */}
+      {activeTab === 'prescription' && (
         <div className="space-y-4">
           
-          {/* Navigation Tabs */}
-          <div className="flex border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0b101d] rounded-t-2xl px-4 pt-2 gap-2 text-xs font-bold overflow-x-auto">
-            {[
-              { id: 'overview', label: 'Order Overview & Clinician', icon: FileText },
-              { id: 'suborders', label: 'Sub-Orders Matrix (Conv, TP, SG, Mod)', icon: Layers },
-              { id: '3dviewer', label: '3D CAD / DICOM Multi-Planar Viewer', icon: Box },
-              { id: 'history', label: `Internal History Notes (${notes.length})`, icon: MessageSquare },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 py-3 px-3 border-b-2 transition-all shrink-0 cursor-pointer ${
-                  activeTab === tab.id
-                    ? 'border-[#0284c7] text-[#0284c7] dark:text-sky-400 font-black'
-                    : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                <tab.icon size={15} />
-                <span>{tab.label}</span>
-              </button>
-            ))}
+          {/* A. Core Case Prescription Specification Table (Exact Image 1 Style) */}
+          <div className="border border-slate-300 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-[#0b101d] shadow-sm text-xs">
+            
+            {/* Header Cyan Banner Rows */}
+            <div className="bg-[#bfe6f2] dark:bg-[#0d2838] border-b border-slate-300 dark:border-slate-700 divide-y divide-slate-300/80 dark:divide-slate-700/80">
+              <div className="grid grid-cols-12 py-2 px-3">
+                <div className="col-span-3 font-extrabold text-slate-800 dark:text-slate-200">Order ID</div>
+                <div className="col-span-9 font-mono font-black text-slate-900 dark:text-white">{flowOrder.orderNum}</div>
+              </div>
+              <div className="grid grid-cols-12 py-2 px-3">
+                <div className="col-span-3 font-extrabold text-slate-800 dark:text-slate-200">Scanning Center</div>
+                <div className="col-span-9 font-semibold text-slate-800 dark:text-slate-300">{flowOrder.scanCenter || 'None'}</div>
+              </div>
+              <div className="grid grid-cols-12 py-2 px-3">
+                <div className="col-span-3 font-extrabold text-slate-800 dark:text-slate-200">Doctor</div>
+                <div className="col-span-9 font-bold text-slate-900 dark:text-white">{flowOrder.doctorName}</div>
+              </div>
+              <div className="grid grid-cols-12 py-2 px-3">
+                <div className="col-span-3 font-extrabold text-slate-800 dark:text-slate-200">Patient Name</div>
+                <div className="col-span-9 font-bold text-slate-900 dark:text-white">{flowOrder.patientName}</div>
+              </div>
+            </div>
+
+            {/* Form Fields: Dr Special Request, Sc Special Request, Client Note */}
+            <div className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
+              
+              {/* Dr. Special Request */}
+              <div className="grid grid-cols-12 py-2.5 px-3 items-center">
+                <div className="col-span-3 font-extrabold text-slate-700 dark:text-slate-300">Dr. Special Request</div>
+                <div className="col-span-9">
+                  <input
+                    type="text"
+                    value={drSpecialRequest}
+                    onChange={(e) => setDrSpecialRequest(e.target.value)}
+                    placeholder="Enter clinician specific surgical or restoration requests..."
+                    className="w-full px-2.5 py-1 text-xs border border-slate-300 dark:border-slate-700 rounded-lg bg-transparent text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  />
+                </div>
+              </div>
+
+              {/* Sc. Special Request */}
+              <div className="grid grid-cols-12 py-2.5 px-3 items-center">
+                <div className="col-span-3 font-extrabold text-slate-700 dark:text-slate-300">Sc. Special Request</div>
+                <div className="col-span-9 flex items-center gap-4">
+                  <span className="font-bold text-slate-800 dark:text-slate-200">{scSpecialRequest}</span>
+                  <span className="text-slate-400">|</span>
+                  <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{scSpecialValue}</span>
+                </div>
+              </div>
+
+              {/* Client Note */}
+              <div className="grid grid-cols-12 py-2.5 px-3 items-center">
+                <div className="col-span-3 font-extrabold text-slate-700 dark:text-slate-300">Client Note</div>
+                <div className="col-span-9">
+                  <input
+                    type="text"
+                    value={clientNote}
+                    onChange={(e) => setClientNote(e.target.value)}
+                    placeholder="Add client portal communication notes..."
+                    className="w-full px-2.5 py-1 text-xs border border-slate-300 dark:border-slate-700 rounded-lg bg-transparent text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  />
+                </div>
+              </div>
+
+            </div>
           </div>
 
-          {/* TAB 1: OVERVIEW */}
-          {activeTab === 'overview' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              
-              {/* Left 2 Cols: Details Grid */}
-              <div className="lg:col-span-2 space-y-4">
-                <div className="bg-white dark:bg-[#0b101d] p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                      Core Order Specification (OrderWithDetails)
-                    </h3>
-                    <span className="text-xs text-slate-400 font-mono">
-                      Received: {displayOrder.receivedAt || '2026-09-28'}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Patient Name</span>
-                      <span className="font-bold text-slate-900 dark:text-white text-sm block mt-0.5">{displayOrder.patientName}</span>
-                      <span className="text-[10px] text-slate-400 block font-mono mt-0.5">ID: {displayOrder.id}</span>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Treating Doctor</span>
-                      <span className="font-bold text-slate-900 dark:text-white text-sm block mt-0.5">{displayOrder.doctorName}</span>
-                      <span className="text-[10px] text-slate-400 block mt-0.5">{displayOrder.clinicName}</span>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Scanning Facility</span>
-                      <span className="font-bold text-[#0284c7] dark:text-sky-400 text-sm block mt-0.5">{displayOrder.clinicName.split('(')[0]}</span>
-                      <span className="text-[10px] text-slate-400 block font-mono mt-0.5">ScanID: #{modId}</span>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Restoration / Guide Type</span>
-                      <span className="font-bold text-slate-900 dark:text-white block mt-0.5">{displayOrder.restoration}</span>
-                      <span className="text-[10px] text-[#0284c7] dark:text-sky-400 block font-mono mt-0.5">Shade: {displayOrder.shade}</span>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Surgical Protocol</span>
-                      <span className="font-bold text-slate-900 dark:text-white block mt-0.5">Tooth-Supported</span>
-                      <span className="text-[10px] text-slate-400 block mt-0.5">Straumann VeloGuide</span>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Due Delivery Date</span>
-                      <span className="font-bold text-amber-500 font-mono block mt-0.5">{displayOrder.dueDate}</span>
-                      <span className="text-[10px] text-[#ea580c] block font-bold mt-0.5">⚡ {displayOrder.priority} SLA</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Workflow Progress Timeline */}
-                <div className="bg-white dark:bg-[#0b101d] p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-3">
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                    Production Lifecycle & QC Milestones
-                  </h3>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
-                    {[
-                      { step: '1. Scans Received', done: true, time: 'Ingested & Verified' },
-                      { step: '2. DICOM Conv.', done: true, time: 'Segmentation Complete' },
-                      { step: '3. Co-Diagnostix TP', current: displayOrder.status === 'Design', done: displayOrder.status === 'Completed', time: 'Virtual Implant Planning' },
-                      { step: '4. Guide 3D CAM', current: displayOrder.status === 'Production', done: displayOrder.status === 'Completed', time: 'CAM Nesting & Print' },
-                      { step: '5. Lab Dispatch', done: displayOrder.status === 'Completed', time: `Due ${displayOrder.dueDate}` },
-                    ].map((m, idx) => (
-                      <div
-                        key={idx}
-                        className={`p-3 rounded-xl border text-xs ${
-                          m.done
-                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-semibold'
-                            : m.current
-                            ? 'bg-sky-500/15 border-sky-500/50 text-[#0284c7] dark:text-sky-300 font-black shadow-xs ring-1 ring-sky-400/40'
-                            : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-slate-400'
-                        }`}
-                      >
-                        <div className="text-[11px] font-bold">{m.step}</div>
-                        <div className="text-[10px] mt-1 opacity-80">{m.time}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Col: Attached Files & Download links */}
-              <div className="space-y-4">
-                <div className="bg-white dark:bg-[#0b101d] p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-3 text-xs">
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center justify-between">
-                    <span>Clinical File Assets</span>
-                    <Download size={15} className="text-[#0284c7]" />
-                  </h3>
-
-                  <div className="space-y-2">
-                    {[
-                      { name: `${displayOrder.patientName.replace(' ', '_')}_CBCT_Scan.zip`, size: '142 MB', type: 'DICOM Archive' },
-                      { name: 'Maxilla_Optical_Intraoral.stl', size: '18 MB', type: 'STL Mesh' },
-                      { name: 'Co-Diagnostix_Plan_V2.pts', size: '4.2 MB', type: 'Planning Project' },
-                      { name: 'Surgical_Protocol_Report.pdf', size: '1.8 MB', type: 'PDF Document' },
-                    ].map((f, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 hover:border-sky-500/40 transition-colors"
-                      >
-                        <div className="min-w-0 pr-2">
-                          <div className="font-bold text-slate-900 dark:text-white truncate max-w-[180px]">
-                            {f.name}
-                          </div>
-                          <div className="text-[10px] text-slate-400 font-mono">
-                            {f.type} • {f.size}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleDownloadFile(f.name)}
-                          className="p-1.5 rounded-lg bg-[#0284c7]/10 text-[#0284c7] dark:text-sky-400 hover:bg-[#0284c7] hover:text-white transition-colors cursor-pointer"
-                          title="Download File"
-                        >
-                          <Download size={13} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Voucher & Financial Status */}
-                <div className="bg-white dark:bg-[#0b101d] p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs text-xs space-y-2">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase">Billing & Voucher Invoicing</div>
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium text-slate-700 dark:text-slate-300">Voucher Credit:</span>
-                    <span className="font-bold font-mono text-emerald-600 dark:text-emerald-400">Linked (#VCH-9921)</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium text-slate-700 dark:text-slate-300">Total Order Cost:</span>
-                    <span className="font-black text-sm text-slate-900 dark:text-white font-mono">${displayOrder.amount}.00 USD</span>
-                  </div>
-                </div>
-              </div>
-
+          {/* B. Internal Case Note(Old) Table (Exact Image 1 layout) */}
+          <div className="border border-slate-300 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-[#0b101d] shadow-sm space-y-0 text-xs">
+            <div className="p-3 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 font-extrabold text-slate-800 dark:text-slate-200 flex items-center justify-between">
+              <span>Internal Case Note(Old)</span>
+              <span className="text-[11px] font-mono text-slate-400">{oldNotes.length} historical records</span>
             </div>
-          )}
 
-          {/* TAB 2: SUB-ORDERS MATRIX */}
-          {activeTab === 'suborders' && (
-            <div className="bg-white dark:bg-[#0b101d] p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-4 text-xs">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                  Sub-Orders Component Breakdown (taskOrderDetails.php)
-                </h3>
-                <span className="text-xs text-slate-400 font-mono">
-                  Order #{displayOrder.orderNumber}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                {[
-                  { name: 'Conversion Sub-Order', id: 'convID: 1044', status: 'Completed', op: 'Omar H.', file: '1016_conv.zip', badge: 'bg-emerald-500/10 text-emerald-600' },
-                  { name: 'Treatment Planning (TP)', id: 'tpID: 8812', status: displayOrder.status === 'New' ? 'Pending' : 'Active In-Progress', op: 'Sarah K.', file: '1016_tp.pts', badge: 'bg-sky-500/10 text-sky-600' },
-                  { name: 'Surgical Guide (SG)', id: 'sgID: 5502', status: displayOrder.status === 'Completed' ? 'Printed' : 'Queued for CAM', op: 'Jessica L.', file: '1016_guide.stl', badge: 'bg-orange-500/10 text-orange-600' },
-                  { name: 'Model Work (MOD)', id: `modID: ${modId}`, status: 'Verified & Inspected', op: 'Alex M.', file: '1016_model.stl', badge: 'bg-purple-500/10 text-purple-600' },
-                ].map((so, i) => (
-                  <div
-                    key={i}
-                    className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-2"
-                  >
-                    <div className="font-bold text-slate-900 dark:text-white">{so.name}</div>
-                    <div className="text-[10px] font-mono text-[#0284c7] dark:text-sky-400">{so.id}</div>
-                    <div className="text-[11px] text-slate-500 flex items-center justify-between">
-                      <span>Status:</span>
-                      <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${so.badge}`}>{so.status}</span>
-                    </div>
-                    <div className="text-[11px] text-slate-500">Operator: <strong>{so.op}</strong></div>
-                    <div className="text-[10px] font-mono text-slate-400 pt-1 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
-                      <span>Asset: {so.file}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleDownloadFile(so.file)}
-                        className="text-[#0284c7] hover:underline cursor-pointer"
-                      >
-                        Download
-                      </button>
-                    </div>
-                  </div>
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-black text-white font-extrabold text-[11px]">
+                  <th className="py-2 px-3 w-[12%]">By</th>
+                  <th className="py-2 px-3 w-[10%]">To</th>
+                  <th className="py-2 px-3 w-[22%]">Time Sent</th>
+                  <th className="py-2 px-3 w-[46%]">History</th>
+                  <th className="py-2 px-3 w-[10%] text-center">Attach</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-xs font-medium">
+                {oldNotes.map((n) => (
+                  <tr key={n.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                    <td className="py-2 px-3 font-bold text-slate-900 dark:text-white">{n.by}</td>
+                    <td className="py-2 px-3 font-mono font-bold text-sky-600 dark:text-sky-400">{n.to}</td>
+                    <td className="py-2 px-3 font-mono text-slate-600 dark:text-slate-400">{n.timeSent}</td>
+                    <td className="py-2 px-3 text-slate-800 dark:text-slate-200">{n.history}</td>
+                    <td className="py-2 px-3 text-center">
+                      {n.attach === 'View' ? (
+                        <span className="text-sky-600 dark:text-sky-400 font-bold hover:underline cursor-pointer">
+                          View
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">-</span>
+                      )}
+                    </td>
+                  </tr>
                 ))}
-              </div>
+              </tbody>
+            </table>
+          </div>
+
+          {/* C. Internal Case Note & Task Dispatcher System (Exact Image 1 3-Column Box) */}
+          <div className="border border-slate-300 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-[#0b101d] shadow-sm text-xs">
+            <div className="p-3 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 font-extrabold text-slate-800 dark:text-slate-200">
+              Internal Case Note & Task Dispatcher
             </div>
-          )}
 
-          {/* TAB 3: 3D CAD & DICOM MULTI-PLANAR VIEWER */}
-          {activeTab === '3dviewer' && (
-            <DicomMprViewer
-              orderNumber={displayOrder.orderNumber}
-              patientName={displayOrder.patientName}
-              implantSite="Tooth #19 (Mandibular 1st Molar)"
-              implantModel="Straumann® BLT Ø4.1mm RC x 10mm"
-              sleeveModel="T-Sleeve Straumann (Ø5.0mm, H: 5mm)"
-              sleeveOffset={9.0}
-              nerveClearance={3.2}
-            />
-          )}
+            <form onSubmit={handlePostInternalNote} className="p-4 space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                
+                {/* 1. Left: Internal Case Note Textarea */}
+                <div className="lg:col-span-5 space-y-1.5">
+                  <label className="font-extrabold text-slate-700 dark:text-slate-300 block">
+                    Internal Case Note
+                  </label>
+                  <textarea
+                    rows={6}
+                    value={newInternalNote}
+                    onChange={(e) => setNewInternalNote(e.target.value)}
+                    placeholder="Type internal case instruction, doctor phone notes, or lab coordination message..."
+                    className="w-full p-2.5 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500 resize-none font-medium"
+                  />
+                </div>
 
-          {/* TAB 4: INTERNAL HISTORY NOTES */}
-          {activeTab === 'history' && (
-            <div className="bg-white dark:bg-[#0b101d] p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                  Internal History Audit Trail (OrdersInternalHistory)
-                </h3>
-                <span className="text-xs text-slate-400 font-mono">
-                  Case #{displayOrder.orderNumber}
-                </span>
+                {/* 2. Middle: Send mail to (Checkboxes) */}
+                <div className="lg:col-span-4 border-l border-slate-200 dark:border-slate-800 pl-4 space-y-1.5">
+                  <div className="font-extrabold text-slate-700 dark:text-slate-300">
+                    Send mail to
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5 pt-1 text-[11px]">
+                    {MAIL_DEPARTMENTS.map((dept) => {
+                      const isChecked = mailToSelected.has(dept);
+                      return (
+                        <label key={dept} className="flex items-center gap-1.5 cursor-pointer text-slate-700 dark:text-slate-300 hover:text-sky-500">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleMailDept(dept)}
+                            className="rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                          />
+                          <span>{dept}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 3. Right: Send IH task (Radios) & Priority RUSH */}
+                <div className="lg:col-span-3 border-l border-slate-200 dark:border-slate-800 pl-4 space-y-2">
+                  <div className="font-extrabold text-slate-700 dark:text-slate-300">
+                    Send IH task
+                  </div>
+                  <div className="grid grid-cols-2 gap-1 text-[11px] max-h-40 overflow-y-auto pr-1">
+                    {IH_TASK_DEPARTMENTS.map((dept) => (
+                      <label key={dept} className="flex items-center gap-1.5 cursor-pointer text-slate-700 dark:text-slate-300 hover:text-sky-500">
+                        <input
+                          type="radio"
+                          name="ihTaskTarget"
+                          value={dept}
+                          checked={ihTaskSelected === dept}
+                          onChange={() => setIhTaskSelected(dept)}
+                          className="border-slate-300 text-sky-600 focus:ring-sky-500"
+                        />
+                        <span className="truncate">{dept}</span>
+                      </label>
+                    ))}
+                  </div>
+
+                  {/* Priority Checkbox: RUSH task in bold red */}
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+                    <div className="text-slate-500 text-[10px] font-bold uppercase">Priority:</div>
+                    <label className="flex items-center gap-2 cursor-pointer mt-1">
+                      <input
+                        type="checkbox"
+                        checked={isRushTask}
+                        onChange={(e) => setIsRushTask(e.target.checked)}
+                        className="rounded border-rose-500 text-rose-600 focus:ring-rose-500"
+                      />
+                      <span className="text-rose-600 dark:text-rose-400 font-black text-xs tracking-wide">
+                        RUSH task
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
               </div>
 
-              {/* Add Note Form */}
-              <form onSubmit={handleAddNote} className="flex gap-2">
-                <input
-                  type="text"
-                  value={newNote}
-                  onChange={(e) => setNewNote(e.target.value)}
-                  placeholder="Append clinical observation, CAD feedback, or doctor instructions..."
-                  className="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white"
-                />
+              {/* Submit Dispatch Action */}
+              <div className="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="submit"
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0284c7] hover:bg-sky-600 text-white font-bold text-xs cursor-pointer shadow-sm transition-colors"
+                  className="flex items-center gap-1.5 px-5 py-2 rounded-xl border border-sky-500/60 hover:bg-sky-500/10 text-sky-600 dark:text-sky-400 font-extrabold text-xs transition-all cursor-pointer bg-transparent"
                 >
                   <Send size={13} />
-                  <span>Post Note</span>
+                  <span>Dispatch Note & Notify Departments</span>
                 </button>
-              </form>
+              </div>
+            </form>
+          </div>
 
-              {/* Note Stream */}
-              <div className="space-y-2.5">
-                {notes.map((n) => (
-                  <div
-                    key={n.id}
-                    className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-xs space-y-1.5"
-                  >
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900 dark:text-white">{n.author}</span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-sky-500/10 text-[#0284c7] dark:text-sky-400 font-bold border border-sky-500/20">
-                          {n.role}
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-slate-400 font-mono">{n.date}</span>
+          {/* D. Special Pre-Shipping Instructions (Old & New) */}
+          <div className="border border-slate-300 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-[#0b101d] shadow-sm p-4 space-y-3 text-xs">
+            <div>
+              <div className="font-extrabold text-slate-700 dark:text-slate-300">
+                Special Pre Shipping Instruction (Old) :
+              </div>
+              <div className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/40 mt-1 font-mono">
+                {specialPreShippingOld}
+              </div>
+            </div>
+
+            <div>
+              <div className="font-extrabold text-slate-700 dark:text-slate-300">
+                Special Pre Shipping Instruction
+              </div>
+              <textarea
+                rows={3}
+                value={specialPreShippingNew}
+                onChange={(e) => setSpecialPreShippingNew(e.target.value)}
+                placeholder="Specify sterile packaging instructions, delivery time constraints, or customs codes..."
+                className="w-full p-2.5 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500 resize-none font-medium mt-1"
+              />
+            </div>
+          </div>
+
+          {/* E. Registration Type (Option 1 / Option 2) */}
+          <div className="border border-slate-300 dark:border-slate-800 rounded-2xl p-4 bg-white dark:bg-[#0b101d] shadow-sm text-xs flex items-center gap-6">
+            <span className="font-extrabold text-slate-700 dark:text-slate-300">
+              Registration Type :
+            </span>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-1.5 cursor-pointer text-slate-800 dark:text-slate-200 font-bold">
+                <input
+                  type="radio"
+                  name="registrationType"
+                  value="option1"
+                  checked={registrationType === 'option1'}
+                  onChange={() => setRegistrationType('option1')}
+                  className="border-slate-300 text-sky-600"
+                />
+                <span>Option 1</span>
+              </label>
+              <label className="flex items-center gap-1.5 cursor-pointer text-slate-800 dark:text-slate-200 font-bold">
+                <input
+                  type="radio"
+                  name="registrationType"
+                  value="option2"
+                  checked={registrationType === 'option2'}
+                  onChange={() => setRegistrationType('option2')}
+                  className="border-slate-300 text-sky-600"
+                />
+                <span>Option 2</span>
+              </label>
+            </div>
+          </div>
+
+          {/* F. Uploading Files Section (Exact Image 1) */}
+          <div className="border border-slate-300 dark:border-slate-800 rounded-2xl p-4 bg-white dark:bg-[#0b101d] shadow-sm text-xs space-y-3">
+            <form onSubmit={handleFileUpload} className="space-y-3">
+              <div className="flex items-center gap-3">
+                <span className="font-extrabold text-slate-900 dark:text-white">
+                  * Uploading Files
+                </span>
+                <input
+                  type="text"
+                  placeholder="Select a File or enter file name..."
+                  value={selectedFileName}
+                  onChange={(e) => setSelectedFileName(e.target.value)}
+                  className="flex-1 max-w-sm px-3 py-1.5 border border-slate-300 dark:border-slate-700 rounded-lg text-xs bg-transparent text-slate-900 dark:text-white"
+                />
+              </div>
+
+              {/* Green Upload File Button matching Image 1 */}
+              <div className="text-center pt-2">
+                <button
+                  type="submit"
+                  className="px-6 py-2 rounded-lg bg-[#2e7d32] hover:bg-[#1b5e20] text-white font-extrabold text-xs shadow-md cursor-pointer transition-all active:scale-95"
+                >
+                  Upload File
+                </button>
+              </div>
+            </form>
+
+            {/* List of Uploaded Assets */}
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-1.5">
+              <div className="text-[11px] font-bold text-slate-400 uppercase">Linked Archive Files</div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {uploadedFilesList.map((f, i) => (
+                  <div key={i} className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[180px]">{f.name}</div>
+                      <div className="text-[10px] text-slate-400 font-mono">{f.type} • {f.size}</div>
                     </div>
-                    <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{n.text}</p>
+                    <button
+                      type="button"
+                      className="p-1 rounded text-sky-500 hover:text-sky-600"
+                      title="Download"
+                    >
+                      <Download size={13} />
+                    </button>
                   </div>
                 ))}
               </div>
             </div>
-          )}
+          </div>
 
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* TAB 2: CLINICAL 3D DICOM CAD & CO-DIAGNOSTIX VIEWPORT         */}
+      {/* ------------------------------------------------------------- */}
+      {activeTab === '3dviewer' && (
+        <DicomMprViewer
+          orderNumber={flowOrder.orderNum}
+          patientName={flowOrder.patientName}
+          implantSite="Tooth #19 (Mandibular 1st Molar)"
+          implantModel="Straumann® BLT Ø4.1mm RC x 10mm"
+          sleeveModel="T-Sleeve Straumann (Ø5.0mm, H: 5mm)"
+          sleeveOffset={9.0}
+          nerveClearance={3.2}
+        />
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* TAB 3: SUB-ORDERS MATRIX BREAKDOWN                           */}
+      {/* ------------------------------------------------------------- */}
+      {activeTab === 'suborders' && (
+        <div className="border border-slate-300 dark:border-slate-800 rounded-2xl p-5 bg-white dark:bg-[#0b101d] space-y-4 text-xs">
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+            <div>
+              <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                Case #{flowOrder.orderNum} Sub-Orders Breakdown
+              </h3>
+              <p className="text-xs text-slate-400">All services billed and tracked under this master order</p>
+            </div>
+            <span className="font-mono text-xs font-black text-emerald-500">
+              Total: ${flowOrder.services.reduce((a, s) => a + s.amount, 0)}.00 USD
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {flowOrder.services.map((sub, srvIdx) => (
+              <div
+                key={sub.id || srvIdx}
+                className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2 bg-slate-50/50 dark:bg-slate-900/40"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-black border border-sky-500/50 text-sky-500 bg-transparent">
+                      {sub.typeCode}
+                    </span>
+                    <span className="font-bold text-xs text-slate-900 dark:text-white">
+                      {sub.title}
+                    </span>
+                  </div>
+                  <span className="font-mono font-bold text-xs text-emerald-500">
+                    ${sub.amount}.00
+                  </span>
+                </div>
+
+                <div className="text-[11px] text-slate-500 space-y-1">
+                  <div>Format: <strong className="text-slate-700 dark:text-slate-300">{sub.format}</strong></div>
+                  <div>Anatomical Jaws: <strong className="text-slate-700 dark:text-slate-300">Max: {sub.maxilla} • Mand: {sub.mandible}</strong></div>
+                  <div>Bill To: <span className="text-slate-700 dark:text-slate-300 truncate block">{sub.billTo}</span></div>
+                  <div>Received: <span className="font-mono text-[10px] text-slate-400">{sub.receivedTime}</span></div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] font-mono text-slate-400">CS Task: {sub.csTask.assignee || 'Unassigned'}</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border border-sky-500/40 text-sky-500 bg-transparent">
+                    {sub.actionLabel}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
