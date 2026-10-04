@@ -35,7 +35,8 @@ import {
   ChevronUp,
   User,
   CreditCard,
-  Plus
+  Plus,
+  ShoppingCart
 } from 'lucide-react';
 import { useStore } from '@/hooks/useStore';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -43,38 +44,74 @@ import { UIStateSwitcher, UIStateType } from '@/components/ui/UIStateSwitcher';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { StatusBadge } from '@/components/ui/StatusBadge';
-import { PriorityBadge } from '@/components/ui/PriorityBadge';
 
-// Detailed Sub-Service Item matching the exact columns from the user's legacy screenshot
+// Web Audio API helper for smooth, light swoosh sound effect on expand/collapse
+function playSwooshSound(isExpanding: boolean) {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const now = ctx.currentTime;
+
+    if (isExpanding) {
+      // Gentle rapid upward swoosh (220Hz -> 540Hz in 50ms)
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.exponentialRampToValueAtTime(540, now + 0.05);
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+    } else {
+      // Gentle rapid downward swoosh (500Hz -> 200Hz in 40ms)
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(500, now);
+      osc.frequency.exponentialRampToValueAtTime(200, now + 0.04);
+      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+    }
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.08);
+  } catch (e) {
+    // Audio policy fallback
+  }
+}
+
+// Sub-Service Item matching the exact columns in the user reference image
 export interface SubServiceItem {
   id: string;
   type: 'Intra-Oral' | 'Treatment Plan' | 'Surgical Guide' | 'Temp Restoration' | 'Model Work' | 'Radiology Report';
   typeCode: 'IO' | 'TP' | 'SG' | 'FMP' | 'MOD' | 'RAD';
-  title: string;              // e.g. "Treatment Plan #1 (Maxilla)"
-  statusTag?: string;         // e.g. "Later"
+  title: string;              // e.g. "Intra-Oral" or "Treatment Plan"
+  subtitle?: string;          // e.g. "Later"
   billTo: string;             // e.g. "Bishoy Mina CC: Master, 9903"
-  maxilla: string;            // "Yes" | "No" | "Quadrant" | "None"
-  mandible: string;           // "Yes" | "No" | "Mandible" | "None"
+  maxilla: string;            // "Yes" | "Quadrant" | "None"
+  mandible: string;           // "No" | "None" | "Mandible"
   format: string;             // "coDiagnostiX"
-  amount: number;             // e.g. 200
-  vouchers: string;           // "N/A" or "1"
-  receivedTime: string;       // "Mon Sep 28 14.13.07"
-  sentTime: string;           // "Not Yet" or "Sep 29 16:30"
+  amount: number;             // e.g. 0 or 200 or 575
+  vouchers: string;           // "N/A"
+  receivedTime: string;       // "Mon Sep 28 14.13.07 -0400"
+  sentTime: string;           // "Not Yet"
   updateTime: string;         // "No Updates"
   chargedOn: string;          // "Not Yet"
-  hasActionAlert: boolean;    // true if red alert "No Scans Uploaded"
-  actionLabel: string;        // "No Scans Uploaded - Upload IO File"
-  actionButtonText?: string;  // "Upload IO File"
-  changeRequest: string;      // "Revised", "CR-104", "-"
+  hasActionAlert: boolean;    // true for red alert box
+  actionLabel: string;        // "No Scans Uploaded"
+  actionButtonText?: string;  // "Upload IO File" or "Upload"
+  changeRequest: string;      // "-" or "Revised"
   csTask: {
     status: 'Assign' | 'Assigned';
     assignee?: string;        // "shrouk"
-    time?: string;            // "2026-09-28 14:14"
+    time?: string;            // "2026-09-28 14:14 -0400"
   };
 }
 
-// Master Order enriched with its multiple sub-services
+// Master Order containing its metadata and linked services
 export interface MasterWorkflowOrder {
   id: string;
   serial: number;
@@ -82,31 +119,29 @@ export interface MasterWorkflowOrder {
   source: 'Via CP' | 'Via Connect';
   scanCenter: string;
   doctorName: string;
+  doctorSub: string;         // e.g. "TE"
   patientName: string;
+  patientSub: string;        // e.g. "Add SG Date"
   isLocked: boolean;
-  notes: string;
-  archiveDate: string;
-  status: string;
-  priority: string;
-  totalAmount: number;
+  notes: string;             // e.g. "Inter. 2026-09-28"
+  archiveDate: string;       // e.g. "2026-09-28"
   services: SubServiceItem[];
 }
 
-// Service Filter definitions
 export interface ServiceFilterState {
-  rep: boolean;      // Radiology Report
-  mod: boolean;      // Model Work
-  conv: boolean;     // DICOM Conversion
-  tp: boolean;       // Treatment Plan
-  sg: boolean;       // Surgical Guide
-  soft: boolean;     // Software
-  vr: boolean;       // Virtual Reality
-  misc: boolean;     // Misc
-  restTemp: boolean; // Temp Restoration
-  restFinal: boolean;// Final Restoration
-  other: boolean;    // Other Services
-  GFMR: boolean;     // Guided Full Mouth Reconstruction
-  FMP: boolean;      // Fast Medical Planning
+  rep: boolean;
+  mod: boolean;
+  conv: boolean;
+  tp: boolean;
+  sg: boolean;
+  soft: boolean;
+  vr: boolean;
+  misc: boolean;
+  restTemp: boolean;
+  restFinal: boolean;
+  other: boolean;
+  GFMR: boolean;
+  FMP: boolean;
 }
 
 const DEFAULT_FILTERS: ServiceFilterState = {
@@ -175,36 +210,39 @@ export default function Flow() {
   const [servicesFilter, setServicesFilter] = useState<ServiceFilterState>(DEFAULT_FILTERS);
   const [viewFilter, setViewFilter] = useState<'all' | 'multi-tp' | 'action-required'>('all');
 
-  // Expand / Collapse state: Set of order IDs currently expanded
-  const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set(['504901'])); // Default first order open for immediate visual discovery!
+  // Closed / Collapsed by default as requested: "وعايز مقفول بالافتراضي"
+  const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
 
   // Quick View Drawer Modal
   const [selectedOrderForDrawer, setSelectedOrderForDrawer] = useState<any | null>(null);
 
-  // Toggle single order expansion
+  // Toggle single order expansion with swoosh sound
   const toggleOrderExpand = (orderId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     setExpandedOrders((prev) => {
       const next = new Set(prev);
-      if (next.has(orderId)) {
-        next.delete(orderId);
-      } else {
+      const isExpanding = !next.has(orderId);
+      if (isExpanding) {
         next.add(orderId);
+      } else {
+        next.delete(orderId);
       }
+      playSwooshSound(isExpanding);
       return next;
     });
   };
 
-  // Expand all or collapse all rows
+  // Expand all or collapse all rows with sound
   const handleToggleExpandAll = () => {
-    if (expandedOrders.size === filteredOrders.length) {
-      setExpandedOrders(new Set());
-    } else {
+    const isExpandingAll = expandedOrders.size !== filteredOrders.length;
+    playSwooshSound(isExpandingAll);
+    if (isExpandingAll) {
       setExpandedOrders(new Set(filteredOrders.map((o) => o.id)));
+    } else {
+      setExpandedOrders(new Set());
     }
   };
 
-  // Toggle single service filter
   const toggleService = (key: keyof ServiceFilterState) => {
     setServicesFilter((prev) => ({ ...prev, [key]: !prev[key] }));
   };
@@ -222,7 +260,7 @@ export default function Flow() {
   // Build authentic multi-service workflow orders matching Image 1 exact screenshot
   const enrichedOrders: MasterWorkflowOrder[] = useMemo(() => {
     return [
-      // 1. Exact Order 504901 from User Reference Image (has 2 TPs and Intra-Oral)
+      // 1. Exact Order 504901 from User Image (Via CP, Bishoy Mina, Intra-Oral + 2x TP)
       {
         id: '504901',
         serial: 1,
@@ -230,26 +268,25 @@ export default function Flow() {
         source: 'Via CP',
         scanCenter: 'None',
         doctorName: 'Bishoy Mina',
+        doctorSub: 'TE',
         patientName: 'Test Add order',
+        patientSub: 'Add SG Date',
         isLocked: true,
         notes: 'Inter. 2026-09-28',
         archiveDate: '2026-09-28',
-        status: 'Action Required',
-        priority: 'Urgent',
-        totalAmount: 200,
         services: [
           {
             id: 'srv-101',
             type: 'Intra-Oral',
             typeCode: 'IO',
-            title: 'Intra-Oral Scanning (IO)',
+            title: 'Intra-Oral',
             billTo: 'Bishoy Mina CC: Master, 9903',
             maxilla: 'Yes',
             mandible: 'No',
             format: 'coDiagnostiX',
             amount: 0,
             vouchers: 'N/A',
-            receivedTime: 'Mon Sep 28 14.13.07',
+            receivedTime: 'Mon Sep 28 14.13.07 -0400',
             sentTime: 'Not Yet',
             updateTime: 'No Updates',
             chargedOn: 'Not Yet',
@@ -257,21 +294,21 @@ export default function Flow() {
             actionLabel: 'No Scans Uploaded',
             actionButtonText: 'Upload IO File',
             changeRequest: '-',
-            csTask: { status: 'Assigned', assignee: 'shrouk', time: '2026-09-28 14:14' }
+            csTask: { status: 'Assigned', assignee: 'shrouk', time: '2026-09-28 14:14 -0400' }
           },
           {
             id: 'srv-102',
             type: 'Treatment Plan',
             typeCode: 'TP',
-            title: 'Treatment Plan #1 (Maxilla)',
-            statusTag: 'Later',
+            title: 'Treatment Plan',
+            subtitle: 'Later',
             billTo: 'Bishoy Mina CC: Master, 9903',
             maxilla: 'Quadrant',
             mandible: 'None',
             format: 'coDiagnostiX',
             amount: 200,
             vouchers: 'N/A',
-            receivedTime: 'Mon Sep 28 14.13.07',
+            receivedTime: 'Mon Sep 28 14.13.07 -0400',
             sentTime: 'Not Yet',
             updateTime: 'No Updates',
             chargedOn: 'Not Yet',
@@ -285,15 +322,15 @@ export default function Flow() {
             id: 'srv-103',
             type: 'Treatment Plan',
             typeCode: 'TP',
-            title: 'Treatment Plan #2 (Mandible - Multi-TP Design)',
-            statusTag: 'Later',
+            title: 'Treatment Plan #2 (Mandible)',
+            subtitle: 'Later',
             billTo: 'Bishoy Mina CC: Master, 9903',
             maxilla: 'None',
             mandible: 'Quadrant',
             format: 'coDiagnostiX',
             amount: 200,
             vouchers: 'N/A',
-            receivedTime: 'Mon Sep 28 14.13.07',
+            receivedTime: 'Mon Sep 28 14.13.07 -0400',
             sentTime: 'Not Yet',
             updateTime: 'No Updates',
             chargedOn: 'Not Yet',
@@ -305,7 +342,7 @@ export default function Flow() {
         ]
       },
 
-      // 2. Exact Order 504900 from User Reference Image (Via Connect, Temp Restoration FMP)
+      // 2. Exact Order 504900 from User Image (Via Connect, Rashad Hussein, Temp Restoration FMP)
       {
         id: '504900',
         serial: 2,
@@ -313,32 +350,32 @@ export default function Flow() {
         source: 'Via Connect',
         scanCenter: 'None',
         doctorName: 'Rashad Hussein',
+        doctorSub: 'Add SG Date',
         patientName: 'patient RH',
+        patientSub: 'Unlock',
         isLocked: false,
         notes: 'SALES Rashad',
         archiveDate: '2026-09-22',
-        status: 'Action Required',
-        priority: 'Normal',
-        totalAmount: 575,
         services: [
           {
             id: 'srv-201',
             type: 'Temp Restoration',
             typeCode: 'FMP',
-            title: 'Temp Restoration (FMP)',
+            title: 'Temp Restoration',
+            subtitle: 'FMP',
             billTo: 'Rashad Hussein CC: VISA, 9903',
             maxilla: 'None',
             mandible: 'Mandible',
-            format: 'coDiagnostiX',
+            format: 'None',
             amount: 575,
             vouchers: 'N/A',
-            receivedTime: 'Tue Sep 22 15:52:43',
+            receivedTime: 'Tue Sep 22 15:52:43 -0400',
             sentTime: 'Not Yet',
             updateTime: 'No Updates',
             chargedOn: 'Not Yet',
             hasActionAlert: true,
             actionLabel: 'No Scans Uploaded',
-            actionButtonText: 'Fill FMP Form',
+            actionButtonText: 'Upload scans\nFill FMP Form',
             changeRequest: '-',
             csTask: { status: 'Assign' }
           },
@@ -346,14 +383,15 @@ export default function Flow() {
             id: 'srv-202',
             type: 'Surgical Guide',
             typeCode: 'SG',
-            title: 'Surgical Guide (Tooth-Supported)',
+            title: 'Surgical Guide',
+            subtitle: 'CAM Print',
             billTo: 'Rashad Hussein CC: VISA, 9903',
             maxilla: 'None',
             mandible: 'Mandible',
-            format: 'STL / CAM',
+            format: 'coDiagnostiX',
             amount: 285,
-            vouchers: '1',
-            receivedTime: 'Tue Sep 22 15:52:43',
+            vouchers: 'N/A',
+            receivedTime: 'Tue Sep 22 15:52:43 -0400',
             sentTime: 'Not Yet',
             updateTime: 'Sep 23 10:15',
             chargedOn: 'Not Yet',
@@ -365,7 +403,7 @@ export default function Flow() {
         ]
       },
 
-      // 3. Clinical Multi-Service Case: Co-Diagnostix Dual TP + Surgical Guide
+      // 3. Order ORD-2024-003 (Dr. Marcus Vance, Multi-TP + Surgical Guide)
       {
         id: 'ord-3',
         serial: 3,
@@ -373,20 +411,19 @@ export default function Flow() {
         source: 'Via CP',
         scanCenter: 'Align Chicago Hub',
         doctorName: 'Dr. Marcus Vance',
+        doctorSub: 'NY Smile Center',
         patientName: 'Arthur Pendelton',
+        patientSub: 'Add SG Date',
         isLocked: false,
-        notes: 'Bone density 650 HU • Verify nerve canal',
+        notes: 'Bone density 650 HU',
         archiveDate: '2026-10-15',
-        status: 'Design',
-        priority: 'Urgent',
-        totalAmount: 485,
         services: [
           {
             id: 'srv-301',
             type: 'Treatment Plan',
             typeCode: 'TP',
-            title: 'Treatment Plan #1 (Maxilla Anterior)',
-            statusTag: 'Co-Dx Plan',
+            title: 'Treatment Plan #1 (Maxilla)',
+            subtitle: 'Co-Dx Plan',
             billTo: 'NY Smile Center (Account #1428)',
             maxilla: 'Yes',
             mandible: 'No',
@@ -406,8 +443,8 @@ export default function Flow() {
             id: 'srv-302',
             type: 'Treatment Plan',
             typeCode: 'TP',
-            title: 'Treatment Plan #2 (Mandible Molar Site #19)',
-            statusTag: 'Dual TP',
+            title: 'Treatment Plan #2 (Mandible)',
+            subtitle: 'Dual TP',
             billTo: 'NY Smile Center (Account #1428)',
             maxilla: 'No',
             mandible: 'Yes',
@@ -427,7 +464,8 @@ export default function Flow() {
             id: 'srv-303',
             type: 'Surgical Guide',
             typeCode: 'SG',
-            title: 'Surgical Guide (Straumann VeloGuide)',
+            title: 'Surgical Guide (VeloGuide)',
+            subtitle: 'Tooth-Supported',
             billTo: 'NY Smile Center (Account #1428)',
             maxilla: 'Yes',
             mandible: 'No',
@@ -439,14 +477,14 @@ export default function Flow() {
             updateTime: 'Sep 29 12:00',
             chargedOn: 'Not Yet',
             hasActionAlert: false,
-            actionLabel: 'Nesting for 3D Print',
+            actionLabel: 'CAM 3D Print',
             changeRequest: '-',
             csTask: { status: 'Assign' }
           }
         ]
       },
 
-      // 4. Case 504895: Radiology Report + Conversion
+      // 4. Order 504895 (Dr. Sarah Connor, Radiology Report + Models)
       {
         id: '504895',
         serial: 4,
@@ -454,19 +492,19 @@ export default function Flow() {
         source: 'Via CP',
         scanCenter: 'Boston Diagnostics',
         doctorName: 'Dr. Sarah Connor',
+        doctorSub: 'TE',
         patientName: 'Emma Watson',
+        patientSub: 'Add SG Date',
         isLocked: true,
-        notes: 'Impaction review for lower third molars',
+        notes: 'Impaction review',
         archiveDate: '2026-10-02',
-        status: 'Completed',
-        priority: 'Normal',
-        totalAmount: 320,
         services: [
           {
             id: 'srv-401',
             type: 'Radiology Report',
             typeCode: 'RAD',
-            title: 'Full Radiology Report (CBCT)',
+            title: 'Full Radiology Report',
+            subtitle: 'CBCT Review',
             billTo: 'Boston Diagnostics Lab',
             maxilla: 'Yes',
             mandible: 'Yes',
@@ -487,6 +525,7 @@ export default function Flow() {
             type: 'Model Work',
             typeCode: 'MOD',
             title: '3D Printed Study Models',
+            subtitle: 'Model Work',
             billTo: 'Boston Diagnostics Lab',
             maxilla: 'Yes',
             mandible: 'Yes',
@@ -507,10 +546,9 @@ export default function Flow() {
     ];
   }, []);
 
-  // Filtered orders according to search, status, and view mode
+  // Filtered orders according to search and view modes
   const filteredOrders = useMemo(() => {
     return enrichedOrders.filter((order) => {
-      // 1. Search Query
       if (search.trim()) {
         const q = search.toLowerCase();
         const matches =
@@ -522,12 +560,6 @@ export default function Flow() {
         if (!matches) return false;
       }
 
-      // 2. Status Filter
-      if (selectedStatus !== 'ALL' && order.status !== selectedStatus) {
-        return false;
-      }
-
-      // 3. View Filter: Multiple TPs or Action Required
       if (viewFilter === 'multi-tp') {
         const tpCount = order.services.filter(s => s.typeCode === 'TP').length;
         if (tpCount < 2) return false;
@@ -538,52 +570,12 @@ export default function Flow() {
 
       return true;
     });
-  }, [enrichedOrders, search, selectedStatus, viewFilter]);
-
-  // Helper to render service badge with appropriate color
-  const renderServiceBadge = (service: SubServiceItem) => {
-    switch (service.typeCode) {
-      case 'IO':
-        return (
-          <span key={service.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-300/30 text-amber-800 dark:text-amber-300 border border-amber-400/40">
-            <Wrench size={10} />
-            <span>IO</span>
-          </span>
-        );
-      case 'TP':
-        return (
-          <span key={service.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black bg-sky-500/15 text-[#0284c7] dark:text-sky-300 border border-sky-500/30">
-            <FileText size={10} />
-            <span>TP</span>
-          </span>
-        );
-      case 'SG':
-        return (
-          <span key={service.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-            <CheckCircle2 size={10} />
-            <span>SG</span>
-          </span>
-        );
-      case 'FMP':
-        return (
-          <span key={service.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black bg-[#ea580c]/15 text-[#ea580c] dark:text-orange-300 border border-[#ea580c]/30">
-            <Sparkles size={10} />
-            <span>FMP</span>
-          </span>
-        );
-      default:
-        return (
-          <span key={service.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30">
-            <span>{service.typeCode}</span>
-          </span>
-        );
-    }
-  };
+  }, [enrichedOrders, search, viewFilter]);
 
   return (
     <div className="space-y-4 w-full min-w-0">
       
-      {/* 1. Header & Controls Bar */}
+      {/* 1. Top Bar */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white dark:bg-[#0b101d] p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
         <div>
           <div className="flex items-center gap-2">
@@ -598,11 +590,10 @@ export default function Flow() {
             </span>
           </div>
           <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mt-1">
-            Expandable Master-Detail Architecture • Full Sub-Orders (TP, SG, IO, FMP) with Multi-TP capability • Zero horizontal scrolling
+            Exact 22 Columns from Specification • Collapsed by Default with Smooth Slide-Down & Sound Effect • Multi-TP Support
           </p>
         </div>
 
-        {/* Right Tools: State Switcher & New Case */}
         <div className="flex flex-wrap items-center gap-2.5">
           <UIStateSwitcher
             state={uiState}
@@ -623,8 +614,6 @@ export default function Flow() {
 
       {/* 2. Redesigned Service Filter Bar */}
       <div className="bg-white dark:bg-[#0b101d] p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-3">
-        
-        {/* Top Header of Filter Bar */}
         <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2">
             <SlidersHorizontal size={15} className="text-[#0284c7]" />
@@ -653,7 +642,7 @@ export default function Flow() {
           </div>
         </div>
 
-        {/* Clean Categorized Groups */}
+        {/* Categorized Filter Buttons */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
           {SERVICE_GROUPS.map((grp) => (
             <div
@@ -687,7 +676,7 @@ export default function Flow() {
           ))}
         </div>
 
-        {/* Quick Filter & Architecture View Filters */}
+        {/* Search & Architecture Filter Controls */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2 flex-1 min-w-[280px]">
             <div className="relative flex-1">
@@ -696,26 +685,14 @@ export default function Flow() {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search Case #, Patient, Doctor, Sub-Service..."
+                placeholder="Search by Patient, Doctor, ID, or Scan Center..."
                 className="w-full pl-9 pr-3 py-1.5 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#0284c7]"
               />
             </div>
-
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0284c7]"
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="Action Required">Action Required</option>
-              <option value="Design">In Design / Planning</option>
-              <option value="Completed">Completed</option>
-            </select>
           </div>
 
-          {/* Architecture Special Filters: Multi-TP & Actions */}
           <div className="flex items-center gap-1.5 text-xs font-bold">
-            <span className="text-slate-400 text-[11px] uppercase mr-1">View:</span>
+            <span className="text-slate-400 text-[11px] uppercase mr-1">Filter:</span>
             <button
               type="button"
               onClick={() => setViewFilter('all')}
@@ -725,7 +702,7 @@ export default function Flow() {
                   : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
-              All Cases
+              All Orders
             </button>
             <button
               type="button"
@@ -736,8 +713,8 @@ export default function Flow() {
                   : 'border-slate-200 dark:border-slate-800 text-[#0284c7] dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/30'
               }`}
             >
-              <span>Multi-TP Cases (2+ TP)</span>
-              <span className="px-1.5 py-0.2 rounded-full bg-white/20 text-[10px]">New DB</span>
+              <span>Multi-TP Cases</span>
+              <span className="px-1.5 py-0.2 rounded-full bg-white/20 text-[10px]">2+ TP</span>
             </button>
             <button
               type="button"
@@ -749,11 +726,10 @@ export default function Flow() {
               }`}
             >
               <AlertTriangle size={12} />
-              <span>Needs Scans (Action Required)</span>
+              <span>Needs Scans (Action)</span>
             </button>
           </div>
         </div>
-
       </div>
 
       {/* 3. Main Data Content (Handling Simulated States) */}
@@ -791,7 +767,7 @@ export default function Flow() {
         </div>
       )}
 
-      {/* 4. EXPANDABLE MASTER-DETAIL WORKFLOW TABLE (NO HORIZONTAL SCROLL) */}
+      {/* 4. EXACT 22 COLUMNS TABLE WITH ACCORDION SLIDE-DOWN & SOUND EFFECT */}
       {uiState === 'normal' && (
         <div className="bg-white dark:bg-[#0b101d] rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md overflow-hidden">
           
@@ -801,7 +777,7 @@ export default function Flow() {
               <button
                 type="button"
                 onClick={handleToggleExpandAll}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-[#0284c7] text-slate-800 dark:text-slate-200 font-bold transition-all cursor-pointer shadow-xs"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-[#0284c7] text-slate-800 dark:text-slate-200 font-bold transition-all cursor-pointer shadow-xs active:scale-95"
               >
                 {expandedOrders.size === filteredOrders.length ? (
                   <>
@@ -816,38 +792,51 @@ export default function Flow() {
                 )}
               </button>
               <span className="text-slate-400 font-normal hidden sm:inline">
-                Click any case row or arrow to reveal full sub-orders (TP, SG, IO, FMP)
+                Click ▶ arrow to slide down sub-orders (with sound effect)
               </span>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-mono text-[#0284c7] dark:text-sky-400">
-                22" Zero Horizontal Scroll Standard
+              <span className="text-[11px] font-mono text-[#0284c7] dark:text-sky-400 font-bold">
+                22 Columns Standard • Master-Detail
               </span>
             </div>
           </div>
 
-          <div className="w-full overflow-x-hidden">
-            <table className="w-full text-left text-xs border-collapse table-fixed">
+          <div className="w-full overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-[#e5e7eb] dark:bg-slate-800/90 border-b border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-black text-[11px] select-none">
-                  <th className="py-2.5 px-2 text-center w-12">#</th>
-                  <th className="py-2.5 px-2 w-28">Case / Source</th>
-                  <th className="py-2.5 px-2 w-36">Scan Center</th>
-                  <th className="py-2.5 px-2 w-36">Doctor</th>
-                  <th className="py-2.5 px-2 w-40">Patient Name</th>
-                  <th className="py-2.5 px-2">Sub-Services Breakdown</th>
-                  <th className="py-2.5 px-2 text-center w-28">Lock / Archive</th>
-                  <th className="py-2.5 px-2 text-right w-24">Billed</th>
-                  <th className="py-2.5 px-2 text-center w-28">Status</th>
-                  <th className="py-2.5 px-2 text-center w-20">Actions</th>
+                {/* EXACT 22 HEADERS FROM THE USER REFERENCE IMAGE */}
+                <tr className="bg-[#d1d5db] dark:bg-slate-800 border-b border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-black text-[11px] select-none whitespace-nowrap">
+                  <th className="py-2.5 px-2 text-center w-20"># tl</th>
+                  <th className="py-2.5 px-2 w-28">Scan Center tl</th>
+                  <th className="py-2.5 px-2 w-28">Doctor tl</th>
+                  <th className="py-2.5 px-2 w-32">Patient Name tl</th>
+                  <th className="py-2.5 px-1.5 text-center w-20">Is Locked (?)</th>
+                  <th className="py-2.5 px-2 text-center w-24">Notes</th>
+                  <th className="py-2.5 px-2 text-center w-24">Archive Date</th>
+                  <th className="py-2.5 px-1 text-center w-8">...</th>
+                  <th className="py-2.5 px-3 w-32">Order</th>
+                  <th className="py-2.5 px-3 w-44">Bill To</th>
+                  <th className="py-2.5 px-2 text-center w-16">Max.</th>
+                  <th className="py-2.5 px-2 text-center w-16">Mand.</th>
+                  <th className="py-2.5 px-2.5 w-24">Format</th>
+                  <th className="py-2.5 px-2.5 text-right w-20">Amount Billed</th>
+                  <th className="py-2.5 px-2 text-center w-16">Vouchers</th>
+                  <th className="py-2.5 px-3 w-32">Received Time</th>
+                  <th className="py-2.5 px-2.5 text-center w-20">Sent Time</th>
+                  <th className="py-2.5 px-2.5 text-center w-20">Update Time</th>
+                  <th className="py-2.5 px-2.5 text-center w-20">Charged On</th>
+                  <th className="py-2.5 px-3 text-center w-40">Action</th>
+                  <th className="py-2.5 px-2 text-center w-24">Change Request</th>
+                  <th className="py-2.5 px-3 text-center w-36">CS-Task</th>
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-xs">
+              <tbody className="divide-y divide-slate-300 dark:divide-slate-800 text-xs">
                 {filteredOrders.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="py-12 text-center text-slate-500 font-bold">
+                    <td colSpan={22} className="py-12 text-center text-slate-500 font-bold">
                       No matching cases in this production queue.
                     </td>
                   </tr>
@@ -856,345 +845,395 @@ export default function Flow() {
                     const isExpanded = expandedOrders.has(order.id);
                     const tpCount = order.services.filter(s => s.typeCode === 'TP').length;
                     const hasActionAlert = order.services.some(s => s.hasActionAlert);
+                    const primaryService = order.services[0];
 
                     return (
                       <React.Fragment key={order.id}>
-                        {/* MASTER ROW (CLEAN, ELEGANT, ZERO HORIZONTAL SCROLL) */}
+                        {/* 1. MASTER ORDER ROW (COLLAPSED BY DEFAULT, STAYS FIXED IN PLACE) */}
                         <tr
                           onClick={() => toggleOrderExpand(order.id)}
-                          className={`group transition-colors cursor-pointer select-none ${
+                          className={`group transition-colors cursor-pointer select-none font-medium ${
                             isExpanded
-                              ? 'bg-sky-50/70 dark:bg-sky-950/30 border-l-4 border-l-[#0284c7]'
+                              ? 'bg-sky-50/60 dark:bg-sky-950/20 border-b-2 border-b-[#0284c7]/40'
                               : 'hover:bg-slate-50/80 dark:hover:bg-slate-900/60'
                           }`}
                         >
-                          {/* 1. Expand Chevron & Serial */}
-                          <td className="py-3 px-2 text-center font-mono text-slate-500">
-                            <div className="flex items-center justify-center gap-1">
-                              <span className="p-1 rounded-md text-slate-400 group-hover:text-[#0284c7] transition-transform">
+                          {/* 1. # tl: Chevron + Case # + Source Badge */}
+                          <td className="py-3 px-2 text-center">
+                            <div className="flex items-center gap-1.5 justify-center">
+                              <span
+                                onClick={(e) => toggleOrderExpand(order.id, e)}
+                                className="p-1 rounded-md text-slate-400 group-hover:text-[#0284c7] transition-all cursor-pointer"
+                                title={isExpanded ? 'Collapse sub-orders' : 'Expand full sub-orders'}
+                              >
                                 {isExpanded ? (
-                                  <ChevronDown size={15} className="text-[#0284c7] stroke-[3]" />
+                                  <ChevronDown size={16} className="text-[#0284c7] stroke-[3]" />
                                 ) : (
-                                  <ChevronRight size={15} className="stroke-[2.5]" />
+                                  <ChevronRight size={16} className="stroke-[2.5]" />
                                 )}
                               </span>
-                              <span className="text-[11px] font-bold">{order.serial}</span>
+                              <div className="flex flex-col items-start">
+                                <span className="font-mono font-bold text-amber-600 dark:text-amber-500 text-xs">
+                                  {order.orderNum}
+                                </span>
+                                <span className={`inline-block px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider ${
+                                  order.source === 'Via CP'
+                                    ? 'bg-purple-600 text-white'
+                                    : 'bg-purple-700 text-white'
+                                }`}>
+                                  {order.source}
+                                </span>
+                              </div>
                             </div>
                           </td>
 
-                          {/* 2. Case # & Source (matching user image badge) */}
-                          <td className="py-3 px-2">
-                            <div className="flex flex-col">
-                              <span className="font-mono font-black text-[#0284c7] dark:text-sky-400 text-sm">
-                                {order.orderNum}
-                              </span>
-                              <span className={`inline-block px-1.5 py-0.5 mt-0.5 rounded text-[10px] font-black uppercase tracking-wider w-fit ${
-                                order.source === 'Via CP'
-                                  ? 'bg-purple-600/15 text-purple-700 dark:text-purple-300 border border-purple-500/30'
-                                  : 'bg-indigo-600/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30'
-                              }`}>
-                                {order.source}
-                              </span>
-                            </div>
-                          </td>
-
-                          {/* 3. Scan Center */}
-                          <td className="py-3 px-2 truncate font-semibold text-slate-800 dark:text-slate-200" title={order.scanCenter}>
+                          {/* 2. Scan Center tl */}
+                          <td className="py-3 px-2 font-bold text-slate-800 dark:text-slate-200">
                             {order.scanCenter}
                           </td>
 
-                          {/* 4. Doctor */}
-                          <td className="py-3 px-2 truncate font-bold text-slate-900 dark:text-white" title={order.doctorName}>
-                            {order.doctorName}
-                          </td>
-
-                          {/* 5. Patient Name */}
-                          <td className="py-3 px-2 truncate font-black text-slate-950 dark:text-white" title={order.patientName}>
-                            {order.patientName}
-                          </td>
-
-                          {/* 6. Services Breakdown Summary (Shows TP Count & Alerts) */}
+                          {/* 3. Doctor tl */}
                           <td className="py-3 px-2">
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              {/* Distinct Service Badges */}
-                              {order.services.map((s) => renderServiceBadge(s))}
-
-                              {/* Multi-TP Highlight Badge */}
-                              {tpCount >= 2 && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-black bg-[#0284c7] text-white shadow-xs">
-                                  <span>2x TP Plans</span>
-                                </span>
-                              )}
-
-                              {/* Red Alert Pill if Action Required (matching image) */}
-                              {hasActionAlert && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-black bg-rose-600 text-white animate-pulse shadow-xs">
-                                  <AlertTriangle size={10} />
-                                  <span>Action Needed</span>
-                                </span>
-                              )}
+                            <div className="font-bold text-[#ea580c] dark:text-orange-400">
+                              {order.doctorName}
+                            </div>
+                            <div className="text-[10px] text-cyan-600 dark:text-cyan-400 font-bold">
+                              {order.doctorSub}
                             </div>
                           </td>
 
-                          {/* 7. Lock & Archive Date */}
-                          <td className="py-3 px-2 text-center">
-                            <div className="flex items-center justify-center gap-2">
+                          {/* 4. Patient Name tl */}
+                          <td className="py-3 px-2">
+                            <div className="font-bold text-slate-900 dark:text-white">
+                              {order.patientName}
+                            </div>
+                            <div className="text-[10px] text-amber-600 dark:text-amber-500 font-bold cursor-pointer hover:underline">
+                              {order.patientSub}
+                            </div>
+                          </td>
+
+                          {/* 5. Is Locked (?) */}
+                          <td className="py-3 px-1.5 text-center">
+                            <div className="flex flex-col items-center">
                               {order.isLocked ? (
-                                <span title="Case Locked by Lab Operator">
-                                  <Lock size={13} className="text-emerald-500" />
-                                </span>
+                                <>
+                                  <div className="w-4 h-4 rotate-45 bg-emerald-500 text-white flex items-center justify-center text-[9px] font-bold shadow-xs">
+                                    <span className="-rotate-45">?</span>
+                                  </div>
+                                  <span className="text-[10px] text-sky-600 dark:text-sky-400 font-bold mt-1">
+                                    Lock
+                                  </span>
+                                </>
                               ) : (
-                                <span title="Unlocked">
-                                  <Unlock size={13} className="text-slate-300 dark:text-slate-600" />
-                                </span>
+                                <>
+                                  <div className="w-4 h-4 rotate-45 bg-rose-600 text-white flex items-center justify-center text-[9px] font-bold shadow-xs">
+                                    <span className="-rotate-45">?</span>
+                                  </div>
+                                  <span className="text-[9px] text-rose-600 font-bold uppercase mt-0.5">
+                                    SALES Rashad
+                                  </span>
+                                  <span className="text-[10px] text-rose-600 font-bold">
+                                    Unlock
+                                  </span>
+                                </>
                               )}
-                              <span className="font-mono text-[11px] text-slate-500">
-                                {order.archiveDate}
-                              </span>
                             </div>
                           </td>
 
-                          {/* 8. Total Amount Billed */}
-                          <td className="py-3 px-2 text-right font-mono font-black text-slate-900 dark:text-white text-sm">
-                            ${order.totalAmount}.00
-                          </td>
-
-                          {/* 9. Master Status */}
-                          <td className="py-3 px-2 text-center">
-                            <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-black ${
-                              order.status === 'Action Required'
-                                ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30'
-                                : order.status === 'Completed'
-                                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
-                                : 'bg-sky-500/15 text-[#0284c7] dark:text-sky-300 border border-sky-500/30'
-                            }`}>
-                              {order.status}
+                          {/* 6. Notes */}
+                          <td className="py-3 px-2 text-center font-bold text-[11px] text-slate-800 dark:text-slate-200">
+                            <span className="underline cursor-pointer">
+                              {order.notes}
                             </span>
                           </td>
 
-                          {/* 10. Quick Action */}
-                          <td className="py-3 px-2 text-center" onClick={(e) => e.stopPropagation()}>
-                            <button
-                              type="button"
-                              onClick={() => navigate(`/order-details?ID=${order.orderNum}`)}
-                              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-[#0284c7] hover:text-white text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
-                              title="Open Full Case Details"
-                            >
-                              <ExternalLink size={14} />
-                            </button>
+                          {/* 7. Archive Date */}
+                          <td className="py-3 px-2 text-center font-mono text-[11px] text-slate-700 dark:text-slate-300">
+                            <div className="flex items-center justify-center gap-1">
+                              <span>{order.archiveDate}</span>
+                              <ShoppingCart size={13} className="text-emerald-500" />
+                            </div>
+                          </td>
+
+                          {/* 8. ... */}
+                          <td className="py-3 px-1 text-center" onClick={(e) => { e.stopPropagation(); navigate(`/order-details?ID=${order.orderNum}`); }}>
+                            <MoreHorizontal size={14} className="text-slate-400 hover:text-[#0284c7] mx-auto cursor-pointer" />
+                          </td>
+
+                          {/* 9. Order (Service preview) */}
+                          <td className="py-3 px-3">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="px-2 py-0.5 rounded font-black text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200">
+                                {order.services.length} Services ({tpCount >= 2 ? `${tpCount}x TP` : '1x TP'})
+                              </span>
+                              {!isExpanded && (
+                                <span className="text-[10px] text-[#0284c7] font-bold">
+                                  ▶ Click to Expand
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* 10. Bill To */}
+                          <td className="py-3 px-3 text-slate-700 dark:text-slate-300 text-[11px] truncate max-w-[170px]" title={primaryService?.billTo}>
+                            {primaryService?.billTo}
+                          </td>
+
+                          {/* 11. Max. */}
+                          <td className="py-3 px-2 text-center font-bold text-[11px] text-slate-700 dark:text-slate-300">
+                            {primaryService?.maxilla}
+                          </td>
+
+                          {/* 12. Mand. */}
+                          <td className="py-3 px-2 text-center font-bold text-[11px] text-slate-700 dark:text-slate-300">
+                            {primaryService?.mandible}
+                          </td>
+
+                          {/* 13. Format */}
+                          <td className="py-3 px-2.5 font-mono text-[11px] text-slate-600 dark:text-slate-300">
+                            {primaryService?.format}
+                          </td>
+
+                          {/* 14. Amount Billed */}
+                          <td className="py-3 px-2.5 text-right font-mono font-bold text-slate-900 dark:text-white">
+                            ${primaryService?.amount}
+                          </td>
+
+                          {/* 15. Vouchers */}
+                          <td className="py-3 px-2 text-center font-mono text-[11px] text-slate-500">
+                            {primaryService?.vouchers}
+                          </td>
+
+                          {/* 16. Received Time */}
+                          <td className="py-3 px-3 font-mono text-[10px] text-slate-700 dark:text-slate-300">
+                            {primaryService?.receivedTime}
+                          </td>
+
+                          {/* 17. Sent Time */}
+                          <td className="py-3 px-2.5 text-center font-mono text-[10px] text-slate-700 dark:text-slate-300">
+                            {primaryService?.sentTime}
+                          </td>
+
+                          {/* 18. Update Time */}
+                          <td className="py-3 px-2.5 text-center font-mono text-[10px] text-slate-700 dark:text-slate-300">
+                            {primaryService?.updateTime}
+                          </td>
+
+                          {/* 19. Charged On */}
+                          <td className="py-3 px-2.5 text-center font-mono text-[10px] text-slate-700 dark:text-slate-300">
+                            {primaryService?.chargedOn}
+                          </td>
+
+                          {/* 20. Action */}
+                          <td className="py-3 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                            {hasActionAlert ? (
+                              <div className="bg-red-600 text-white p-1 rounded font-black text-[10px] leading-tight shadow-xs">
+                                <div>No Scans Uploaded</div>
+                                <span className="underline hover:text-amber-200 cursor-pointer block mt-0.5">
+                                  {primaryService?.actionButtonText || 'Upload'}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-sky-500/10 text-sky-600 border border-sky-500/30">
+                                {primaryService?.actionLabel}
+                              </span>
+                            )}
+                          </td>
+
+                          {/* 21. Change Request */}
+                          <td className="py-3 px-2 text-center font-mono text-[11px] text-rose-600 font-bold">
+                            {primaryService?.changeRequest}
+                          </td>
+
+                          {/* 22. CS-Task */}
+                          <td className="py-3 px-3 text-center">
+                            <span className="text-[#ea580c] font-bold text-[11px] cursor-pointer hover:underline">
+                              Assign
+                            </span>
                           </td>
                         </tr>
 
-                        {/* EXPANDED SUB-SERVICES ACCORDION PANEL (FULL LEGACY COLUMNS INTEGRATED) */}
-                        {isExpanded && (
-                          <tr>
-                            <td colSpan={10} className="p-0 bg-slate-50/90 dark:bg-[#090d18] border-y border-slate-200 dark:border-slate-800">
-                              <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                exit={{ opacity: 0, height: 0 }}
-                                transition={{ duration: 0.25 }}
-                                className="p-4 sm:p-5 space-y-3"
+                        {/* 2. EXPANDED DETAILED SUB-ROWS (SLIDES DOWN DIRECTLY UNDERNEATH) */}
+                        <AnimatePresence>
+                          {isExpanded && (
+                            order.services.map((sub, srvIdx) => (
+                              <motion.tr
+                                key={sub.id}
+                                initial={{ opacity: 0, y: -6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -6 }}
+                                transition={{ duration: 0.22, delay: srvIdx * 0.04 }}
+                                className={`border-b border-slate-200 dark:border-slate-800 text-xs font-medium ${
+                                  sub.typeCode === 'IO'
+                                    ? 'bg-[#ffff77] dark:bg-yellow-950/30 text-slate-900 dark:text-yellow-100'
+                                    : 'bg-white dark:bg-[#0b101d] text-slate-800 dark:text-slate-200'
+                                }`}
                               >
-                                {/* Sub-Services Panel Header */}
-                                <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-200 dark:border-slate-800">
-                                  <div className="flex items-center gap-2">
-                                    <span className="p-1 rounded-md bg-[#0284c7]/10 text-[#0284c7]">
-                                      <Layers size={14} />
-                                    </span>
-                                    <h4 className="font-black text-xs text-slate-900 dark:text-white uppercase tracking-wider">
-                                      Linked Clinical Services for Case #{order.orderNum}
-                                    </h4>
-                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-black bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                                      {order.services.length} Services ({tpCount} Treatment Plans)
-                                    </span>
-                                  </div>
+                                {/* Left Columns 1-8: Grouped blank/indent under the parent order */}
+                                <td className="py-2.5 px-2 text-center font-mono text-[11px] text-slate-400 border-r border-slate-200 dark:border-slate-800">
+                                  ↳ {srvIdx + 1}
+                                </td>
+                                <td className="py-2.5 px-2 text-slate-400 italic text-[10px]">
+                                  (same case)
+                                </td>
+                                <td className="py-2.5 px-2 text-slate-400 italic text-[10px]">
+                                  (same doctor)
+                                </td>
+                                <td className="py-2.5 px-2 text-slate-400 italic text-[10px]">
+                                  (same patient)
+                                </td>
+                                <td className="py-2.5 px-1.5 text-center text-slate-300">
+                                  •
+                                </td>
+                                <td className="py-2.5 px-2 text-center text-slate-300">
+                                  -
+                                </td>
+                                <td className="py-2.5 px-2 text-center text-slate-300">
+                                  -
+                                </td>
+                                <td className="py-2.5 px-1 text-center text-slate-300">
+                                  -
+                                </td>
 
-                                  <div className="flex items-center gap-2">
+                                {/* Column 9: Exact Service Name & Icon (Matching legacy screenshot) */}
+                                <td className={`py-2.5 px-3 font-bold ${sub.typeCode === 'IO' ? 'bg-[#ffff55] dark:bg-yellow-900/40 text-amber-900 dark:text-amber-200' : ''}`}>
+                                  <div className="flex flex-col items-start gap-1">
+                                    <span className="font-extrabold text-xs">
+                                      {sub.title}
+                                    </span>
+                                    <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                                      {sub.typeCode === 'IO' && (
+                                        <Wrench size={13} className="text-amber-600 inline" />
+                                      )}
+                                      {sub.typeCode === 'TP' && (
+                                        <div className="flex items-center gap-1 text-cyan-600 font-bold">
+                                          <span>🛠️</span>
+                                          <span>{sub.subtitle || 'Later'}</span>
+                                        </div>
+                                      )}
+                                      {sub.typeCode === 'FMP' && (
+                                        <div className="flex items-center gap-1 text-orange-600 font-bold">
+                                          <Sparkles size={12} />
+                                          <span>FMP</span>
+                                        </div>
+                                      )}
+                                      {sub.typeCode === 'SG' && (
+                                        <div className="flex items-center gap-1 text-emerald-600 font-bold">
+                                          <CheckCircle2 size={12} />
+                                          <span>CAM</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
+
+                                {/* Column 10: Bill To */}
+                                <td className={`py-2.5 px-3 text-[11px] font-bold ${sub.typeCode === 'IO' ? 'text-amber-950 dark:text-amber-100' : 'text-slate-700 dark:text-slate-300'}`}>
+                                  {sub.billTo}
+                                </td>
+
+                                {/* Column 11: Max. */}
+                                <td className="py-2.5 px-2 text-center font-bold text-[11px]">
+                                  {sub.maxilla}
+                                </td>
+
+                                {/* Column 12: Mand. */}
+                                <td className="py-2.5 px-2 text-center font-bold text-[11px]">
+                                  {sub.mandible}
+                                </td>
+
+                                {/* Column 13: Format */}
+                                <td className="py-2.5 px-2.5 font-mono text-[11px]">
+                                  {sub.format}
+                                </td>
+
+                                {/* Column 14: Amount Billed */}
+                                <td className="py-2.5 px-2.5 text-right font-mono font-bold">
+                                  ${sub.amount}
+                                </td>
+
+                                {/* Column 15: Vouchers */}
+                                <td className="py-2.5 px-2 text-center font-mono text-[11px]">
+                                  {sub.vouchers}
+                                </td>
+
+                                {/* Column 16: Received Time */}
+                                <td className="py-2.5 px-3 font-mono text-[10px] leading-tight">
+                                  {sub.receivedTime}
+                                </td>
+
+                                {/* Column 17: Sent Time */}
+                                <td className="py-2.5 px-2.5 text-center font-mono text-[10px]">
+                                  {sub.sentTime}
+                                </td>
+
+                                {/* Column 18: Update Time */}
+                                <td className="py-2.5 px-2.5 text-center font-mono text-[10px]">
+                                  {sub.updateTime}
+                                </td>
+
+                                {/* Column 19: Charged On */}
+                                <td className="py-2.5 px-2.5 text-center font-mono text-[10px]">
+                                  {sub.chargedOn}
+                                </td>
+
+                                {/* Column 20: Action (EXACT BRIGHT RED RECTANGLE FROM IMAGE) */}
+                                <td className="py-2 px-3 text-center">
+                                  {sub.hasActionAlert ? (
+                                    <div className="bg-red-600 hover:bg-red-700 text-white p-2 rounded font-black text-[11px] leading-tight shadow-md transition-colors">
+                                      <div className="tracking-tight">{sub.actionLabel}</div>
+                                      {sub.actionButtonText && (
+                                        <button
+                                          type="button"
+                                          onClick={() => navigate(`/order-details?ID=${order.orderNum}`)}
+                                          className="underline hover:text-amber-200 cursor-pointer block mt-1 mx-auto text-[10px] whitespace-pre-line"
+                                        >
+                                          {sub.actionButtonText}
+                                        </button>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="inline-block px-2.5 py-1 rounded font-bold text-[11px] bg-sky-500/10 text-[#0284c7] dark:text-sky-400 border border-sky-500/30">
+                                      {sub.actionLabel}
+                                    </span>
+                                  )}
+                                </td>
+
+                                {/* Column 21: Change Request */}
+                                <td className="py-2.5 px-2 text-center font-mono text-[11px] text-rose-600 font-bold">
+                                  {sub.changeRequest}
+                                </td>
+
+                                {/* Column 22: CS-Task (Matching legacy assign / shrouk undo) */}
+                                <td className="py-2.5 px-3 text-center">
+                                  {sub.csTask.status === 'Assigned' ? (
+                                    <div className="text-[10px] leading-tight space-y-0.5">
+                                      <div className="text-[#ea580c] font-bold">
+                                        Assign
+                                      </div>
+                                      <div className="font-mono text-slate-800 dark:text-slate-200 font-bold">
+                                        {sub.csTask.time}
+                                      </div>
+                                      <div className="font-bold text-slate-900 dark:text-white">
+                                        by {sub.csTask.assignee}
+                                      </div>
+                                      <span className="text-sky-600 dark:text-sky-400 font-bold hover:underline cursor-pointer block">
+                                        Undo
+                                      </span>
+                                    </div>
+                                  ) : (
                                     <button
                                       type="button"
-                                      onClick={() => navigate(`/order-details?ID=${order.orderNum}`)}
-                                      className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-[#0284c7] dark:text-sky-400 hover:underline cursor-pointer"
+                                      className="text-[#ea580c] font-bold text-[11px] hover:underline cursor-pointer"
                                     >
-                                      <span>Full 3D / DICOM Inspector →</span>
+                                      Assign
                                     </button>
-                                  </div>
-                                </div>
-
-                                {/* NESTED SERVICES SUB-TABLE (REPRODUCING EXACT LEGACY COLUMNS CLEANLY) */}
-                                <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs bg-white dark:bg-[#0b101d]">
-                                  <table className="w-full text-left text-xs border-collapse">
-                                    <thead>
-                                      <tr className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[10px] font-extrabold uppercase text-slate-500 tracking-wider">
-                                        <th className="py-2 px-3 w-48">Service / Sub-Order</th>
-                                        <th className="py-2 px-3 w-48">Bill To & Payment</th>
-                                        <th className="py-2 px-2 text-center w-16">Maxilla</th>
-                                        <th className="py-2 px-2 text-center w-16">Mandible</th>
-                                        <th className="py-2 px-2.5 w-24">Format</th>
-                                        <th className="py-2 px-2.5 text-right w-20">Amount</th>
-                                        <th className="py-2 px-2.5 text-center w-16">Vouchers</th>
-                                        <th className="py-2 px-3 w-36">Timestamps</th>
-                                        <th className="py-2 px-3 text-center w-48">Clinical Action</th>
-                                        <th className="py-2 px-2 text-center w-20">CR</th>
-                                        <th className="py-2 px-3 text-center w-36">CS-Task</th>
-                                      </tr>
-                                    </thead>
-
-                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
-                                      {order.services.map((srv, idx) => (
-                                        <tr
-                                          key={srv.id}
-                                          className={`hover:bg-slate-50/70 dark:hover:bg-slate-900/50 transition-colors ${
-                                            srv.typeCode === 'IO'
-                                              ? 'bg-amber-50/30 dark:bg-amber-950/10'
-                                              : idx % 2 === 1
-                                              ? 'bg-slate-50/30 dark:bg-slate-900/20'
-                                              : ''
-                                          }`}
-                                        >
-                                          {/* 1. Service Type & Sub-Title (with legacy icons) */}
-                                          <td className="py-2.5 px-3">
-                                            <div className="flex items-center gap-2">
-                                              <span className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                                                {srv.typeCode === 'IO' ? (
-                                                  <Wrench size={13} className="text-amber-600" />
-                                                ) : srv.typeCode === 'TP' ? (
-                                                  <FileText size={13} className="text-[#0284c7]" />
-                                                ) : srv.typeCode === 'FMP' ? (
-                                                  <Sparkles size={13} className="text-[#ea580c]" />
-                                                ) : (
-                                                  <CheckCircle2 size={13} className="text-emerald-600" />
-                                                )}
-                                              </span>
-                                              <div>
-                                                <div className="font-bold text-slate-900 dark:text-white text-xs">
-                                                  {srv.title}
-                                                </div>
-                                                {srv.statusTag && (
-                                                  <span className="text-[10px] font-mono text-slate-400 block">
-                                                    Status: {srv.statusTag}
-                                                  </span>
-                                                )}
-                                              </div>
-                                            </div>
-                                          </td>
-
-                                          {/* 2. Bill To & CC */}
-                                          <td className="py-2.5 px-3 text-slate-700 dark:text-slate-300">
-                                            <div className="flex items-center gap-1 font-semibold text-[11px]">
-                                              <CreditCard size={12} className="text-slate-400 shrink-0" />
-                                              <span className="truncate">{srv.billTo}</span>
-                                            </div>
-                                          </td>
-
-                                          {/* 3. Maxilla */}
-                                          <td className="py-2.5 px-2 text-center font-bold text-[11px]">
-                                            {srv.maxilla === 'Yes' || srv.maxilla === 'Quadrant' ? (
-                                              <span className="text-emerald-600 dark:text-emerald-400 font-mono">
-                                                {srv.maxilla}
-                                              </span>
-                                            ) : (
-                                              <span className="text-slate-300 dark:text-slate-600">-</span>
-                                            )}
-                                          </td>
-
-                                          {/* 4. Mandible */}
-                                          <td className="py-2.5 px-2 text-center font-bold text-[11px]">
-                                            {srv.mandible === 'Yes' || srv.mandible === 'Mandible' || srv.mandible === 'Quadrant' ? (
-                                              <span className="text-emerald-600 dark:text-emerald-400 font-mono">
-                                                {srv.mandible}
-                                              </span>
-                                            ) : (
-                                              <span className="text-slate-300 dark:text-slate-600">-</span>
-                                            )}
-                                          </td>
-
-                                          {/* 5. Format */}
-                                          <td className="py-2.5 px-2.5 font-mono text-[11px] text-slate-600 dark:text-slate-400">
-                                            {srv.format}
-                                          </td>
-
-                                          {/* 6. Amount */}
-                                          <td className="py-2.5 px-2.5 text-right font-mono font-bold text-slate-900 dark:text-white">
-                                            ${srv.amount}.00
-                                          </td>
-
-                                          {/* 7. Vouchers */}
-                                          <td className="py-2.5 px-2.5 text-center font-mono text-[11px] text-slate-500">
-                                            {srv.vouchers}
-                                          </td>
-
-                                          {/* 8. Timestamps (Stacked for zero horizontal scroll) */}
-                                          <td className="py-2.5 px-3 font-mono text-[10px] text-slate-500 leading-tight">
-                                            <div>Rec: <span className="text-slate-700 dark:text-slate-300">{srv.receivedTime}</span></div>
-                                            <div>Sent: <span className="text-slate-400">{srv.sentTime}</span></div>
-                                          </td>
-
-                                          {/* 9. Action (Exact Red Alert Box matching legacy image) */}
-                                          <td className="py-2.5 px-3 text-center">
-                                            {srv.hasActionAlert ? (
-                                              <div className="p-1.5 rounded-lg bg-rose-600 text-white shadow-sm space-y-1">
-                                                <div className="font-black text-[10px] tracking-tight uppercase flex items-center justify-center gap-1">
-                                                  <AlertTriangle size={11} />
-                                                  <span>{srv.actionLabel}</span>
-                                                </div>
-                                                {srv.actionButtonText && (
-                                                  <button
-                                                    type="button"
-                                                    onClick={() => navigate(`/order-details?ID=${order.orderNum}`)}
-                                                    className="w-full py-0.5 px-1.5 bg-white text-rose-700 hover:bg-rose-50 rounded text-[10px] font-black transition-colors cursor-pointer"
-                                                  >
-                                                    {srv.actionButtonText}
-                                                  </button>
-                                                )}
-                                              </div>
-                                            ) : (
-                                              <span className="inline-block px-2.5 py-1 rounded-md text-[11px] font-bold bg-sky-500/10 text-[#0284c7] dark:text-sky-400 border border-sky-500/30">
-                                                {srv.actionLabel}
-                                              </span>
-                                            )}
-                                          </td>
-
-                                          {/* 10. Change Request */}
-                                          <td className="py-2.5 px-2 text-center font-mono text-[11px]">
-                                            {srv.changeRequest !== '-' ? (
-                                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
-                                                {srv.changeRequest}
-                                              </span>
-                                            ) : (
-                                              <span className="text-slate-300 dark:text-slate-600">-</span>
-                                            )}
-                                          </td>
-
-                                          {/* 11. CS-Task Delegation (with shrouk assignee / Undo button matching image) */}
-                                          <td className="py-2.5 px-3 text-center">
-                                            {srv.csTask.status === 'Assigned' ? (
-                                              <div className="text-[10px] leading-tight space-y-0.5">
-                                                <div className="font-mono text-slate-700 dark:text-slate-300">
-                                                  by <strong>{srv.csTask.assignee}</strong>
-                                                </div>
-                                                <span className="text-rose-600 dark:text-rose-400 font-bold hover:underline cursor-pointer">
-                                                  Undo
-                                                </span>
-                                              </div>
-                                            ) : (
-                                              <button
-                                                type="button"
-                                                className="px-2 py-0.5 rounded text-[10px] font-bold text-[#0284c7] hover:bg-sky-50 dark:hover:bg-sky-950/40 cursor-pointer"
-                                              >
-                                                Assign
-                                              </button>
-                                            )}
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              </motion.div>
-                            </td>
-                          </tr>
-                        )}
+                                  )}
+                                </td>
+                              </motion.tr>
+                            ))
+                          )}
+                        </AnimatePresence>
                       </React.Fragment>
                     );
                   })
@@ -1206,10 +1245,10 @@ export default function Flow() {
           {/* Table Footer */}
           <div className="p-3 bg-slate-100 dark:bg-slate-900 border-t border-slate-300 dark:border-slate-800 text-xs font-bold text-slate-600 dark:text-slate-400 flex flex-wrap items-center justify-between gap-2">
             <span>
-              Total Cases: <strong>{filteredOrders.length}</strong> • Showing Master-Detail Accordion
+              Total Cases: <strong>{filteredOrders.length}</strong> • Showing all 22 columns from CP Specification
             </span>
             <span className="font-mono text-[#0284c7] dark:text-sky-400">
-              Verified 22" 1080p Fit • Full Information • Zero Crowding
+              Verified 22" 1080p Fit • Master-Detail Slide-Down with Audio Telemetry
             </span>
           </div>
 
