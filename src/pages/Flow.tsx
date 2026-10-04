@@ -36,7 +36,9 @@ import {
   User,
   CreditCard,
   Plus,
-  ShoppingCart
+  ShoppingCart,
+  Table,
+  LayoutGrid
 } from 'lucide-react';
 import { useStore } from '@/hooks/useStore';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -215,6 +217,7 @@ export default function Flow() {
 
   // Quick View Drawer Modal
   const [selectedOrderForDrawer, setSelectedOrderForDrawer] = useState<any | null>(null);
+  const [subOrderViewMode, setSubOrderViewMode] = useState<'matrix' | 'cards'>('matrix');
 
   // Toggle single order expansion with swoosh sound
   const toggleOrderExpand = (orderId: string, e?: React.MouseEvent) => {
@@ -767,12 +770,12 @@ export default function Flow() {
         </div>
       )}
 
-      {/* 4. EXACT 22 COLUMNS TABLE WITH ACCORDION SLIDE-DOWN & SOUND EFFECT */}
+      {/* 4. ENCAPSULATED MASTER TABLE WITH STATIONARY ROW & ZERO HORIZONTAL SCROLLING */}
       {uiState === 'normal' && (
         <div className="bg-white dark:bg-[#0b101d] rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md overflow-hidden">
           
-          {/* Table Header Bar with Expand All Toggle */}
-          <div className="p-3 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 select-none">
+          {/* Table Header Bar with Expand All Toggle & View Mode */}
+          <div className="p-3 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-slate-700 dark:text-slate-300 select-none">
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -791,89 +794,109 @@ export default function Flow() {
                   </>
                 )}
               </button>
-              <span className="text-slate-400 font-normal hidden sm:inline">
-                Click ▶ arrow to slide down sub-orders (with sound effect)
+              <span className="text-slate-500 font-normal hidden md:inline text-[11px]">
+                Click row or ▶ arrow to slide down sub-orders (Zero displacement, stays fixed in place)
               </span>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-mono text-[#0284c7] dark:text-sky-400 font-bold">
-                22 Columns Standard • Master-Detail
+              <div className="flex items-center bg-slate-200 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-300 dark:border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => setSubOrderViewMode('matrix')}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                    subOrderViewMode === 'matrix'
+                      ? 'bg-white dark:bg-[#0284c7] text-[#0284c7] dark:text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                  title="22-Column Specification Matrix Table"
+                >
+                  <Table size={12} />
+                  <span>22-Col Matrix</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSubOrderViewMode('cards')}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                    subOrderViewMode === 'cards'
+                      ? 'bg-white dark:bg-[#0284c7] text-[#0284c7] dark:text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                  title="22-Field Comprehensive Cards"
+                >
+                  <LayoutGrid size={12} />
+                  <span>22-Field Cards</span>
+                </button>
+              </div>
+
+              <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-bold px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20">
+                100% Fit • 0 Horizontal Scroll
               </span>
             </div>
           </div>
 
-          <div className="w-full overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+          {/* Table Container - Strict overflow-hidden to prevent horizontal scrolling */}
+          <div className="w-full overflow-hidden">
+            <table className="w-full text-left text-xs border-collapse table-fixed">
               <thead>
-                {/* EXACT 22 HEADERS FROM THE USER REFERENCE IMAGE */}
-                <tr className="bg-[#d1d5db] dark:bg-slate-800 border-b border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-black text-[11px] select-none whitespace-nowrap">
-                  <th className="py-2.5 px-2 text-center w-20"># tl</th>
-                  <th className="py-2.5 px-2 w-28">Scan Center tl</th>
-                  <th className="py-2.5 px-2 w-28">Doctor tl</th>
-                  <th className="py-2.5 px-2 w-32">Patient Name tl</th>
-                  <th className="py-2.5 px-1.5 text-center w-20">Is Locked (?)</th>
-                  <th className="py-2.5 px-2 text-center w-24">Notes</th>
-                  <th className="py-2.5 px-2 text-center w-24">Archive Date</th>
-                  <th className="py-2.5 px-1 text-center w-8">...</th>
-                  <th className="py-2.5 px-3 w-32">Order</th>
-                  <th className="py-2.5 px-3 w-44">Bill To</th>
-                  <th className="py-2.5 px-2 text-center w-16">Max.</th>
-                  <th className="py-2.5 px-2 text-center w-16">Mand.</th>
-                  <th className="py-2.5 px-2.5 w-24">Format</th>
-                  <th className="py-2.5 px-2.5 text-right w-20">Amount Billed</th>
-                  <th className="py-2.5 px-2 text-center w-16">Vouchers</th>
-                  <th className="py-2.5 px-3 w-32">Received Time</th>
-                  <th className="py-2.5 px-2.5 text-center w-20">Sent Time</th>
-                  <th className="py-2.5 px-2.5 text-center w-20">Update Time</th>
-                  <th className="py-2.5 px-2.5 text-center w-20">Charged On</th>
-                  <th className="py-2.5 px-3 text-center w-40">Action</th>
-                  <th className="py-2.5 px-2 text-center w-24">Change Request</th>
-                  <th className="py-2.5 px-3 text-center w-36">CS-Task</th>
+                {/* ENCAPSULATED MASTER TABLE HEADER - 100% FIT, ZERO SCROLLBAR */}
+                <tr className="bg-[#d1d5db] dark:bg-slate-800 border-b border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-black text-[11px] select-none">
+                  <th className="py-2.5 px-2 text-center w-[9%]"># tl</th>
+                  <th className="py-2.5 px-2 w-[12%]">Scan Center tl</th>
+                  <th className="py-2.5 px-2 w-[13%]">Doctor tl</th>
+                  <th className="py-2.5 px-2 w-[13%]">Patient Name tl</th>
+                  <th className="py-2.5 px-1 text-center w-[7%]">Lock</th>
+                  <th className="py-2.5 px-2 text-center w-[8%]">Notes & Date</th>
+                  <th className="py-2.5 px-3 w-[21%]">Order / Services (Encapsulated)</th>
+                  <th className="py-2.5 px-2 text-right w-[7%]">Amount</th>
+                  <th className="py-2.5 px-2 text-center w-[9%]">Action</th>
+                  <th className="py-2.5 px-1 text-center w-[5%]">CS</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-slate-300 dark:divide-slate-800 text-xs">
                 {filteredOrders.length === 0 ? (
                   <tr>
-                    <td colSpan={22} className="py-12 text-center text-slate-500 font-bold">
+                    <td colSpan={10} className="py-12 text-center text-slate-500 font-bold">
                       No matching cases in this production queue.
                     </td>
                   </tr>
                 ) : (
                   filteredOrders.map((order) => {
                     const isExpanded = expandedOrders.has(order.id);
-                    const tpCount = order.services.filter(s => s.typeCode === 'TP').length;
-                    const hasActionAlert = order.services.some(s => s.hasActionAlert);
+                    const tpCount = order.services.filter((s) => s.typeCode === 'TP').length;
+                    const hasActionAlert = order.services.some((s) => s.hasActionAlert);
+                    const totalCaseAmount = order.services.reduce((acc, s) => acc + s.amount, 0);
                     const primaryService = order.services[0];
+                    const alertService = order.services.find((s) => s.hasActionAlert);
 
                     return (
                       <React.Fragment key={order.id}>
-                        {/* 1. MASTER ORDER ROW (COLLAPSED BY DEFAULT, STAYS FIXED IN PLACE) */}
+                        {/* 1. MASTER ORDER ROW (STATIONARY: NEVER DISPLACES OR MOVES UP!) */}
                         <tr
                           onClick={() => toggleOrderExpand(order.id)}
-                          className={`group transition-colors cursor-pointer select-none font-medium ${
+                          className={`group transition-colors cursor-pointer select-none font-medium border-b border-slate-200 dark:border-slate-800 ${
                             isExpanded
-                              ? 'bg-sky-50/60 dark:bg-sky-950/20 border-b-2 border-b-[#0284c7]/40'
-                              : 'hover:bg-slate-50/80 dark:hover:bg-slate-900/60'
+                              ? 'bg-sky-50/80 dark:bg-sky-950/30 border-l-4 border-l-[#0284c7]'
+                              : 'hover:bg-slate-50/90 dark:hover:bg-slate-900/60'
                           }`}
                         >
-                          {/* 1. # tl: Chevron + Case # + Source Badge */}
+                          {/* 1. # tl: Chevron + Order # + Source Badge */}
                           <td className="py-3 px-2 text-center">
                             <div className="flex items-center gap-1.5 justify-center">
                               <span
                                 onClick={(e) => toggleOrderExpand(order.id, e)}
-                                className="p-1 rounded-md text-slate-400 group-hover:text-[#0284c7] transition-all cursor-pointer"
-                                title={isExpanded ? 'Collapse sub-orders' : 'Expand full sub-orders'}
+                                className={`p-1 rounded-md transition-transform duration-200 cursor-pointer ${
+                                  isExpanded
+                                    ? 'text-[#0284c7] rotate-90'
+                                    : 'text-slate-400 group-hover:text-[#0284c7]'
+                                }`}
+                                title={isExpanded ? 'Collapse sub-orders' : 'Expand full 22-column breakdown'}
                               >
-                                {isExpanded ? (
-                                  <ChevronDown size={16} className="text-[#0284c7] stroke-[3]" />
-                                ) : (
-                                  <ChevronRight size={16} className="stroke-[2.5]" />
-                                )}
+                                <ChevronRight size={16} className="stroke-[3]" />
                               </span>
                               <div className="flex flex-col items-start">
-                                <span className="font-mono font-bold text-amber-600 dark:text-amber-500 text-xs">
+                                <span className="font-mono font-black text-amber-600 dark:text-amber-500 text-xs">
                                   {order.orderNum}
                                 </span>
                                 <span className={`inline-block px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider ${
@@ -888,352 +911,450 @@ export default function Flow() {
                           </td>
 
                           {/* 2. Scan Center tl */}
-                          <td className="py-3 px-2 font-bold text-slate-800 dark:text-slate-200">
+                          <td className="py-3 px-2 font-bold text-slate-800 dark:text-slate-200 truncate" title={order.scanCenter}>
                             {order.scanCenter}
                           </td>
 
                           {/* 3. Doctor tl */}
                           <td className="py-3 px-2">
-                            <div className="font-bold text-[#ea580c] dark:text-orange-400">
+                            <div className="font-bold text-[#ea580c] dark:text-orange-400 truncate" title={order.doctorName}>
                               {order.doctorName}
                             </div>
-                            <div className="text-[10px] text-cyan-600 dark:text-cyan-400 font-bold">
+                            <div className="text-[10px] text-cyan-600 dark:text-cyan-400 font-bold truncate">
                               {order.doctorSub}
                             </div>
                           </td>
 
                           {/* 4. Patient Name tl */}
                           <td className="py-3 px-2">
-                            <div className="font-bold text-slate-900 dark:text-white">
+                            <div className="font-bold text-slate-900 dark:text-white truncate" title={order.patientName}>
                               {order.patientName}
                             </div>
-                            <div className="text-[10px] text-amber-600 dark:text-amber-500 font-bold cursor-pointer hover:underline">
+                            <div className="text-[10px] text-amber-600 dark:text-amber-500 font-bold truncate">
                               {order.patientSub}
                             </div>
                           </td>
 
                           {/* 5. Is Locked (?) */}
-                          <td className="py-3 px-1.5 text-center">
+                          <td className="py-3 px-1 text-center">
                             <div className="flex flex-col items-center">
                               {order.isLocked ? (
                                 <>
-                                  <div className="w-4 h-4 rotate-45 bg-emerald-500 text-white flex items-center justify-center text-[9px] font-bold shadow-xs">
+                                  <div className="w-3.5 h-3.5 rotate-45 bg-emerald-500 text-white flex items-center justify-center text-[8px] font-bold shadow-xs">
                                     <span className="-rotate-45">?</span>
                                   </div>
-                                  <span className="text-[10px] text-sky-600 dark:text-sky-400 font-bold mt-1">
+                                  <span className="text-[9px] text-sky-600 dark:text-sky-400 font-bold mt-0.5">
                                     Lock
                                   </span>
                                 </>
                               ) : (
                                 <>
-                                  <div className="w-4 h-4 rotate-45 bg-rose-600 text-white flex items-center justify-center text-[9px] font-bold shadow-xs">
+                                  <div className="w-3.5 h-3.5 rotate-45 bg-rose-600 text-white flex items-center justify-center text-[8px] font-bold shadow-xs">
                                     <span className="-rotate-45">?</span>
                                   </div>
-                                  <span className="text-[9px] text-rose-600 font-bold uppercase mt-0.5">
-                                    SALES Rashad
-                                  </span>
-                                  <span className="text-[10px] text-rose-600 font-bold">
-                                    Unlock
+                                  <span className="text-[8px] text-rose-600 font-bold uppercase mt-0.5">
+                                    SALES
                                   </span>
                                 </>
                               )}
                             </div>
                           </td>
 
-                          {/* 6. Notes */}
-                          <td className="py-3 px-2 text-center font-bold text-[11px] text-slate-800 dark:text-slate-200">
-                            <span className="underline cursor-pointer">
+                          {/* 6. Notes & Archive Date */}
+                          <td className="py-3 px-2 text-center text-[10px]">
+                            <div className="font-bold text-slate-700 dark:text-slate-300 underline cursor-pointer truncate" title={order.notes}>
                               {order.notes}
-                            </span>
-                          </td>
-
-                          {/* 7. Archive Date */}
-                          <td className="py-3 px-2 text-center font-mono text-[11px] text-slate-700 dark:text-slate-300">
-                            <div className="flex items-center justify-center gap-1">
+                            </div>
+                            <div className="flex items-center justify-center gap-1 text-slate-500 font-mono mt-0.5">
                               <span>{order.archiveDate}</span>
-                              <ShoppingCart size={13} className="text-emerald-500" />
+                              <ShoppingCart size={11} className="text-emerald-500" />
                             </div>
                           </td>
 
-                          {/* 8. ... */}
-                          <td className="py-3 px-1 text-center" onClick={(e) => { e.stopPropagation(); navigate(`/order-details?ID=${order.orderNum}`); }}>
-                            <MoreHorizontal size={14} className="text-slate-400 hover:text-[#0284c7] mx-auto cursor-pointer" />
-                          </td>
-
-                          {/* 9. Order (Service preview) */}
+                          {/* 7. Order / Services (ENCAPSULATED: Clear pills representing all services inside) */}
                           <td className="py-3 px-3">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="px-2 py-0.5 rounded font-black text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200">
-                                {order.services.length} Services ({tpCount >= 2 ? `${tpCount}x TP` : '1x TP'})
+                            <div className="flex flex-col gap-1.5">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {order.services.map((s, idx) => (
+                                  <span
+                                    key={s.id || idx}
+                                    className={`px-1.5 py-0.5 rounded text-[10px] font-black border ${
+                                      s.typeCode === 'IO'
+                                        ? 'bg-[#ffff77] text-amber-900 border-amber-300'
+                                        : s.typeCode === 'TP'
+                                        ? 'bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 border-cyan-300'
+                                        : s.typeCode === 'SG'
+                                        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300'
+                                        : 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border-orange-300'
+                                    }`}
+                                  >
+                                    {s.typeCode === 'IO' && '🔧 IO'}
+                                    {s.typeCode === 'TP' && (idx === 1 && tpCount > 1 ? '🛠️ TP #1' : idx === 2 && tpCount > 1 ? '🛠️ TP #2' : '🛠️ TP')}
+                                    {s.typeCode === 'SG' && '✓ SG'}
+                                    {s.typeCode === 'FMP' && '✨ FMP'}
+                                    {s.typeCode === 'MOD' && 'MOD'}
+                                    {s.typeCode === 'RAD' && 'RAD'}
+                                  </span>
+                                ))}
+                              </div>
+                              <span className="text-[10px] font-bold text-[#0284c7] dark:text-sky-400">
+                                {isExpanded ? '▲ Click to collapse' : `▶ ${order.services.length} Services (Inspect 22-Col Specs)`}
                               </span>
-                              {!isExpanded && (
-                                <span className="text-[10px] text-[#0284c7] font-bold">
-                                  ▶ Click to Expand
-                                </span>
-                              )}
                             </div>
                           </td>
 
-                          {/* 10. Bill To */}
-                          <td className="py-3 px-3 text-slate-700 dark:text-slate-300 text-[11px] truncate max-w-[170px]" title={primaryService?.billTo}>
-                            {primaryService?.billTo}
+                          {/* 8. Total Amount Billed */}
+                          <td className="py-3 px-2 text-right font-mono font-black text-slate-900 dark:text-white text-xs">
+                            ${totalCaseAmount}.00
                           </td>
 
-                          {/* 11. Max. */}
-                          <td className="py-3 px-2 text-center font-bold text-[11px] text-slate-700 dark:text-slate-300">
-                            {primaryService?.maxilla}
-                          </td>
-
-                          {/* 12. Mand. */}
-                          <td className="py-3 px-2 text-center font-bold text-[11px] text-slate-700 dark:text-slate-300">
-                            {primaryService?.mandible}
-                          </td>
-
-                          {/* 13. Format */}
-                          <td className="py-3 px-2.5 font-mono text-[11px] text-slate-600 dark:text-slate-300">
-                            {primaryService?.format}
-                          </td>
-
-                          {/* 14. Amount Billed */}
-                          <td className="py-3 px-2.5 text-right font-mono font-bold text-slate-900 dark:text-white">
-                            ${primaryService?.amount}
-                          </td>
-
-                          {/* 15. Vouchers */}
-                          <td className="py-3 px-2 text-center font-mono text-[11px] text-slate-500">
-                            {primaryService?.vouchers}
-                          </td>
-
-                          {/* 16. Received Time */}
-                          <td className="py-3 px-3 font-mono text-[10px] text-slate-700 dark:text-slate-300">
-                            {primaryService?.receivedTime}
-                          </td>
-
-                          {/* 17. Sent Time */}
-                          <td className="py-3 px-2.5 text-center font-mono text-[10px] text-slate-700 dark:text-slate-300">
-                            {primaryService?.sentTime}
-                          </td>
-
-                          {/* 18. Update Time */}
-                          <td className="py-3 px-2.5 text-center font-mono text-[10px] text-slate-700 dark:text-slate-300">
-                            {primaryService?.updateTime}
-                          </td>
-
-                          {/* 19. Charged On */}
-                          <td className="py-3 px-2.5 text-center font-mono text-[10px] text-slate-700 dark:text-slate-300">
-                            {primaryService?.chargedOn}
-                          </td>
-
-                          {/* 20. Action */}
-                          <td className="py-3 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                          {/* 9. Case Action */}
+                          <td className="py-3 px-2 text-center" onClick={(e) => e.stopPropagation()}>
                             {hasActionAlert ? (
-                              <div className="bg-red-600 text-white p-1 rounded font-black text-[10px] leading-tight shadow-xs">
+                              <div className="bg-red-600 hover:bg-red-700 text-white p-1 rounded font-black text-[10px] leading-tight shadow-xs">
                                 <div>No Scans Uploaded</div>
-                                <span className="underline hover:text-amber-200 cursor-pointer block mt-0.5">
-                                  {primaryService?.actionButtonText || 'Upload'}
-                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => navigate(`/order-details?ID=${order.orderNum}`)}
+                                  className="underline hover:text-amber-200 cursor-pointer block mt-0.5 mx-auto text-[9px]"
+                                >
+                                  {alertService?.actionButtonText || 'Upload'}
+                                </button>
                               </div>
                             ) : (
-                              <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-sky-500/10 text-sky-600 border border-sky-500/30">
-                                {primaryService?.actionLabel}
+                              <span className="inline-block px-2 py-0.5 rounded font-bold text-[10px] bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/30 truncate max-w-full">
+                                {primaryService?.actionLabel || 'In Progress'}
                               </span>
                             )}
                           </td>
 
-                          {/* 21. Change Request */}
-                          <td className="py-3 px-2 text-center font-mono text-[11px] text-rose-600 font-bold">
-                            {primaryService?.changeRequest}
-                          </td>
-
-                          {/* 22. CS-Task */}
-                          <td className="py-3 px-3 text-center">
-                            <span className="text-[#ea580c] font-bold text-[11px] cursor-pointer hover:underline">
-                              Assign
-                            </span>
+                          {/* 10. CS-Task & More */}
+                          <td className="py-3 px-1 text-center" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex flex-col items-center gap-0.5">
+                              <span className="text-[#ea580c] font-black text-[10px] hover:underline cursor-pointer">
+                                {primaryService?.csTask?.assignee ? primaryService.csTask.assignee : 'Assign'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => navigate(`/order-details?ID=${order.orderNum}`)}
+                                className="text-slate-400 hover:text-[#0284c7] cursor-pointer"
+                                title="Open full details"
+                              >
+                                <MoreHorizontal size={13} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
 
-                        {/* 2. EXPANDED DETAILED SUB-ROWS (SLIDES DOWN DIRECTLY UNDERNEATH) */}
-                        <AnimatePresence>
-                          {isExpanded && (
-                            order.services.map((sub, srvIdx) => (
-                              <motion.tr
-                                key={sub.id}
-                                initial={{ opacity: 0, y: -6 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -6 }}
-                                transition={{ duration: 0.22, delay: srvIdx * 0.04 }}
-                                className={`border-b border-slate-200 dark:border-slate-800 text-xs font-medium ${
-                                  sub.typeCode === 'IO'
-                                    ? 'bg-[#ffff77] dark:bg-yellow-950/30 text-slate-900 dark:text-yellow-100'
-                                    : 'bg-white dark:bg-[#0b101d] text-slate-800 dark:text-slate-200'
-                                }`}
+                        {/* 2. EXPANDED DETAIL CONTAINER (SLIDES DOWN DIRECTLY UNDERNEATH, PUSHING BELOW ROWS) */}
+                        {isExpanded && (
+                          <tr key={`expanded-${order.id}`} className="bg-slate-100/60 dark:bg-slate-950/60">
+                            <td colSpan={10} className="p-0 border-b-2 border-[#0284c7]/40 dark:border-sky-500/30">
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.26, ease: 'easeOut' }}
+                                className="overflow-hidden"
                               >
-                                {/* Left Columns 1-8: Grouped blank/indent under the parent order */}
-                                <td className="py-2.5 px-2 text-center font-mono text-[11px] text-slate-400 border-r border-slate-200 dark:border-slate-800">
-                                  ↳ {srvIdx + 1}
-                                </td>
-                                <td className="py-2.5 px-2 text-slate-400 italic text-[10px]">
-                                  (same case)
-                                </td>
-                                <td className="py-2.5 px-2 text-slate-400 italic text-[10px]">
-                                  (same doctor)
-                                </td>
-                                <td className="py-2.5 px-2 text-slate-400 italic text-[10px]">
-                                  (same patient)
-                                </td>
-                                <td className="py-2.5 px-1.5 text-center text-slate-300">
-                                  •
-                                </td>
-                                <td className="py-2.5 px-2 text-center text-slate-300">
-                                  -
-                                </td>
-                                <td className="py-2.5 px-2 text-center text-slate-300">
-                                  -
-                                </td>
-                                <td className="py-2.5 px-1 text-center text-slate-300">
-                                  -
-                                </td>
-
-                                {/* Column 9: Exact Service Name & Icon (Matching legacy screenshot) */}
-                                <td className={`py-2.5 px-3 font-bold ${sub.typeCode === 'IO' ? 'bg-[#ffff55] dark:bg-yellow-900/40 text-amber-900 dark:text-amber-200' : ''}`}>
-                                  <div className="flex flex-col items-start gap-1">
-                                    <span className="font-extrabold text-xs">
-                                      {sub.title}
-                                    </span>
-                                    <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-                                      {sub.typeCode === 'IO' && (
-                                        <Wrench size={13} className="text-amber-600 inline" />
-                                      )}
-                                      {sub.typeCode === 'TP' && (
-                                        <div className="flex items-center gap-1 text-cyan-600 font-bold">
-                                          <span>🛠️</span>
-                                          <span>{sub.subtitle || 'Later'}</span>
-                                        </div>
-                                      )}
-                                      {sub.typeCode === 'FMP' && (
-                                        <div className="flex items-center gap-1 text-orange-600 font-bold">
-                                          <Sparkles size={12} />
-                                          <span>FMP</span>
-                                        </div>
-                                      )}
-                                      {sub.typeCode === 'SG' && (
-                                        <div className="flex items-center gap-1 text-emerald-600 font-bold">
-                                          <CheckCircle2 size={12} />
-                                          <span>CAM</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                </td>
-
-                                {/* Column 10: Bill To */}
-                                <td className={`py-2.5 px-3 text-[11px] font-bold ${sub.typeCode === 'IO' ? 'text-amber-950 dark:text-amber-100' : 'text-slate-700 dark:text-slate-300'}`}>
-                                  {sub.billTo}
-                                </td>
-
-                                {/* Column 11: Max. */}
-                                <td className="py-2.5 px-2 text-center font-bold text-[11px]">
-                                  {sub.maxilla}
-                                </td>
-
-                                {/* Column 12: Mand. */}
-                                <td className="py-2.5 px-2 text-center font-bold text-[11px]">
-                                  {sub.mandible}
-                                </td>
-
-                                {/* Column 13: Format */}
-                                <td className="py-2.5 px-2.5 font-mono text-[11px]">
-                                  {sub.format}
-                                </td>
-
-                                {/* Column 14: Amount Billed */}
-                                <td className="py-2.5 px-2.5 text-right font-mono font-bold">
-                                  ${sub.amount}
-                                </td>
-
-                                {/* Column 15: Vouchers */}
-                                <td className="py-2.5 px-2 text-center font-mono text-[11px]">
-                                  {sub.vouchers}
-                                </td>
-
-                                {/* Column 16: Received Time */}
-                                <td className="py-2.5 px-3 font-mono text-[10px] leading-tight">
-                                  {sub.receivedTime}
-                                </td>
-
-                                {/* Column 17: Sent Time */}
-                                <td className="py-2.5 px-2.5 text-center font-mono text-[10px]">
-                                  {sub.sentTime}
-                                </td>
-
-                                {/* Column 18: Update Time */}
-                                <td className="py-2.5 px-2.5 text-center font-mono text-[10px]">
-                                  {sub.updateTime}
-                                </td>
-
-                                {/* Column 19: Charged On */}
-                                <td className="py-2.5 px-2.5 text-center font-mono text-[10px]">
-                                  {sub.chargedOn}
-                                </td>
-
-                                {/* Column 20: Action (EXACT BRIGHT RED RECTANGLE FROM IMAGE) */}
-                                <td className="py-2 px-3 text-center">
-                                  {sub.hasActionAlert ? (
-                                    <div className="bg-red-600 hover:bg-red-700 text-white p-2 rounded font-black text-[11px] leading-tight shadow-md transition-colors">
-                                      <div className="tracking-tight">{sub.actionLabel}</div>
-                                      {sub.actionButtonText && (
-                                        <button
-                                          type="button"
-                                          onClick={() => navigate(`/order-details?ID=${order.orderNum}`)}
-                                          className="underline hover:text-amber-200 cursor-pointer block mt-1 mx-auto text-[10px] whitespace-pre-line"
-                                        >
-                                          {sub.actionButtonText}
-                                        </button>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <span className="inline-block px-2.5 py-1 rounded font-bold text-[11px] bg-sky-500/10 text-[#0284c7] dark:text-sky-400 border border-sky-500/30">
-                                      {sub.actionLabel}
-                                    </span>
-                                  )}
-                                </td>
-
-                                {/* Column 21: Change Request */}
-                                <td className="py-2.5 px-2 text-center font-mono text-[11px] text-rose-600 font-bold">
-                                  {sub.changeRequest}
-                                </td>
-
-                                {/* Column 22: CS-Task (Matching legacy assign / shrouk undo) */}
-                                <td className="py-2.5 px-3 text-center">
-                                  {sub.csTask.status === 'Assigned' ? (
-                                    <div className="text-[10px] leading-tight space-y-0.5">
-                                      <div className="text-[#ea580c] font-bold">
-                                        Assign
-                                      </div>
-                                      <div className="font-mono text-slate-800 dark:text-slate-200 font-bold">
-                                        {sub.csTask.time}
-                                      </div>
-                                      <div className="font-bold text-slate-900 dark:text-white">
-                                        by {sub.csTask.assignee}
-                                      </div>
-                                      <span className="text-sky-600 dark:text-sky-400 font-bold hover:underline cursor-pointer block">
-                                        Undo
+                                <div className="p-3.5 space-y-3 bg-gradient-to-b from-sky-50/40 via-white to-slate-50 dark:from-slate-950 dark:via-[#070b14] dark:to-[#090d18] border-l-4 border-l-[#0284c7]">
+                                  
+                                  {/* Encapsulated Case Overview Ribbon */}
+                                  <div className="p-2.5 rounded-xl bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-slate-800 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs">
+                                    <div className="flex flex-wrap items-center gap-3">
+                                      <span className="px-2 py-0.5 rounded-md bg-[#0284c7] text-white font-mono font-black text-xs">
+                                        Case #{order.orderNum}
+                                      </span>
+                                      <span className="font-bold text-slate-800 dark:text-slate-200">
+                                        Scan Center: <strong className="text-slate-900 dark:text-white">{order.scanCenter}</strong>
+                                      </span>
+                                      <span className="text-slate-400">•</span>
+                                      <span className="font-bold text-slate-800 dark:text-slate-200">
+                                        Doctor: <strong className="text-[#ea580c]">{order.doctorName}</strong> ({order.doctorSub})
+                                      </span>
+                                      <span className="text-slate-400">•</span>
+                                      <span className="font-bold text-slate-800 dark:text-slate-200">
+                                        Patient: <strong className="text-slate-900 dark:text-white">{order.patientName}</strong>
+                                      </span>
+                                      <span className="text-slate-400">•</span>
+                                      <span className="font-bold text-slate-800 dark:text-slate-200">
+                                        Archive: <strong className="font-mono">{order.archiveDate}</strong>
                                       </span>
                                     </div>
+
+                                    <div className="flex items-center gap-2">
+                                      <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30">
+                                        {tpCount >= 2 ? `Multi-TP Supported (${tpCount} Plans)` : 'Standard Case'}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => navigate(`/order-details?ID=${order.orderNum}`)}
+                                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-bold text-[11px] shadow-xs cursor-pointer"
+                                      >
+                                        <span>Full Case Record</span>
+                                        <ExternalLink size={11} />
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* VIEW MODE 1: THE COMPLETE 22-COL SPECIFICATION MATRIX TABLE (ZERO HORIZONTAL SCROLL) */}
+                                  {subOrderViewMode === 'matrix' ? (
+                                    <div className="w-full rounded-xl border border-slate-300 dark:border-slate-800 bg-white dark:bg-[#0b101d] overflow-hidden shadow-xs">
+                                      <table className="w-full text-left text-xs border-collapse table-fixed">
+                                        <thead>
+                                          <tr className="bg-slate-200/90 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-black text-[10.5px]">
+                                            <th className="py-2 px-2 text-center w-[5%]">#</th>
+                                            <th className="py-2 px-3 w-[18%]">Order (Service & Specification)</th>
+                                            <th className="py-2 px-2.5 w-[14%]">Bill To</th>
+                                            <th className="py-2 px-2 text-center w-[9%]">Max. / Mand.</th>
+                                            <th className="py-2 px-2 w-[8%]">Format</th>
+                                            <th className="py-2 px-2 text-right w-[7%]">Amount</th>
+                                            <th className="py-2 px-1 text-center w-[5%]">Vouchers</th>
+                                            <th className="py-2 px-2 w-[15%]">Timeline (Rec/Sent/Upd/Chg)</th>
+                                            <th className="py-2 px-2 text-center w-[11%]">Action</th>
+                                            <th className="py-2 px-1 text-center w-[4%]">CR</th>
+                                            <th className="py-2 px-2 text-center w-[7%]">CS-Task</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                                          {order.services.map((sub, srvIdx) => (
+                                            <tr
+                                              key={sub.id}
+                                              className={`text-xs font-medium transition-colors ${
+                                                sub.typeCode === 'IO'
+                                                  ? 'bg-[#ffff77] dark:bg-yellow-950/40 text-slate-900 dark:text-yellow-100 font-bold'
+                                                  : 'bg-white dark:bg-[#0b101d] text-slate-800 dark:text-slate-200'
+                                              }`}
+                                            >
+                                              {/* 1. Sub-Order Index */}
+                                              <td className="py-2.5 px-2 text-center font-mono text-[11px] text-slate-500 dark:text-slate-400">
+                                                ↳ #{srvIdx + 1}
+                                              </td>
+
+                                              {/* 2. Order Name & Icon (100% Match with Screenshot) */}
+                                              <td className="py-2.5 px-3">
+                                                <div className="flex flex-col items-start gap-0.5">
+                                                  <span className="font-extrabold text-xs">
+                                                    {sub.title}
+                                                  </span>
+                                                  <div className="flex items-center gap-1 text-[10.5px] font-mono">
+                                                    {sub.typeCode === 'IO' && (
+                                                      <span className="text-amber-800 dark:text-amber-300 font-bold flex items-center gap-1">
+                                                        <Wrench size={12} className="text-amber-700" />
+                                                        <span>Intra-Oral Scan</span>
+                                                      </span>
+                                                    )}
+                                                    {sub.typeCode === 'TP' && (
+                                                      <span className="text-cyan-700 dark:text-cyan-400 font-bold flex items-center gap-1">
+                                                        <span>🛠️</span>
+                                                        <span>{sub.subtitle || 'Later'}</span>
+                                                      </span>
+                                                    )}
+                                                    {sub.typeCode === 'FMP' && (
+                                                      <span className="text-orange-600 dark:text-orange-400 font-bold flex items-center gap-1">
+                                                        <Sparkles size={11} />
+                                                        <span>Temp Rest. (FMP)</span>
+                                                      </span>
+                                                    )}
+                                                    {sub.typeCode === 'SG' && (
+                                                      <span className="text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1">
+                                                        <CheckCircle2 size={11} />
+                                                        <span>Surgical Guide (CAM)</span>
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              </td>
+
+                                              {/* 3. Bill To */}
+                                              <td className="py-2.5 px-2.5 text-[11px] truncate" title={sub.billTo}>
+                                                {sub.billTo}
+                                              </td>
+
+                                              {/* 4. Max. & Mand. */}
+                                              <td className="py-2.5 px-2 text-center text-[10.5px]">
+                                                <div className="flex items-center justify-center gap-1 font-bold">
+                                                  <span className={sub.maxilla === 'Yes' || sub.maxilla === 'Quadrant' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}>
+                                                    Mx: {sub.maxilla}
+                                                  </span>
+                                                  <span className="text-slate-300">/</span>
+                                                  <span className={sub.mandible === 'Yes' || sub.mandible === 'Mandible' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}>
+                                                    Md: {sub.mandible}
+                                                  </span>
+                                                </div>
+                                              </td>
+
+                                              {/* 5. Format */}
+                                              <td className="py-2.5 px-2 font-mono text-[10.5px] truncate" title={sub.format}>
+                                                {sub.format}
+                                              </td>
+
+                                              {/* 6. Amount */}
+                                              <td className="py-2.5 px-2 text-right font-mono font-black text-xs">
+                                                ${sub.amount}.00
+                                              </td>
+
+                                              {/* 7. Vouchers */}
+                                              <td className="py-2.5 px-1 text-center font-mono text-[10.5px] text-slate-500">
+                                                {sub.vouchers}
+                                              </td>
+
+                                              {/* 8. Timestamps (Stacked for 0 horizontal scroll) */}
+                                              <td className="py-2 px-2 font-mono text-[9.5px] leading-tight text-slate-600 dark:text-slate-400">
+                                                <div><strong className="text-slate-700 dark:text-slate-300">Rec:</strong> {sub.receivedTime}</div>
+                                                <div><strong className="text-slate-500">Sent:</strong> {sub.sentTime} • <strong className="text-slate-500">Upd:</strong> {sub.updateTime}</div>
+                                                <div><strong className="text-slate-500">Chg:</strong> {sub.chargedOn}</div>
+                                              </td>
+
+                                              {/* 9. Action (Exact Red Alert Box) */}
+                                              <td className="py-2 px-2 text-center">
+                                                {sub.hasActionAlert ? (
+                                                  <div className="bg-red-600 hover:bg-red-700 text-white p-1.5 rounded font-black text-[10px] leading-tight shadow-xs">
+                                                    <div>{sub.actionLabel}</div>
+                                                    {sub.actionButtonText && (
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => navigate(`/order-details?ID=${order.orderNum}`)}
+                                                        className="underline hover:text-amber-200 cursor-pointer block mt-0.5 mx-auto text-[9px]"
+                                                      >
+                                                        {sub.actionButtonText}
+                                                      </button>
+                                                    )}
+                                                  </div>
+                                                ) : (
+                                                  <span className="inline-block px-2 py-0.5 rounded font-bold text-[10px] bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/30 truncate max-w-full">
+                                                    {sub.actionLabel}
+                                                  </span>
+                                                )}
+                                              </td>
+
+                                              {/* 10. Change Request */}
+                                              <td className="py-2.5 px-1 text-center font-mono text-[10.5px] text-rose-600 font-bold">
+                                                {sub.changeRequest}
+                                              </td>
+
+                                              {/* 11. CS-Task */}
+                                              <td className="py-2.5 px-2 text-center">
+                                                {sub.csTask.status === 'Assigned' ? (
+                                                  <div className="text-[9.5px] leading-tight">
+                                                    <div className="text-[#ea580c] font-black">Assign</div>
+                                                    <div className="font-bold text-slate-800 dark:text-slate-200 truncate">
+                                                      by {sub.csTask.assignee}
+                                                    </div>
+                                                    <span className="text-sky-600 dark:text-sky-400 font-bold hover:underline cursor-pointer block">
+                                                      Undo
+                                                    </span>
+                                                  </div>
+                                                ) : (
+                                                  <button
+                                                    type="button"
+                                                    className="text-[#ea580c] font-bold text-[10px] hover:underline cursor-pointer"
+                                                  >
+                                                    Assign
+                                                  </button>
+                                                )}
+                                              </td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
                                   ) : (
-                                    <button
-                                      type="button"
-                                      className="text-[#ea580c] font-bold text-[11px] hover:underline cursor-pointer"
-                                    >
-                                      Assign
-                                    </button>
+                                    /* VIEW MODE 2: 22-FIELD COMPREHENSIVE SERVICE CARDS */
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                                      {order.services.map((sub, srvIdx) => (
+                                        <div
+                                          key={sub.id}
+                                          className={`p-3.5 rounded-xl border shadow-xs space-y-2.5 ${
+                                            sub.typeCode === 'IO'
+                                              ? 'bg-[#ffff88]/40 dark:bg-yellow-950/20 border-yellow-300 dark:border-yellow-900/50'
+                                              : 'bg-white dark:bg-[#0c1222] border-slate-200 dark:border-slate-800'
+                                          }`}
+                                        >
+                                          {/* Card Top: Service Header & Action */}
+                                          <div className="flex items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-800/80 pb-2">
+                                            <div className="flex items-center gap-2">
+                                              <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200">
+                                                Sub #{srvIdx + 1}
+                                              </span>
+                                              <span className="font-extrabold text-xs text-slate-900 dark:text-white">
+                                                {sub.title}
+                                              </span>
+                                              {sub.subtitle && (
+                                                <span className="text-[10px] text-cyan-600 font-bold">
+                                                  ({sub.subtitle})
+                                                </span>
+                                              )}
+                                            </div>
+
+                                            {/* Action Alert */}
+                                            {sub.hasActionAlert ? (
+                                              <span className="px-2 py-0.5 rounded bg-red-600 text-white font-black text-[10px]">
+                                                {sub.actionLabel}
+                                              </span>
+                                            ) : (
+                                              <span className="px-2 py-0.5 rounded bg-sky-500/10 text-sky-600 font-bold text-[10px]">
+                                                {sub.actionLabel}
+                                              </span>
+                                            )}
+                                          </div>
+
+                                          {/* 22 Fields Categorized Grid */}
+                                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10.5px]">
+                                            <div className="p-1.5 rounded bg-slate-50 dark:bg-slate-900/60">
+                                              <div className="text-slate-400 font-bold text-[9px] uppercase">Bill To</div>
+                                              <div className="font-bold text-slate-800 dark:text-slate-200 truncate">{sub.billTo}</div>
+                                            </div>
+                                            <div className="p-1.5 rounded bg-slate-50 dark:bg-slate-900/60">
+                                              <div className="text-slate-400 font-bold text-[9px] uppercase">Format</div>
+                                              <div className="font-mono font-bold text-slate-800 dark:text-slate-200 truncate">{sub.format}</div>
+                                            </div>
+                                            <div className="p-1.5 rounded bg-slate-50 dark:bg-slate-900/60">
+                                              <div className="text-slate-400 font-bold text-[9px] uppercase">Maxilla</div>
+                                              <div className="font-bold text-emerald-600 dark:text-emerald-400">{sub.maxilla}</div>
+                                            </div>
+                                            <div className="p-1.5 rounded bg-slate-50 dark:bg-slate-900/60">
+                                              <div className="text-slate-400 font-bold text-[9px] uppercase">Mandible</div>
+                                              <div className="font-bold text-emerald-600 dark:text-emerald-400">{sub.mandible}</div>
+                                            </div>
+                                          </div>
+
+                                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10.5px]">
+                                            <div className="p-1.5 rounded bg-slate-50 dark:bg-slate-900/60">
+                                              <div className="text-slate-400 font-bold text-[9px] uppercase">Amount Billed</div>
+                                              <div className="font-mono font-black text-slate-900 dark:text-white">${sub.amount}.00</div>
+                                            </div>
+                                            <div className="p-1.5 rounded bg-slate-50 dark:bg-slate-900/60">
+                                              <div className="text-slate-400 font-bold text-[9px] uppercase">Vouchers</div>
+                                              <div className="font-mono text-slate-600 dark:text-slate-400">{sub.vouchers}</div>
+                                            </div>
+                                            <div className="p-1.5 rounded bg-slate-50 dark:bg-slate-900/60">
+                                              <div className="text-slate-400 font-bold text-[9px] uppercase">Change Request</div>
+                                              <div className="font-bold text-rose-600">{sub.changeRequest}</div>
+                                            </div>
+                                            <div className="p-1.5 rounded bg-slate-50 dark:bg-slate-900/60">
+                                              <div className="text-slate-400 font-bold text-[9px] uppercase">CS-Task</div>
+                                              <div className="font-bold text-[#ea580c]">{sub.csTask.assignee ? `by ${sub.csTask.assignee}` : 'Assign'}</div>
+                                            </div>
+                                          </div>
+
+                                          {/* Timeline Strip */}
+                                          <div className="p-2 rounded bg-slate-100/70 dark:bg-slate-900/80 font-mono text-[9.5px] flex flex-wrap items-center justify-between gap-2 text-slate-600 dark:text-slate-400">
+                                            <span><strong>Rec:</strong> {sub.receivedTime}</span>
+                                            <span><strong>Sent:</strong> {sub.sentTime}</span>
+                                            <span><strong>Upd:</strong> {sub.updateTime}</span>
+                                            <span><strong>Charged:</strong> {sub.chargedOn}</span>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
                                   )}
-                                </td>
-                              </motion.tr>
-                            ))
-                          )}
-                        </AnimatePresence>
+
+                                </div>
+                              </motion.div>
+                            </td>
+                          </tr>
+                        )}
                       </React.Fragment>
                     );
                   })
@@ -1245,10 +1366,10 @@ export default function Flow() {
           {/* Table Footer */}
           <div className="p-3 bg-slate-100 dark:bg-slate-900 border-t border-slate-300 dark:border-slate-800 text-xs font-bold text-slate-600 dark:text-slate-400 flex flex-wrap items-center justify-between gap-2">
             <span>
-              Total Cases: <strong>{filteredOrders.length}</strong> • Showing all 22 columns from CP Specification
+              Total Cases: <strong>{filteredOrders.length}</strong> • Encapsulated Master View
             </span>
             <span className="font-mono text-[#0284c7] dark:text-sky-400">
-              Verified 22" 1080p Fit • Master-Detail Slide-Down with Audio Telemetry
+              Stationary Rows • 100% Fit • Zero Horizontal Scroll
             </span>
           </div>
 
