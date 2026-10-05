@@ -1,33 +1,49 @@
 import React, { useState } from 'react';
 import { useStore } from '@/hooks/useStore';
 import { store } from '@/services/store';
-import { useTableState } from '@/hooks/useTableState';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { PriorityBadge } from '@/components/ui/PriorityBadge';
-import { Button } from '@/components/ui/Button';
-import { SearchInput } from '@/components/ui/SearchInput';
-import { Select } from '@/components/ui/Select';
 import { Pagination } from '@/components/ui/Pagination';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { timeAgo } from '@/utils/format';
 import { Link } from 'react-router-dom';
 import { Check, X, AlertCircle, CheckCircle2, LayoutGrid, List } from 'lucide-react';
-import type { ChangeRequest } from '@/types';
+import { TableTools, SortTh } from '@/components/ui/TableTools';
+import { useAdvancedTable } from '@/hooks/useAdvancedTable';
+
+const STATUS_OPTIONS = [
+  { value: 'all', label: 'All Statuses' },
+  { value: 'Pending', label: 'Pending' },
+  { value: 'In Review', label: 'In Review' },
+  { value: 'Approved', label: 'Approved' },
+  { value: 'Rejected', label: 'Rejected' },
+  { value: 'Completed', label: 'Completed' },
+];
+
+const PRIORITY_OPTIONS = [
+  { value: 'all', label: 'All Priorities' },
+  { value: 'Urgent', label: 'Urgent' },
+  { value: 'High', label: 'High' },
+  { value: 'Normal', label: 'Normal' },
+  { value: 'Low', label: 'Low' },
+];
+
+const CR_COLUMNS = [
+  { id: 'requestNumber', label: 'Request #', defaultVisible: true },
+  { id: 'orderNumber', label: 'Order #', defaultVisible: true },
+  { id: 'patientName', label: 'Patient', defaultVisible: true },
+  { id: 'requester', label: 'Requester', defaultVisible: true },
+  { id: 'description', label: 'Description', defaultVisible: true },
+  { id: 'priority', label: 'Priority', defaultVisible: true },
+  { id: 'status', label: 'Status', defaultVisible: true },
+  { id: 'createdAt', label: 'Created', defaultVisible: true },
+  { id: 'actions', label: 'Actions', defaultVisible: true },
+];
 
 export default function ChangeRequests() {
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const changeRequests = useStore((s) => s.getChangeRequests());
   const [feedback, setFeedback] = useState<string | null>(null);
-
-  const {
-    searchQuery,
-    setSearchQuery,
-    statusFilter,
-    setStatusFilter,
-    currentPage,
-    setCurrentPage,
-    pageSize,
-  } = useTableState();
 
   const handleAction = (id: string, newStatus: 'Approved' | 'Rejected') => {
     store.updateChangeRequestStatus(id, newStatus);
@@ -35,22 +51,21 @@ export default function ChangeRequests() {
     setTimeout(() => setFeedback(null), 2500);
   };
 
-  const filteredRequests = changeRequests.filter(cr => {
-    const term = (searchQuery || '').toLowerCase();
-    const matchesSearch = 
-      (cr.description || '').toLowerCase().includes(term) || 
-      (cr.patientName || '').toLowerCase().includes(term) ||
-      (cr.orderId || '').toLowerCase().includes(term) ||
-      (cr.orderNumber || '').toLowerCase().includes(term);
-    const matchesStatus = !statusFilter || statusFilter === 'All' || cr.status === statusFilter;
-    return matchesSearch && matchesStatus;
+  const table = useAdvancedTable({
+    data: changeRequests || [],
+    columns: CR_COLUMNS,
+    searchFields: ['requestNumber', 'orderNumber', 'orderId', 'patientName', 'requester', 'description', 'id'],
+    filterConfigs: [
+      { key: 'status', label: 'Status', options: STATUS_OPTIONS, defaultValue: 'all' },
+      { key: 'priority', label: 'Priority', options: PRIORITY_OPTIONS, defaultValue: 'all' },
+    ],
+    pageSize: 10,
   });
+
+  const paginatedRequests = table.paginatedData;
 
   const pendingCount = changeRequests.filter(cr => cr.status === 'Pending').length;
   const inReviewCount = changeRequests.filter(cr => cr.status === 'In Review').length;
-
-  const totalPages = Math.ceil(filteredRequests.length / pageSize) || 1;
-  const paginatedRequests = filteredRequests.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto w-full min-w-0">
@@ -98,44 +113,28 @@ export default function ChangeRequests() {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto flex-1">
-            <div className="w-full sm:w-72">
-              <SearchInput placeholder="Search requests..." value={searchQuery} onChange={setSearchQuery} />
+        <TableTools
+          table={table}
+          searchPlaceholder="Search by request #, order #, patient, requester..."
+          rightActions={
+            <div className="flex items-center gap-1 border border-gray-200 dark:border-gray-700 rounded-md p-1 bg-gray-50 dark:bg-gray-900 shrink-0">
+              <button 
+                onClick={() => setViewMode('table')}
+                className={`p-1.5 rounded transition-colors ${viewMode === 'table' ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                title="Table View"
+              >
+                <List className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                title="Card Grid View"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
             </div>
-            <div className="w-full sm:w-48">
-              <Select
-                value={statusFilter}
-                onChange={setStatusFilter}
-                options={[
-                  { value: 'All', label: 'All Statuses' },
-                  { value: 'Pending', label: 'Pending' },
-                  { value: 'In Review', label: 'In Review' },
-                  { value: 'Approved', label: 'Approved' },
-                  { value: 'Rejected', label: 'Rejected' },
-                  { value: 'Completed', label: 'Completed' },
-                ]}
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1 border border-gray-200 dark:border-gray-700 rounded-md p-1 bg-gray-50 dark:bg-gray-900 shrink-0">
-            <button 
-              onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded transition-colors ${viewMode === 'table' ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
-              title="Table View"
-            >
-              <List className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
-              title="Card Grid View"
-            >
-              <LayoutGrid className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+          }
+        />
 
         {paginatedRequests.length === 0 ? (
           <div className="p-8">
@@ -146,62 +145,98 @@ export default function ChangeRequests() {
             <table className="w-full min-w-[700px] text-left text-sm text-gray-500 dark:text-gray-400 divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="text-xs uppercase bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-800">
                 <tr>
-                  <th className="px-4 py-3.5 font-semibold">Request #</th>
-                  <th className="px-4 py-3.5 font-semibold">Order #</th>
-                  <th className="px-4 py-3.5 font-semibold">Patient</th>
-                  <th className="hidden md:table-cell px-4 py-3.5 font-semibold">Requester</th>
-                  <th className="hidden lg:table-cell px-4 py-3.5 font-semibold max-w-xs">Description</th>
-                  <th className="hidden sm:table-cell px-4 py-3.5 font-semibold">Priority</th>
-                  <th className="px-4 py-3.5 font-semibold">Status</th>
-                  <th className="hidden xl:table-cell px-4 py-3.5 font-semibold">Created</th>
-                  <th className="px-4 py-3.5 text-right font-semibold">Actions</th>
+                  {table.isColVisible('requestNumber') && (
+                    <SortTh field="requestNumber" label="Request #" sortField={table.sortField} sortOrder={table.sortOrder} onSort={table.handleSort} />
+                  )}
+                  {table.isColVisible('orderNumber') && (
+                    <SortTh field="orderNumber" label="Order #" sortField={table.sortField} sortOrder={table.sortOrder} onSort={table.handleSort} />
+                  )}
+                  {table.isColVisible('patientName') && (
+                    <SortTh field="patientName" label="Patient" sortField={table.sortField} sortOrder={table.sortOrder} onSort={table.handleSort} />
+                  )}
+                  {table.isColVisible('requester') && (
+                    <SortTh field="requester" label="Requester" sortField={table.sortField} sortOrder={table.sortOrder} onSort={table.handleSort} className="hidden md:table-cell" />
+                  )}
+                  {table.isColVisible('description') && (
+                    <th className="hidden lg:table-cell px-4 py-3.5 font-semibold max-w-xs">Description</th>
+                  )}
+                  {table.isColVisible('priority') && (
+                    <SortTh field="priority" label="Priority" sortField={table.sortField} sortOrder={table.sortOrder} onSort={table.handleSort} className="hidden sm:table-cell" />
+                  )}
+                  {table.isColVisible('status') && (
+                    <SortTh field="status" label="Status" sortField={table.sortField} sortOrder={table.sortOrder} onSort={table.handleSort} />
+                  )}
+                  {table.isColVisible('createdAt') && (
+                    <SortTh field="createdAt" label="Created" sortField={table.sortField} sortOrder={table.sortOrder} onSort={table.handleSort} className="hidden xl:table-cell" />
+                  )}
+                  {table.isColVisible('actions') && (
+                    <th className="px-4 py-3.5 text-right font-semibold">Actions</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {paginatedRequests.map((cr) => (
                   <tr key={cr.id} className="hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
-                    <td className="px-4 py-3.5 font-mono text-xs font-semibold text-gray-900 dark:text-white whitespace-nowrap">
-                      {cr.requestNumber || cr.id}
-                    </td>
-                    <td className="px-4 py-3.5 whitespace-nowrap">
-                      <Link to={`/orders/${cr.orderId}`} className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
-                        {cr.orderNumber || cr.orderId}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3.5 font-medium text-gray-900 dark:text-white truncate max-w-[130px]">{cr.patientName}</td>
-                    <td className="hidden md:table-cell px-4 py-3.5 text-gray-600 dark:text-gray-300 truncate max-w-[130px]">{cr.requester || (cr as any).requesterName}</td>
-                    <td className="hidden lg:table-cell px-4 py-3.5 max-w-xs text-xs text-gray-700 dark:text-gray-300">
-                      <span className="line-clamp-2" title={cr.description}>{cr.description}</span>
-                    </td>
-                    <td className="hidden sm:table-cell px-4 py-3.5">
-                      <PriorityBadge priority={cr.priority as any} />
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <StatusBadge status={cr.status as any} />
-                    </td>
-                    <td className="hidden xl:table-cell px-4 py-3.5 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{timeAgo(cr.createdAt)}</td>
-                    <td className="px-4 py-3.5 text-right whitespace-nowrap">
-                      {(cr.status === 'Pending' || cr.status === 'In Review') ? (
-                        <div className="flex justify-end gap-1.5">
-                          <button 
-                            className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800 transition-colors"
-                            title="Approve Request"
-                            onClick={() => handleAction(cr.id, 'Approved')}
-                          >
-                            <Check className="w-4 h-4" />
-                          </button>
-                          <button 
-                            className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800 transition-colors"
-                            title="Reject Request"
-                            onClick={() => handleAction(cr.id, 'Rejected')}
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-gray-400">Settled</span>
-                      )}
-                    </td>
+                    {table.isColVisible('requestNumber') && (
+                      <td className="px-4 py-3.5 font-mono text-xs font-semibold text-gray-900 dark:text-white whitespace-nowrap">
+                        {cr.requestNumber || cr.id}
+                      </td>
+                    )}
+                    {table.isColVisible('orderNumber') && (
+                      <td className="px-4 py-3.5 whitespace-nowrap">
+                        <Link to={`/orders/${cr.orderId}`} className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                          {cr.orderNumber || cr.orderId}
+                        </Link>
+                      </td>
+                    )}
+                    {table.isColVisible('patientName') && (
+                      <td className="px-4 py-3.5 font-medium text-gray-900 dark:text-white truncate max-w-[130px]">{cr.patientName}</td>
+                    )}
+                    {table.isColVisible('requester') && (
+                      <td className="hidden md:table-cell px-4 py-3.5 text-gray-600 dark:text-gray-300 truncate max-w-[130px]">{cr.requester || (cr as any).requesterName}</td>
+                    )}
+                    {table.isColVisible('description') && (
+                      <td className="hidden lg:table-cell px-4 py-3.5 max-w-xs text-xs text-gray-700 dark:text-gray-300">
+                        <span className="line-clamp-2" title={cr.description}>{cr.description}</span>
+                      </td>
+                    )}
+                    {table.isColVisible('priority') && (
+                      <td className="hidden sm:table-cell px-4 py-3.5">
+                        <PriorityBadge priority={cr.priority as any} />
+                      </td>
+                    )}
+                    {table.isColVisible('status') && (
+                      <td className="px-4 py-3.5">
+                        <StatusBadge status={cr.status as any} />
+                      </td>
+                    )}
+                    {table.isColVisible('createdAt') && (
+                      <td className="hidden xl:table-cell px-4 py-3.5 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{timeAgo(cr.createdAt)}</td>
+                    )}
+                    {table.isColVisible('actions') && (
+                      <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                        {(cr.status === 'Pending' || cr.status === 'In Review') ? (
+                          <div className="flex justify-end gap-1.5">
+                            <button 
+                              className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800 transition-colors"
+                              title="Approve Request"
+                              onClick={() => handleAction(cr.id, 'Approved')}
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+                            <button 
+                              className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800 transition-colors"
+                              title="Reject Request"
+                              onClick={() => handleAction(cr.id, 'Rejected')}
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400">Settled</span>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -253,14 +288,12 @@ export default function ChangeRequests() {
           </div>
         )}
 
-        {filteredRequests.length > pageSize && (
-          <div className="p-4 border-t border-gray-100 dark:border-gray-800">
+        {changeRequests.length > 0 && (
+          <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex justify-end">
             <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              pageSize={pageSize}
-              totalCount={filteredRequests.length}
+              page={table.page}
+              totalPages={table.totalPages}
+              onPageChange={table.setPage}
             />
           </div>
         )}

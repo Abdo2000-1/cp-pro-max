@@ -22,6 +22,19 @@ import { useStore } from '@/hooks/useStore';
 import { store } from '@/services/store';
 import { useTableState } from '@/hooks/useTableState';
 import type { BillingRecord } from '@/types';
+import { TableTools, SortTh } from '@/components/ui/TableTools';
+import { useAdvancedTable, ColumnConfig } from '@/hooks/useAdvancedTable';
+
+const BILLING_COLUMNS: ColumnConfig[] = [
+  { id: 'orderNumber', label: 'Order #' },
+  { id: 'patientName', label: 'Patient' },
+  { id: 'doctorName', label: 'Doctor & Clinic' },
+  { id: 'invoiceNumber', label: 'Invoice #' },
+  { id: 'amount', label: 'Amount' },
+  { id: 'status', label: 'Status' },
+  { id: 'dueDate', label: 'Due Date' },
+  { id: 'actions', label: 'Actions' },
+];
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'All Statuses' },
@@ -34,48 +47,28 @@ const STATUS_OPTIONS = [
 
 export default function Billing() {
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
-  const [sortField, setSortField] = useState<'amount' | 'dueDate' | 'orderNumber'>('dueDate');
-  const [sortAsc, setSortAsc] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
   const billingRecords = useStore((s) => s.getBilling());
-  const { currentPage, setCurrentPage } = useTableState();
-
   const records = billingRecords || [];
+
+  const table = useAdvancedTable({
+    data: records,
+    columns: BILLING_COLUMNS,
+    searchFields: ['orderNumber', 'patientName', 'doctorName', 'clinicName', 'invoiceNumber'],
+    initialSortField: 'dueDate',
+    initialSortDirection: 'desc',
+    itemsPerPage: 12,
+  });
+
+  const paginatedRecords = table.paginatedData;
 
   // Metrics
   const totalValue = records.reduce((sum: number, r: BillingRecord) => sum + (r.amount || 0), 0);
   const collected = records.filter((r: BillingRecord) => r.status === 'Paid').reduce((sum: number, r: BillingRecord) => sum + (r.amount || 0), 0);
   const pending = records.filter((r: BillingRecord) => ['Pending', 'Invoiced'].includes(r.status)).reduce((sum: number, r: BillingRecord) => sum + (r.amount || 0), 0);
   const overdueCount = records.filter((r: BillingRecord) => r.status === 'Overdue').length;
-
-  const filteredRecords = records.filter((r: BillingRecord) => {
-    const term = searchTerm.toLowerCase();
-    const matchesSearch = 
-      (r.orderNumber || '').toLowerCase().includes(term) || 
-      (r.patientName || '').toLowerCase().includes(term) ||
-      (r.doctorName || '').toLowerCase().includes(term) ||
-      (r.clinicName || '').toLowerCase().includes(term) ||
-      (r.invoiceNumber || '').toLowerCase().includes(term);
-    const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  }).sort((a: BillingRecord, b: BillingRecord) => {
-    let cmp = 0;
-    if (sortField === 'amount') {
-      cmp = (a.amount || 0) - (b.amount || 0);
-    } else if (sortField === 'dueDate') {
-      cmp = new Date(a.dueDate || 0).getTime() - new Date(b.dueDate || 0).getTime();
-    } else {
-      cmp = (a.orderNumber || '').localeCompare(b.orderNumber || '');
-    }
-    return sortAsc ? cmp : -cmp;
-  });
-
-  const pageSize = 12;
-  const paginatedRecords = filteredRecords.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handleUpdateStatus = (id: string, status: 'Paid' | 'Pending' | 'Invoiced' | 'Overdue') => {
     store.updateBillingStatus(id, status);
@@ -87,7 +80,7 @@ export default function Billing() {
     const headers = ['Order #', 'Patient', 'Doctor', 'Clinic', 'Invoice #', 'Amount', 'Status', 'Invoice Date', 'Due Date'];
     const csvContent = [
       headers.join(','),
-      ...filteredRecords.map((r: BillingRecord) => 
+      ...table.sortedData.map((r: BillingRecord) => 
         [
           `"${r.orderNumber}"`, 
           `"${r.patientName || ''}"`, 
@@ -191,21 +184,57 @@ export default function Billing() {
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 flex flex-col sm:flex-row gap-3">
-        <SearchInput 
-          value={searchTerm} 
-          onChange={(val: any) => setSearchTerm(typeof val === 'string' ? val : val?.target?.value || '')} 
-          placeholder="Search by order #, patient, invoice #..."
-          className="flex-1"
-        />
-        <Select 
-          options={STATUS_OPTIONS} 
-          value={statusFilter} 
-          onChange={(val: any) => setStatusFilter(typeof val === 'string' ? val : val?.target?.value || '')} 
-          className="w-full sm:w-48"
-        />
-      </div>
+      {/* Advanced Table Tools */}
+      <TableTools
+        searchTerm={table.searchTerm}
+        onSearchChange={table.setSearchTerm}
+        searchPlaceholder="Search invoices, order #, patient, doctor, clinic..."
+        filters={[
+          {
+            id: 'status',
+            label: 'Status',
+            value: table.filters.status || 'all',
+            onChange: (val) => table.setFilterValue('status', val),
+            options: STATUS_OPTIONS,
+          }
+        ]}
+        onResetFilters={table.resetAllFilters}
+        activeFiltersCount={table.activeFiltersCount}
+        columns={table.columnsList}
+        onToggleColumn={table.toggleColumn}
+        onSelectAllColumns={table.selectAllColumns}
+        onResetColumns={table.resetColumns}
+        totalItems={table.totalItems}
+        filteredItems={table.filteredItems}
+        extraActions={
+          <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+            <button
+              onClick={() => setViewMode('cards')}
+              className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer ${
+                viewMode === 'cards' 
+                  ? 'bg-white dark:bg-slate-700 text-cyan-600 dark:text-cyan-400 shadow-xs' 
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}
+              title="Card Grid View"
+            >
+              <LayoutGrid size={15} />
+              <span className="hidden sm:inline">Cards</span>
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer ${
+                viewMode === 'table' 
+                  ? 'bg-white dark:bg-slate-700 text-cyan-600 dark:text-cyan-400 shadow-xs' 
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}
+              title="Table View"
+            >
+              <TableIcon size={15} />
+              <span className="hidden sm:inline">Table</span>
+            </button>
+          </div>
+        }
+      />
 
       {/* Content: Cards View (Zero horizontal scroll) OR Table View */}
       {paginatedRecords.length === 0 ? (
@@ -295,61 +324,93 @@ export default function Billing() {
             <table className="w-full min-w-[650px] text-left text-xs text-gray-500 dark:text-gray-400">
             <thead className="text-[11px] uppercase bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-800">
               <tr>
-                <th className="px-4 py-3.5 font-semibold">Order #</th>
-                <th className="px-4 py-3.5 font-semibold">Patient</th>
-                <th className="px-4 py-3.5 font-semibold hidden md:table-cell">Doctor & Clinic</th>
-                <th className="px-4 py-3.5 font-semibold hidden sm:table-cell">Invoice #</th>
-                <th className="px-4 py-3.5 text-right font-semibold">Amount</th>
-                <th className="px-4 py-3.5 font-semibold">Status</th>
-                <th className="px-4 py-3.5 font-semibold hidden lg:table-cell">Due Date</th>
-                <th className="px-4 py-3.5 text-right font-semibold">Actions</th>
+                {table.isColVisible('orderNumber') && (
+                  <SortTh field="orderNumber" currentSortField={table.sortField} sortDirection={table.sortDirection} onSort={table.handleSort}>Order #</SortTh>
+                )}
+                {table.isColVisible('patientName') && (
+                  <SortTh field="patientName" currentSortField={table.sortField} sortDirection={table.sortDirection} onSort={table.handleSort}>Patient</SortTh>
+                )}
+                {table.isColVisible('doctorName') && (
+                  <SortTh field="doctorName" currentSortField={table.sortField} sortDirection={table.sortDirection} onSort={table.handleSort} className="hidden md:table-cell">Doctor & Clinic</SortTh>
+                )}
+                {table.isColVisible('invoiceNumber') && (
+                  <SortTh field="invoiceNumber" currentSortField={table.sortField} sortDirection={table.sortDirection} onSort={table.handleSort} className="hidden sm:table-cell">Invoice #</SortTh>
+                )}
+                {table.isColVisible('amount') && (
+                  <SortTh field="amount" currentSortField={table.sortField} sortDirection={table.sortDirection} onSort={table.handleSort} align="right">Amount</SortTh>
+                )}
+                {table.isColVisible('status') && (
+                  <SortTh field="status" currentSortField={table.sortField} sortDirection={table.sortDirection} onSort={table.handleSort}>Status</SortTh>
+                )}
+                {table.isColVisible('dueDate') && (
+                  <SortTh field="dueDate" currentSortField={table.sortField} sortDirection={table.sortDirection} onSort={table.handleSort} className="hidden lg:table-cell">Due Date</SortTh>
+                )}
+                {table.isColVisible('actions') && (
+                  <th className="px-4 py-3.5 text-right font-semibold">Actions</th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {paginatedRecords.map((r: BillingRecord) => (
+              {table.paginatedData.map((r: BillingRecord) => (
                 <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
-                  <td 
-                    className="px-4 py-3.5 font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                    onClick={() => navigate(`/orders/${r.orderId}`)}
-                  >
-                    {r.orderNumber}
-                  </td>
-                  <td className="px-4 py-3.5 font-medium text-gray-900 dark:text-white">
-                    {r.patientName || 'Patient'}
-                  </td>
-                  <td className="px-4 py-3.5 hidden md:table-cell text-xs">
-                    <div className="text-gray-800 dark:text-gray-200">{r.doctorName}</div>
-                    <div className="text-[10px] text-gray-400">{r.clinicName}</div>
-                  </td>
-                  <td className="px-4 py-3.5 hidden sm:table-cell font-mono text-xs">
-                    {r.invoiceNumber || '-'}
-                  </td>
-                  <td className="px-4 py-3.5 text-right font-bold text-gray-900 dark:text-white">
-                    {formatCurrency(r.amount)}
-                  </td>
-                  <td className="px-4 py-3.5">
-                    <StatusBadge status={r.status} />
-                  </td>
-                  <td className="px-4 py-3.5 hidden lg:table-cell text-xs">
-                    {r.dueDate ? formatDate(r.dueDate) : '-'}
-                  </td>
-                  <td className="px-4 py-3.5 text-right">
-                    {r.status !== 'Paid' ? (
-                      <button
-                        onClick={() => handleUpdateStatus(r.id, 'Paid')}
-                        className="px-2.5 py-1 text-xs font-semibold rounded-md bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/60 transition-colors border border-green-200 dark:border-green-800"
-                      >
-                        Mark Paid
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleUpdateStatus(r.id, 'Pending')}
-                        className="px-2.5 py-1 text-xs font-semibold rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                      >
-                        Revert
-                      </button>
-                    )}
-                  </td>
+                  {table.isColVisible('orderNumber') && (
+                    <td 
+                      className="px-4 py-3.5 font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                      onClick={() => navigate(`/orders/${r.orderId}`)}
+                    >
+                      {r.orderNumber}
+                    </td>
+                  )}
+                  {table.isColVisible('patientName') && (
+                    <td className="px-4 py-3.5 font-medium text-gray-900 dark:text-white">
+                      {r.patientName || 'Patient'}
+                    </td>
+                  )}
+                  {table.isColVisible('doctorName') && (
+                    <td className="px-4 py-3.5 hidden md:table-cell text-xs">
+                      <div className="text-gray-800 dark:text-gray-200">{r.doctorName}</div>
+                      <div className="text-[10px] text-gray-400">{r.clinicName}</div>
+                    </td>
+                  )}
+                  {table.isColVisible('invoiceNumber') && (
+                    <td className="px-4 py-3.5 hidden sm:table-cell font-mono text-xs">
+                      {r.invoiceNumber || '-'}
+                    </td>
+                  )}
+                  {table.isColVisible('amount') && (
+                    <td className="px-4 py-3.5 text-right font-bold text-gray-900 dark:text-white">
+                      {formatCurrency(r.amount)}
+                    </td>
+                  )}
+                  {table.isColVisible('status') && (
+                    <td className="px-4 py-3.5">
+                      <StatusBadge status={r.status} />
+                    </td>
+                  )}
+                  {table.isColVisible('dueDate') && (
+                    <td className="px-4 py-3.5 hidden lg:table-cell text-xs">
+                      {r.dueDate ? formatDate(r.dueDate) : '-'}
+                    </td>
+                  )}
+                  {table.isColVisible('actions') && (
+                    <td className="px-4 py-3.5 text-right">
+                      {r.status !== 'Paid' ? (
+                        <button
+                          onClick={() => handleUpdateStatus(r.id, 'Paid')}
+                          className="px-2.5 py-1 text-xs font-semibold rounded-md bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/60 transition-colors border border-green-200 dark:border-green-800 cursor-pointer"
+                        >
+                          Mark Paid
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleUpdateStatus(r.id, 'Pending')}
+                          className="px-2.5 py-1 text-xs font-semibold rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"
+                        >
+                          Revert
+                        </button>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -359,15 +420,15 @@ export default function Billing() {
       )}
 
       {/* Pagination */}
-      {filteredRecords.length > pageSize && (
+      {table.filteredItems > table.pageSize && (
         <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-500 dark:text-gray-400 gap-3">
           <div>
-            Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, filteredRecords.length)} of {filteredRecords.length} records
+            Showing {(table.currentPage - 1) * table.pageSize + 1} to {Math.min(table.currentPage * table.pageSize, table.filteredItems)} of {table.filteredItems} records
           </div>
           <Pagination 
-            currentPage={currentPage}
-            totalPages={Math.ceil(filteredRecords.length / pageSize)}
-            onPageChange={setCurrentPage}
+            currentPage={table.currentPage} 
+            totalPages={table.totalPages} 
+            onPageChange={table.setCurrentPage} 
           />
         </div>
       )}

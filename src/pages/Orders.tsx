@@ -25,14 +25,28 @@ import { timeAgo, formatCurrency, formatDate } from '@/utils/format';
 import { useStore } from '@/hooks/useStore';
 import { useTableState } from '@/hooks/useTableState';
 
+import { TableTools, SortTh } from '@/components/ui/TableTools';
+import { useAdvancedTable, ColumnConfig } from '@/hooks/useAdvancedTable';
+
+const ORDER_COLUMNS: ColumnConfig[] = [
+  { id: 'orderNumber', label: 'Order #' },
+  { id: 'patientName', label: 'Patient' },
+  { id: 'doctorName', label: 'Doctor & Clinic' },
+  { id: 'restoration', label: 'Restoration' },
+  { id: 'status', label: 'Status' },
+  { id: 'priority', label: 'Priority' },
+  { id: 'amount', label: 'Amount' },
+  { id: 'dueDate', label: 'Due Date' },
+];
+
 export default function Orders() {
   const navigate = useNavigate();
   const orders = useStore((s) => s.getOrders());
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
-  const [simulatedState, setSimulatedState] = useState<'normal' | 'loading' | 'empty' | 'error'>('normal');
+  const [simulatedState, setSimulatedState] = useState<UIStateType>('normal');
 
   const statusOptions = [
-    { value: '', label: 'All Statuses' },
+    { value: 'all', label: 'All Statuses' },
     { value: 'New', label: 'New' },
     { value: 'Review', label: 'Review' },
     { value: 'Design', label: 'Design' },
@@ -43,32 +57,24 @@ export default function Orders() {
     { value: 'Cancelled', label: 'Cancelled' },
   ];
 
-  const {
-    searchTerm,
-    setSearchTerm,
-    filterValue: statusFilter,
-    setFilterValue: setStatusFilter,
-    sortField,
-    sortDirection,
-    handleSort,
-    currentPage,
-    setCurrentPage,
-    paginatedData,
-    totalPages,
-    totalItems,
-  } = useTableState({
+  const priorityOptions = [
+    { value: 'all', label: 'All Priorities' },
+    { value: 'Urgent', label: 'Urgent' },
+    { value: 'High', label: 'High' },
+    { value: 'Medium', label: 'Medium' },
+    { value: 'Low', label: 'Low' },
+  ];
+
+  const table = useAdvancedTable({
     data: orders || [],
-    searchFields: ['orderNumber', 'patientName', 'doctorName', 'clinicName'],
-    itemsPerPage: 12,
+    columns: ORDER_COLUMNS,
+    searchFields: ['orderNumber', 'patientName', 'doctorName', 'clinicName', 'restoration', 'restorationType'],
     initialSortField: 'updatedAt',
     initialSortDirection: 'desc',
-    filterField: 'status'
+    itemsPerPage: 12,
   });
 
-  const renderSortIcon = (field: string) => {
-    if (sortField !== field) return <ChevronDown className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100" />;
-    return sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 text-blue-600" /> : <ChevronDown className="w-4 h-4 text-blue-600" />;
-  };
+  const paginatedData = table.paginatedData;
 
   return (
     <div className="space-y-6 w-full min-w-0">
@@ -77,42 +83,14 @@ export default function Orders() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Orders Directory</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            Manage dental restoration cases ({totalItems} total) • Zero horizontal scrolling
+            Manage dental restoration cases ({table.totalItems} total) • Zero horizontal scrolling
           </p>
         </div>
 
         <div className="flex items-center gap-2 self-stretch sm:self-auto">
-          {/* View Mode Toggle */}
-          <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-            <button
-              onClick={() => setViewMode('cards')}
-              className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors ${
-                viewMode === 'cards' 
-                  ? 'bg-white dark:bg-slate-700 text-cyan-600 dark:text-cyan-400 shadow-sm' 
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-              }`}
-              title="Card Grid View"
-            >
-              <LayoutGrid size={16} />
-              <span className="hidden sm:inline">Cards</span>
-            </button>
-            <button
-              onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors ${
-                viewMode === 'table' 
-                  ? 'bg-white dark:bg-slate-700 text-cyan-600 dark:text-cyan-400 shadow-sm' 
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-              }`}
-              title="Table View"
-            >
-              <TableIcon size={16} />
-              <span className="hidden sm:inline">Table</span>
-            </button>
-          </div>
-
           <button 
             onClick={() => navigate('/orders/create')} 
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 shadow-md shadow-cyan-500/20 transition-all active:scale-[0.98]"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 shadow-md shadow-cyan-500/20 transition-all active:scale-[0.98] cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>New Order</span>
@@ -120,23 +98,64 @@ export default function Orders() {
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 justify-between bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="w-full sm:w-1/2">
-          <SearchInput
-            placeholder="Search by order #, patient, doctor, clinic..."
-            value={searchTerm}
-            onChange={(val: any) => setSearchTerm(typeof val === 'string' ? val : val?.target?.value || '')}
-          />
-        </div>
-        <div className="w-full sm:w-1/3 sm:max-w-xs">
-          <Select
-            options={statusOptions}
-            value={statusFilter}
-            onChange={(val: any) => setStatusFilter(typeof val === 'string' ? val : val?.target?.value || '')}
-          />
-        </div>
-      </div>
+      {/* Advanced Table Tools */}
+      <TableTools
+        searchTerm={table.searchTerm}
+        onSearchChange={table.setSearchTerm}
+        searchPlaceholder="Search by order #, patient, doctor, clinic, restoration..."
+        filters={[
+          {
+            id: 'status',
+            label: 'Status',
+            value: table.filters.status || 'all',
+            onChange: (val) => table.setFilterValue('status', val),
+            options: statusOptions,
+          },
+          {
+            id: 'priority',
+            label: 'Priority',
+            value: table.filters.priority || 'all',
+            onChange: (val) => table.setFilterValue('priority', val),
+            options: priorityOptions,
+          }
+        ]}
+        onResetFilters={table.resetAllFilters}
+        activeFiltersCount={table.activeFiltersCount}
+        columns={table.columnsList}
+        onToggleColumn={table.toggleColumn}
+        onSelectAllColumns={table.selectAllColumns}
+        onResetColumns={table.resetColumns}
+        totalItems={table.totalItems}
+        filteredItems={table.filteredItems}
+        extraActions={
+          <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+            <button
+              onClick={() => setViewMode('cards')}
+              className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer ${
+                viewMode === 'cards' 
+                  ? 'bg-white dark:bg-slate-700 text-cyan-600 dark:text-cyan-400 shadow-xs' 
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}
+              title="Card Grid View"
+            >
+              <LayoutGrid size={15} />
+              <span className="hidden sm:inline">Cards</span>
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer ${
+                viewMode === 'table' 
+                  ? 'bg-white dark:bg-slate-700 text-cyan-600 dark:text-cyan-400 shadow-xs' 
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}
+              title="Table View"
+            >
+              <TableIcon size={15} />
+              <span className="hidden sm:inline">Table</span>
+            </button>
+          </div>
+        }
+      />
 
       {/* State Switcher Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
@@ -231,48 +250,80 @@ export default function Orders() {
             <table className="w-full min-w-[650px] text-xs text-left text-gray-500 dark:text-gray-400">
               <thead className="text-[11px] uppercase bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-800">
                 <tr>
-                  <th className="px-4 py-3 font-semibold">Order #</th>
-                  <th className="px-4 py-3 font-semibold">Patient</th>
-                  <th className="px-4 py-3 font-semibold hidden md:table-cell">Doctor & Clinic</th>
-                  <th className="px-4 py-3 font-semibold hidden sm:table-cell">Restoration</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="px-4 py-3 font-semibold hidden sm:table-cell">Priority</th>
-                  <th className="px-4 py-3 font-semibold text-right">Amount</th>
-                  <th className="px-4 py-3 font-semibold hidden lg:table-cell">Due Date</th>
+                  {table.isColVisible('orderNumber') && (
+                    <SortTh field="orderNumber" currentSortField={table.sortField} sortDirection={table.sortDirection} onSort={table.handleSort}>Order #</SortTh>
+                  )}
+                  {table.isColVisible('patientName') && (
+                    <SortTh field="patientName" currentSortField={table.sortField} sortDirection={table.sortDirection} onSort={table.handleSort}>Patient</SortTh>
+                  )}
+                  {table.isColVisible('doctorName') && (
+                    <SortTh field="doctorName" currentSortField={table.sortField} sortDirection={table.sortDirection} onSort={table.handleSort} className="hidden md:table-cell">Doctor & Clinic</SortTh>
+                  )}
+                  {table.isColVisible('restoration') && (
+                    <SortTh field="restoration" currentSortField={table.sortField} sortDirection={table.sortDirection} onSort={table.handleSort} className="hidden sm:table-cell">Restoration</SortTh>
+                  )}
+                  {table.isColVisible('status') && (
+                    <SortTh field="status" currentSortField={table.sortField} sortDirection={table.sortDirection} onSort={table.handleSort}>Status</SortTh>
+                  )}
+                  {table.isColVisible('priority') && (
+                    <SortTh field="priority" currentSortField={table.sortField} sortDirection={table.sortDirection} onSort={table.handleSort} className="hidden sm:table-cell">Priority</SortTh>
+                  )}
+                  {table.isColVisible('amount') && (
+                    <SortTh field="amount" currentSortField={table.sortField} sortDirection={table.sortDirection} onSort={table.handleSort} align="right">Amount</SortTh>
+                  )}
+                  {table.isColVisible('dueDate') && (
+                    <SortTh field="dueDate" currentSortField={table.sortField} sortDirection={table.sortDirection} onSort={table.handleSort} className="hidden lg:table-cell">Due Date</SortTh>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {paginatedData.map((order: any) => (
+                {table.paginatedData.map((order: any) => (
                   <tr
                     key={order.id}
                     onClick={() => navigate(`/orders/${order.id}`)}
                     className="hover:bg-gray-50 dark:hover:bg-slate-800 cursor-pointer transition-colors"
                   >
-                    <td className="px-4 py-3 font-mono font-medium text-blue-600 dark:text-blue-400 whitespace-nowrap">
-                      {order.orderNumber}
-                    </td>
-                    <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">
-                      {order.patientName}
-                    </td>
-                    <td className="px-4 py-3 hidden md:table-cell">
-                      <div className="text-gray-800 dark:text-gray-200">{order.doctorName?.replace('Dr. ', '')}</div>
-                      <div className="text-[10px] text-gray-400">{order.clinicName}</div>
-                    </td>
-                    <td className="px-4 py-3 hidden sm:table-cell">
-                      {order.restoration || order.restorationType} ({order.units || 1}u)
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={order.status} />
-                    </td>
-                    <td className="px-4 py-3 hidden sm:table-cell">
-                      <PriorityBadge priority={order.priority} />
-                    </td>
-                    <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">
-                      {formatCurrency(order.amount)}
-                    </td>
-                    <td className="px-4 py-3 hidden lg:table-cell text-gray-500 dark:text-gray-400">
-                      {formatDate(order.dueDate)}
-                    </td>
+                    {table.isColVisible('orderNumber') && (
+                      <td className="px-4 py-3 font-mono font-medium text-blue-600 dark:text-blue-400 whitespace-nowrap">
+                        {order.orderNumber}
+                      </td>
+                    )}
+                    {table.isColVisible('patientName') && (
+                      <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">
+                        {order.patientName}
+                      </td>
+                    )}
+                    {table.isColVisible('doctorName') && (
+                      <td className="px-4 py-3 hidden md:table-cell">
+                        <div className="text-gray-800 dark:text-gray-200">{order.doctorName?.replace('Dr. ', '')}</div>
+                        <div className="text-[10px] text-gray-400">{order.clinicName}</div>
+                      </td>
+                    )}
+                    {table.isColVisible('restoration') && (
+                      <td className="px-4 py-3 hidden sm:table-cell">
+                        {order.restoration || order.restorationType} ({order.units || 1}u)
+                      </td>
+                    )}
+                    {table.isColVisible('status') && (
+                      <td className="px-4 py-3">
+                        <StatusBadge status={order.status} />
+                      </td>
+                    )}
+                    {table.isColVisible('priority') && (
+                      <td className="px-4 py-3 hidden sm:table-cell">
+                        <PriorityBadge priority={order.priority} />
+                      </td>
+                    )}
+                    {table.isColVisible('amount') && (
+                      <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">
+                        {formatCurrency(order.amount)}
+                      </td>
+                    )}
+                    {table.isColVisible('dueDate') && (
+                      <td className="px-4 py-3 hidden lg:table-cell text-gray-500 dark:text-gray-400">
+                        {formatDate(order.dueDate)}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -282,15 +333,15 @@ export default function Orders() {
       )}
 
       {/* Pagination */}
-      {totalItems > 12 && (
+      {table.filteredItems > 0 && (
         <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-500 dark:text-gray-400 gap-3">
           <span>
-            Showing {Math.min((currentPage - 1) * 12 + 1, totalItems)} to {Math.min(currentPage * 12, totalItems)} of {totalItems} orders
+            Showing {Math.min((table.currentPage - 1) * table.pageSize + 1, table.filteredItems)} to {Math.min(table.currentPage * table.pageSize, table.filteredItems)} of {table.filteredItems} orders
           </span>
           <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
+            currentPage={table.currentPage}
+            totalPages={table.totalPages}
+            onPageChange={table.setCurrentPage}
           />
         </div>
       )}

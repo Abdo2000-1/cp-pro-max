@@ -2,39 +2,62 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ScanLine, MapPin, Server, ArrowRight, LayoutGrid, List } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { SearchInput } from '@/components/ui/SearchInput';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Pagination } from '@/components/ui/Pagination';
 import { formatDate } from '@/utils/format';
 import { api } from '@/services/api';
 import { useFetch } from '@/hooks/useFetch';
-import { useTableState } from '@/hooks/useTableState';
 import { useStore } from '@/hooks/useStore';
+import { TableTools, SortTh } from '@/components/ui/TableTools';
+import { useAdvancedTable } from '@/hooks/useAdvancedTable';
+
+const SCAN_STATUS_OPTIONS = [
+  { value: 'all', label: 'All Statuses' },
+  { value: 'Active', label: 'Active' },
+  { value: 'Review', label: 'Review' },
+  { value: 'Done', label: 'Done' },
+];
+
+const SCAN_COLUMNS = [
+  { id: 'orderNumber', label: 'Order #', defaultVisible: true },
+  { id: 'patientName', label: 'Patient', defaultVisible: true },
+  { id: 'doctorName', label: 'Doctor', defaultVisible: true },
+  { id: 'scanCenterName', label: 'Scan Center', defaultVisible: true },
+  { id: 'restoration', label: 'Restoration', defaultVisible: true },
+  { id: 'format', label: 'Format', defaultVisible: true },
+  { id: 'scanStatus', label: 'Scan Status', defaultVisible: true },
+  { id: 'receivedAt', label: 'Received', defaultVisible: true },
+  { id: 'actions', label: 'Actions', defaultVisible: true },
+];
 
 export default function ScanCenter() {
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const { data: centersData, loading: centersLoading } = useFetch(api.getScanCenters);
   const orders = useStore(s => s.getOrders());
-  const { searchQuery, setSearchQuery } = useTableState();
-
-  if (centersLoading) return <LoadingState text="Loading scan center data..." />;
 
   const centers = centersData || [];
   
-  const scanOrders = orders.filter(o => o.scanCenterName || o.scanCenterId);
-  
-  const filteredOrders = scanOrders.filter(o => 
-    (o.orderNumber || o.id).toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (o.patientName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (o.doctorName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (o.scanCenterName || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const scanOrders = orders
+    .filter(o => o.scanCenterName || o.scanCenterId)
+    .map(o => ({
+      ...o,
+      scanStatus: o.status === 'Completed' || o.status === 'Ready' ? 'Done' : o.status === 'Review' ? 'Review' : 'Active'
+    }));
 
-  const getScanStatus = (status: string) => {
-    if (status === 'Completed' || status === 'Ready') return 'Done';
-    if (status === 'Review') return 'Review';
-    return 'Active';
-  };
+  const table = useAdvancedTable({
+    data: scanOrders,
+    columns: SCAN_COLUMNS,
+    searchFields: ['orderNumber', 'id', 'patientName', 'doctorName', 'scanCenterName', 'restoration'],
+    filterConfigs: [
+      { key: 'scanStatus', label: 'Scan Status', options: SCAN_STATUS_OPTIONS, defaultValue: 'all' },
+    ],
+    pageSize: 8,
+  });
+
+  if (centersLoading) return <LoadingState text="Loading scan center data..." />;
+
+  const filteredOrders = table.paginatedData;
 
   const getScanStatusColor = (status: string) => {
     if (status === 'Done') return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
@@ -89,19 +112,10 @@ export default function ScanCenter() {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Scan Orders</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Orders associated with scan centers ({filteredOrders.length})</p>
-          </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="w-full sm:w-72">
-              <SearchInput
-                value={searchQuery}
-                onChange={setSearchQuery}
-                placeholder="Search scan orders..."
-              />
-            </div>
+        <TableTools
+          table={table}
+          searchPlaceholder="Search scan orders by order #, patient, doctor, center..."
+          rightActions={
             <div className="flex items-center gap-1 border border-gray-200 dark:border-gray-700 rounded-md p-1 bg-gray-50 dark:bg-gray-900 shrink-0">
               <button 
                 onClick={() => setViewMode('table')}
@@ -118,8 +132,8 @@ export default function ScanCenter() {
                 <LayoutGrid className="w-4 h-4" />
               </button>
             </div>
-          </div>
-        </div>
+          }
+        />
 
         {filteredOrders.length === 0 ? (
           <EmptyState
@@ -132,43 +146,79 @@ export default function ScanCenter() {
             <table className="w-full min-w-[700px] text-left divide-y divide-gray-200 dark:divide-gray-700">
               <thead>
                 <tr className="text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-gray-900">
-                  <th className="px-4 py-3">Order #</th>
-                  <th className="px-4 py-3">Patient</th>
-                  <th className="hidden md:table-cell px-4 py-3">Doctor</th>
-                  <th className="hidden lg:table-cell px-4 py-3">Scan Center</th>
-                  <th className="hidden sm:table-cell px-4 py-3">Restoration</th>
-                  <th className="hidden xl:table-cell px-4 py-3">Format</th>
-                  <th className="px-4 py-3">Scan Status</th>
-                  <th className="hidden lg:table-cell px-4 py-3">Received</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
+                  {table.isColVisible('orderNumber') && (
+                    <SortTh field="orderNumber" label="Order #" sortField={table.sortField} sortOrder={table.sortOrder} onSort={table.handleSort} />
+                  )}
+                  {table.isColVisible('patientName') && (
+                    <SortTh field="patientName" label="Patient" sortField={table.sortField} sortOrder={table.sortOrder} onSort={table.handleSort} />
+                  )}
+                  {table.isColVisible('doctorName') && (
+                    <SortTh field="doctorName" label="Doctor" sortField={table.sortField} sortOrder={table.sortOrder} onSort={table.handleSort} className="hidden md:table-cell" />
+                  )}
+                  {table.isColVisible('scanCenterName') && (
+                    <SortTh field="scanCenterName" label="Scan Center" sortField={table.sortField} sortOrder={table.sortOrder} onSort={table.handleSort} className="hidden lg:table-cell" />
+                  )}
+                  {table.isColVisible('restoration') && (
+                    <SortTh field="restoration" label="Restoration" sortField={table.sortField} sortOrder={table.sortOrder} onSort={table.handleSort} className="hidden sm:table-cell" />
+                  )}
+                  {table.isColVisible('format') && (
+                    <th className="hidden xl:table-cell px-4 py-3">Format</th>
+                  )}
+                  {table.isColVisible('scanStatus') && (
+                    <SortTh field="scanStatus" label="Scan Status" sortField={table.sortField} sortOrder={table.sortOrder} onSort={table.handleSort} />
+                  )}
+                  {table.isColVisible('receivedAt') && (
+                    <SortTh field="receivedAt" label="Received" sortField={table.sortField} sortOrder={table.sortOrder} onSort={table.handleSort} className="hidden lg:table-cell" />
+                  )}
+                  {table.isColVisible('actions') && (
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700 text-sm text-gray-700 dark:text-gray-300">
                 {filteredOrders.map((order) => {
-                  const sStatus = getScanStatus(order.status);
+                  const sStatus = order.scanStatus;
                   return (
                     <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
-                      <td className="px-4 py-3 font-mono font-medium text-blue-600 dark:text-blue-400 whitespace-nowrap">{order.orderNumber}</td>
-                      <td className="px-4 py-3 text-gray-900 dark:text-white font-medium max-w-[140px] truncate">{order.patientName}</td>
-                      <td className="hidden md:table-cell px-4 py-3 max-w-[130px] truncate">{order.doctorName}</td>
-                      <td className="hidden lg:table-cell px-4 py-3 max-w-[130px] truncate">{order.scanCenterName}</td>
-                      <td className="hidden sm:table-cell px-4 py-3">{order.restoration}</td>
-                      <td className="hidden xl:table-cell px-4 py-3">
-                        <span className="font-mono text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">{order.format}</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getScanStatusColor(sStatus)}`}>
-                          {sStatus}
-                        </span>
-                      </td>
-                      <td className="hidden lg:table-cell px-4 py-3 text-gray-500 whitespace-nowrap">{formatDate(order.receivedAt)}</td>
-                      <td className="px-4 py-3 text-right">
-                        <Link to={`/orders/${order.id}`}>
-                          <Button size="sm" variant="outline">
-                            View <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                          </Button>
-                        </Link>
-                      </td>
+                      {table.isColVisible('orderNumber') && (
+                        <td className="px-4 py-3 font-mono font-medium text-blue-600 dark:text-blue-400 whitespace-nowrap">{order.orderNumber}</td>
+                      )}
+                      {table.isColVisible('patientName') && (
+                        <td className="px-4 py-3 text-gray-900 dark:text-white font-medium max-w-[140px] truncate">{order.patientName}</td>
+                      )}
+                      {table.isColVisible('doctorName') && (
+                        <td className="hidden md:table-cell px-4 py-3 max-w-[130px] truncate">{order.doctorName}</td>
+                      )}
+                      {table.isColVisible('scanCenterName') && (
+                        <td className="hidden lg:table-cell px-4 py-3 max-w-[130px] truncate">{order.scanCenterName}</td>
+                      )}
+                      {table.isColVisible('restoration') && (
+                        <td className="hidden sm:table-cell px-4 py-3">{order.restoration}</td>
+                      )}
+                      {table.isColVisible('format') && (
+                        <td className="hidden xl:table-cell px-4 py-3">
+                          <span className="font-mono text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">{order.format}</span>
+                        </td>
+                      )}
+                      {table.isColVisible('scanStatus') && (
+                        <td className="px-4 py-3">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getScanStatusColor(sStatus)}`}>
+                            {sStatus}
+                          </span>
+                        </td>
+                      )}
+                      {table.isColVisible('receivedAt') && (
+                        <td className="hidden lg:table-cell px-4 py-3 text-gray-500 whitespace-nowrap">{formatDate(order.receivedAt)}</td>
+                      )}
+                      {table.isColVisible('actions') && (
+                        <td className="px-4 py-3 text-right">
+                          <Link to={`/orders/${order.id}`}>
+                            <Button size="sm" variant="outline">
+                              View <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                            </Button>
+                          </Link>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -178,7 +228,7 @@ export default function ScanCenter() {
         ) : (
           <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredOrders.map((order) => {
-              const sStatus = getScanStatus(order.status);
+              const sStatus = order.scanStatus;
               return (
                 <div key={order.id} className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 flex flex-col justify-between">
                   <div>
@@ -206,6 +256,16 @@ export default function ScanCenter() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {scanOrders.length > 0 && (
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+            <Pagination
+              page={table.page}
+              totalPages={table.totalPages}
+              onPageChange={table.setPage}
+            />
           </div>
         )}
       </div>

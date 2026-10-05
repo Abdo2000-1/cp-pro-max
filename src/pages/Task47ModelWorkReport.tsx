@@ -9,7 +9,10 @@ import {
   CheckCircle2,
   Clock,
   Printer,
-  ChevronDown
+  ChevronDown,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown
 } from 'lucide-react';
 import { UIStateSwitcher, type UIStateType } from '@/components/ui/UIStateSwitcher';
 import { LoadingState } from '@/components/ui/LoadingState';
@@ -66,6 +69,35 @@ export default function Task47ModelWorkReport() {
       return true;
     });
   }, [selectedOperator, search]);
+
+  const [sortField, setSortField] = useState<string>('orderId');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+  };
+
+  const sortedRows = useMemo(() => {
+    const list = [...filteredRows];
+    if (!sortField) return list;
+    return list.sort((a, b) => {
+      let aVal = (a as any)[sortField];
+      let bVal = (b as any)[sortField];
+      if (aVal === bVal) return 0;
+      if (aVal === null || aVal === undefined) return 1;
+      if (bVal === null || bVal === undefined) return -1;
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      const cmp = String(aVal).localeCompare(String(bVal));
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [filteredRows, sortField, sortDir]);
 
   const totalCost = filteredRows.reduce((acc, r) => acc + r.cost, 0);
   const totalMax = filteredRows.filter((r) => r.maxilla).length;
@@ -241,24 +273,69 @@ export default function Task47ModelWorkReport() {
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold text-slate-500 uppercase select-none">
-                    <th className="py-3 px-3 w-10">#</th>
-                    <th className="py-3 px-3 w-24">Order ID</th>
-                    <th className="py-3 px-3 w-40">Scan Center</th>
-                    <th className="py-3 px-3 w-40">Doctor</th>
-                    <th className="py-3 px-3 w-40">Patient Name</th>
+                    <th onClick={() => handleSort('serial')} className="py-3 px-3 w-10 cursor-pointer hover:text-slate-800 dark:hover:text-white">
+                      <div className="flex items-center gap-1">
+                        <span>#</span>
+                        {sortField === 'serial' ? (sortDir === 'asc' ? <ArrowUp size={11} className="text-pink-500" /> : <ArrowDown size={11} className="text-pink-500" />) : <ArrowUpDown size={10} className="text-slate-400 opacity-40" />}
+                      </div>
+                    </th>
+                    <th onClick={() => handleSort('orderId')} className="py-3 px-3 w-24 cursor-pointer hover:text-slate-800 dark:hover:text-white">
+                      <div className="flex items-center gap-1">
+                        <span>Order ID</span>
+                        {sortField === 'orderId' ? (sortDir === 'asc' ? <ArrowUp size={11} className="text-pink-500" /> : <ArrowDown size={11} className="text-pink-500" />) : <ArrowUpDown size={10} className="text-slate-400 opacity-40" />}
+                      </div>
+                    </th>
+                    <th onClick={() => handleSort('scanCenter')} className="py-3 px-3 w-40 cursor-pointer hover:text-slate-800 dark:hover:text-white">
+                      <div className="flex items-center gap-1">
+                        <span>Scan Center</span>
+                        {sortField === 'scanCenter' ? (sortDir === 'asc' ? <ArrowUp size={11} className="text-pink-500" /> : <ArrowDown size={11} className="text-pink-500" />) : <ArrowUpDown size={10} className="text-slate-400 opacity-40" />}
+                      </div>
+                    </th>
+                    <th onClick={() => handleSort('doctor')} className="py-3 px-3 w-40 cursor-pointer hover:text-slate-800 dark:hover:text-white">
+                      <div className="flex items-center gap-1">
+                        <span>Doctor</span>
+                        {sortField === 'doctor' ? (sortDir === 'asc' ? <ArrowUp size={11} className="text-pink-500" /> : <ArrowDown size={11} className="text-pink-500" />) : <ArrowUpDown size={10} className="text-slate-400 opacity-40" />}
+                      </div>
+                    </th>
+                    <th onClick={() => handleSort('patientName')} className="py-3 px-3 w-40 cursor-pointer hover:text-slate-800 dark:hover:text-white">
+                      <div className="flex items-center gap-1">
+                        <span>Patient Name</span>
+                        {sortField === 'patientName' ? (sortDir === 'asc' ? <ArrowUp size={11} className="text-pink-500" /> : <ArrowDown size={11} className="text-pink-500" />) : <ArrowUpDown size={10} className="text-slate-400 opacity-40" />}
+                      </div>
+                    </th>
                     <th className="py-3 px-3 text-center w-14">Max.</th>
                     <th className="py-3 px-3 text-center w-14">Mand.</th>
-                    <th className="py-3 px-3 w-20">Cost</th>
-                    <th className="py-3 px-3 w-32">Received</th>
-                    <th className="py-3 px-3 w-32">Sent Time</th>
-                    <th className="py-3 px-3 w-28">Operator</th>
+                    <th onClick={() => handleSort('cost')} className="py-3 px-3 w-20 cursor-pointer hover:text-slate-800 dark:hover:text-white">
+                      <div className="flex items-center gap-1">
+                        <span>Cost</span>
+                        {sortField === 'cost' ? (sortDir === 'asc' ? <ArrowUp size={11} className="text-pink-500" /> : <ArrowDown size={11} className="text-pink-500" />) : <ArrowUpDown size={10} className="text-slate-400 opacity-40" />}
+                      </div>
+                    </th>
+                    <th onClick={() => handleSort('receivedTime')} className="py-3 px-3 w-32 cursor-pointer hover:text-slate-800 dark:hover:text-white">
+                      <div className="flex items-center gap-1">
+                        <span>Received</span>
+                        {sortField === 'receivedTime' ? (sortDir === 'asc' ? <ArrowUp size={11} className="text-pink-500" /> : <ArrowDown size={11} className="text-pink-500" />) : <ArrowUpDown size={10} className="text-slate-400 opacity-40" />}
+                      </div>
+                    </th>
+                    <th onClick={() => handleSort('sentTime')} className="py-3 px-3 w-32 cursor-pointer hover:text-slate-800 dark:hover:text-white">
+                      <div className="flex items-center gap-1">
+                        <span>Sent Time</span>
+                        {sortField === 'sentTime' ? (sortDir === 'asc' ? <ArrowUp size={11} className="text-pink-500" /> : <ArrowDown size={11} className="text-pink-500" />) : <ArrowUpDown size={10} className="text-slate-400 opacity-40" />}
+                      </div>
+                    </th>
+                    <th onClick={() => handleSort('operator')} className="py-3 px-3 w-28 cursor-pointer hover:text-slate-800 dark:hover:text-white">
+                      <div className="flex items-center gap-1">
+                        <span>Operator</span>
+                        {sortField === 'operator' ? (sortDir === 'asc' ? <ArrowUp size={11} className="text-pink-500" /> : <ArrowDown size={11} className="text-pink-500" />) : <ArrowUpDown size={10} className="text-slate-400 opacity-40" />}
+                      </div>
+                    </th>
                     <th className="py-3 px-3 w-24">Vouchers</th>
                     <th className="py-3 px-3 w-24">Archive</th>
                     <th className="py-3 px-3 text-right w-24">Charged</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
-                  {filteredRows.map((row) => (
+                  {sortedRows.map((row) => (
                     <tr key={row.orderId} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition-colors">
                       <td className="py-2.5 px-3 font-mono text-slate-400">{row.serial}</td>
                       <td className="py-2.5 px-3 font-mono font-bold text-cyan-600 dark:text-cyan-400">#{row.orderId}</td>

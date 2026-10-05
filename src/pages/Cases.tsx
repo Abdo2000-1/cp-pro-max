@@ -21,6 +21,9 @@ import { useTableState } from '@/hooks/useTableState';
 
 import { useStore } from '@/hooks/useStore';
 
+import { TableTools, SortTh } from '@/components/ui/TableTools';
+import { useAdvancedTable, ColumnConfig } from '@/hooks/useAdvancedTable';
+
 const STATUS_OPTIONS = [
   { value: 'all', label: 'All Statuses' },
   { value: 'Open', label: 'Open' },
@@ -29,28 +32,40 @@ const STATUS_OPTIONS = [
   { value: 'Closed', label: 'Closed' }
 ];
 
+const PRIORITY_OPTIONS = [
+  { value: 'all', label: 'All Priorities' },
+  { value: 'Urgent', label: 'Urgent' },
+  { value: 'High', label: 'High' },
+  { value: 'Medium', label: 'Medium' },
+  { value: 'Low', label: 'Low' }
+];
+
+const CASE_COLUMNS: ColumnConfig[] = [
+  { id: 'caseNumber', label: 'Case #' },
+  { id: 'title', label: 'Title' },
+  { id: 'patientName', label: 'Patient / Doctor' },
+  { id: 'clinicName', label: 'Clinic' },
+  { id: 'ordersCount', label: 'Stats' },
+  { id: 'status', label: 'Status' },
+  { id: 'priority', label: 'Priority' },
+  { id: 'updatedAt', label: 'Updated' },
+];
+
 export default function Cases() {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [simulatedState, setSimulatedState] = useState<'normal' | 'loading' | 'empty' | 'error'>('normal');
+  const [simulatedState, setSimulatedState] = useState<UIStateType>('normal');
   
   const cases = useStore(s => s.getCases());
-  const { currentPage, setCurrentPage } = useTableState();
-  
-  const filteredCases = cases.filter((c: any) => {
-    const pName = c.patientName || c.patient?.name || '';
-    const dName = c.doctorName || c.doctor?.name || '';
-    const matchesSearch = c.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          c.caseNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          pName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          dName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
 
-  const paginatedCases = filteredCases.slice((currentPage - 1) * 10, currentPage * 10);
+  const table = useAdvancedTable({
+    data: cases,
+    columns: CASE_COLUMNS,
+    searchFields: ['title', 'caseNumber', 'patientName', 'doctorName', 'clinicName'],
+    initialSortField: 'caseNumber',
+    initialSortDirection: 'desc',
+    itemsPerPage: 10,
+  });
 
   return (
     <div className="w-full min-w-0 max-w-7xl mx-auto space-y-6">
@@ -67,39 +82,54 @@ export default function Cases() {
         </Button>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="flex flex-col sm:flex-row gap-4 flex-1">
-          <SearchInput 
-            value={searchTerm} 
-            onChange={(val: any) => setSearchTerm(typeof val === 'string' ? val : val?.target?.value || '')} 
-            placeholder="Search cases, patients, doctors..."
-            className="max-w-md"
-          />
-          <Select 
-            options={STATUS_OPTIONS} 
-            value={statusFilter} 
-            onChange={(val: any) => setStatusFilter(typeof val === 'string' ? val : val?.target?.value || '')} 
-            className="w-40"
-          />
-        </div>
-        
-        <div className="flex items-center gap-2 border border-gray-200 dark:border-gray-700 rounded-md p-1 bg-gray-50 dark:bg-gray-900 self-start sm:self-auto">
-          <button 
-            onClick={() => setViewMode('table')}
-            className={`p-1.5 rounded transition-colors ${viewMode === 'table' ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
-            title="Table View"
-          >
-            <List className="w-4 h-4" />
-          </button>
-          <button 
-            onClick={() => setViewMode('grid')}
-            className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
-            title="Card Grid View"
-          >
-            <LayoutGrid className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+      {/* Advanced Table Tools */}
+      <TableTools
+        searchTerm={table.searchTerm}
+        onSearchChange={table.setSearchTerm}
+        searchPlaceholder="Search cases by #, title, patient, doctor, clinic..."
+        filters={[
+          {
+            id: 'status',
+            label: 'Status',
+            value: table.filters.status || 'all',
+            onChange: (val) => table.setFilterValue('status', val),
+            options: STATUS_OPTIONS,
+          },
+          {
+            id: 'priority',
+            label: 'Priority',
+            value: table.filters.priority || 'all',
+            onChange: (val) => table.setFilterValue('priority', val),
+            options: PRIORITY_OPTIONS,
+          }
+        ]}
+        onResetFilters={table.resetAllFilters}
+        activeFiltersCount={table.activeFiltersCount}
+        columns={table.columnsList}
+        onToggleColumn={table.toggleColumn}
+        onSelectAllColumns={table.selectAllColumns}
+        onResetColumns={table.resetColumns}
+        totalItems={table.totalItems}
+        filteredItems={table.filteredItems}
+        extraActions={
+          <div className="flex items-center gap-1.5 border border-slate-200 dark:border-slate-800 rounded-xl p-1 bg-slate-50 dark:bg-slate-900">
+            <button 
+              onClick={() => setViewMode('table')}
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${viewMode === 'table' ? 'bg-white dark:bg-slate-800 shadow-xs text-sky-600 dark:text-sky-400 font-bold' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+              title="Table View"
+            >
+              <List className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${viewMode === 'grid' ? 'bg-white dark:bg-slate-800 shadow-xs text-sky-600 dark:text-sky-400 font-bold' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+              title="Card Grid View"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+          </div>
+        }
+      />
 
       {/* State Switcher Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
@@ -125,7 +155,7 @@ export default function Cases() {
             onRetry={() => setSimulatedState('normal')}
           />
         </div>
-      ) : simulatedState === 'empty' || filteredCases.length === 0 ? (
+      ) : simulatedState === 'empty' || table.filteredItems === 0 ? (
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-12 text-center border border-slate-200 dark:border-slate-800 shadow-sm">
           <EmptyState 
             title="No Clinical Cases Found" 
@@ -133,10 +163,10 @@ export default function Cases() {
             action={
               <Button 
                 variant="primary" 
-                onClick={() => { setSimulatedState('normal'); navigate('/orders/create'); }}
+                onClick={() => { setSimulatedState('normal'); table.resetAllFilters(); }}
                 className="cursor-pointer"
               >
-                Create New Dental Case
+                Clear Search & Filters
               </Button>
             }
           />
@@ -147,96 +177,120 @@ export default function Cases() {
             <table className="w-full min-w-[700px] text-left text-sm text-gray-500 dark:text-gray-400 divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-900 dark:text-gray-300">
                 <tr>
-                  <th className="px-4 py-3">Case #</th>
-                  <th className="px-4 py-3">Title</th>
-                  <th className="px-4 py-3">Patient / Doctor</th>
-                  <th className="hidden md:table-cell px-4 py-3">Clinic</th>
-                  <th className="hidden lg:table-cell px-4 py-3">Stats</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="hidden sm:table-cell px-4 py-3">Priority</th>
-                  <th className="hidden xl:table-cell px-4 py-3">Updated</th>
+                  {table.isColVisible('caseNumber') && (
+                    <SortTh field="caseNumber" currentSortField={table.sortField} sortDirection={table.sortDirection} onSort={table.handleSort}>Case #</SortTh>
+                  )}
+                  {table.isColVisible('title') && (
+                    <SortTh field="title" currentSortField={table.sortField} sortDirection={table.sortDirection} onSort={table.handleSort}>Title</SortTh>
+                  )}
+                  {table.isColVisible('patientName') && (
+                    <SortTh field="patientName" currentSortField={table.sortField} sortDirection={table.sortDirection} onSort={table.handleSort}>Patient / Doctor</SortTh>
+                  )}
+                  {table.isColVisible('clinicName') && (
+                    <SortTh field="clinicName" currentSortField={table.sortField} sortDirection={table.sortDirection} onSort={table.handleSort} className="hidden md:table-cell">Clinic</SortTh>
+                  )}
+                  {table.isColVisible('ordersCount') && (
+                    <SortTh field="ordersCount" currentSortField={table.sortField} sortDirection={table.sortDirection} onSort={table.handleSort} className="hidden lg:table-cell">Stats</SortTh>
+                  )}
+                  {table.isColVisible('status') && (
+                    <SortTh field="status" currentSortField={table.sortField} sortDirection={table.sortDirection} onSort={table.handleSort}>Status</SortTh>
+                  )}
+                  {table.isColVisible('priority') && (
+                    <SortTh field="priority" currentSortField={table.sortField} sortDirection={table.sortDirection} onSort={table.handleSort} className="hidden sm:table-cell">Priority</SortTh>
+                  )}
+                  {table.isColVisible('updatedAt') && (
+                    <SortTh field="updatedAt" currentSortField={table.sortField} sortDirection={table.sortDirection} onSort={table.handleSort} className="hidden xl:table-cell">Updated</SortTh>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {paginatedCases.map((c: any) => (
+                {table.paginatedData.map((c: any) => (
                   <tr 
                     key={c.id} 
                     onClick={() => navigate(`/cases/${c.id}`)}
                     className="hover:bg-gray-50 dark:hover:bg-slate-800 cursor-pointer transition-colors"
                   >
-                    <td className="px-4 py-3 font-mono font-medium text-blue-600 dark:text-blue-400 whitespace-nowrap">{c.caseNumber}</td>
-                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-white max-w-[160px] truncate">{c.title}</td>
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900 dark:text-white truncate max-w-[130px]">{c.patientName || c.patient?.name}</div>
-                      <div className="text-xs text-gray-500 truncate max-w-[130px]">{c.doctorName || c.doctor?.name}</div>
-                    </td>
-                    <td className="hidden md:table-cell px-4 py-3 text-gray-600 dark:text-gray-300">{c.clinicName || c.clinic?.name}</td>
-                    <td className="hidden lg:table-cell px-4 py-3">
-                      <div className="text-xs flex flex-col gap-1">
-                        <span className="flex items-center gap-1"><LayoutTemplate className="w-3 h-3"/> {c.ordersCount || 0} Orders</span>
-                        <span className="flex items-center gap-1"><FileText className="w-3 h-3"/> {c.filesCount || 0} Files</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3"><StatusBadge status={c.status} /></td>
-                    <td className="hidden sm:table-cell px-4 py-3"><PriorityBadge priority={c.priority} /></td>
-                    <td className="hidden xl:table-cell px-4 py-3 whitespace-nowrap">{timeAgo(c.updatedAt)}</td>
+                    {table.isColVisible('caseNumber') && (
+                      <td className="px-4 py-3 font-mono font-medium text-blue-600 dark:text-blue-400 whitespace-nowrap">{c.caseNumber}</td>
+                    )}
+                    {table.isColVisible('title') && (
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white max-w-[160px] truncate">{c.title}</td>
+                    )}
+                    {table.isColVisible('patientName') && (
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-gray-900 dark:text-white truncate max-w-[130px]">{c.patientName || c.patient?.name}</div>
+                        <div className="text-xs text-gray-500 truncate max-w-[130px]">{c.doctorName || c.doctor?.name}</div>
+                      </td>
+                    )}
+                    {table.isColVisible('clinicName') && (
+                      <td className="hidden md:table-cell px-4 py-3 text-gray-600 dark:text-gray-300">{c.clinicName || c.clinic?.name}</td>
+                    )}
+                    {table.isColVisible('ordersCount') && (
+                      <td className="hidden lg:table-cell px-4 py-3">
+                        <div className="text-xs flex flex-col gap-1">
+                          <span className="flex items-center gap-1"><LayoutTemplate className="w-3 h-3"/> {c.ordersCount || 0} Orders</span>
+                          <span className="flex items-center gap-1"><FileText className="w-3 h-3"/> {c.filesCount || 0} Files</span>
+                        </div>
+                      </td>
+                    )}
+                    {table.isColVisible('status') && (
+                      <td className="px-4 py-3"><StatusBadge status={c.status} /></td>
+                    )}
+                    {table.isColVisible('priority') && (
+                      <td className="hidden sm:table-cell px-4 py-3"><PriorityBadge priority={c.priority} /></td>
+                    )}
+                    {table.isColVisible('updatedAt') && (
+                      <td className="hidden xl:table-cell px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{timeAgo(c.updatedAt)}</td>
+                    )}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+            <Pagination 
+              currentPage={table.currentPage} 
+              totalPages={table.totalPages} 
+              onPageChange={table.setCurrentPage} 
+            />
+          </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {paginatedCases.map((c: any) => (
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              key={c.id}
-              onClick={() => navigate(`/cases/${c.id}`)}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-5 cursor-pointer hover:shadow-md transition-shadow"
-            >
-              <div className="flex justify-between items-start mb-3">
-                <span className="text-sm font-mono font-medium text-blue-600 dark:text-blue-400">{c.caseNumber}</span>
-                <StatusBadge status={c.status} />
-              </div>
-              <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-1 truncate">{c.title}</h3>
-              
-              <div className="space-y-2 mt-4 text-sm text-gray-600 dark:text-gray-300">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Patient:</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{c.patientName || c.patient?.name || 'Default Patient'}</span>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {table.paginatedData.map((c: any) => (
+              <div 
+                key={c.id}
+                onClick={() => navigate(`/cases/${c.id}`)}
+                className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5 hover:border-blue-500 dark:hover:border-blue-400 transition-all cursor-pointer shadow-sm hover:shadow-md flex flex-col justify-between h-48"
+              >
+                <div>
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                      {c.caseNumber}
+                    </span>
+                    <PriorityBadge priority={c.priority} />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-1">{c.title}</h3>
+                  <p className="text-xs text-gray-500 mt-1">Patient: {c.patientName || c.patient?.name}</p>
+                  <p className="text-xs text-gray-500">Dr. {c.doctorName || c.doctor?.name}</p>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Doctor:</span>
-                  <span>{c.doctorName || c.doctor?.name || 'Dr. Allison Park'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Clinic:</span>
-                  <span>{c.clinicName || c.clinic?.name || 'Bright Smile Dental'}</span>
+                <div className="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-700/50 mt-auto">
+                  <StatusBadge status={c.status} />
+                  <span className="text-[11px] text-gray-400">{timeAgo(c.updatedAt)}</span>
                 </div>
               </div>
-
-              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center text-xs">
-                <PriorityBadge priority={c.priority} />
-                <span className="text-gray-400 flex items-center">
-                  Updated {timeAgo(c.updatedAt)}
-                </span>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      )}
-
-      {filteredCases.length > 0 && (
-        <div className="mt-6 flex justify-end">
+            ))}
+          </div>
           <Pagination 
-            currentPage={currentPage}
-            totalPages={Math.ceil(filteredCases.length / 10)}
-            onPageChange={setCurrentPage}
+            currentPage={table.currentPage} 
+            totalPages={table.totalPages} 
+            onPageChange={table.setCurrentPage} 
           />
         </div>
       )}
     </div>
   );
 }
+

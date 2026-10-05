@@ -38,6 +38,9 @@ import {
   Plus,
   ShoppingCart,
   Table,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
   LayoutGrid,
   Columns
 } from 'lucide-react';
@@ -546,11 +549,40 @@ export default function Flow() {
     });
   }, [enrichedOrders, search, viewFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / pageSize));
+  const [sortCol, setSortCol] = useState<string>('orderNumber');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const handleSort = (colKey: string) => {
+    if (sortCol === colKey) {
+      setSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortCol(colKey);
+      setSortDir('asc');
+    }
+  };
+
+  const sortedOrders = useMemo(() => {
+    const list = [...filteredOrders];
+    if (!sortCol) return list;
+    return list.sort((a, b) => {
+      let aVal = (a as any)[sortCol];
+      let bVal = (b as any)[sortCol];
+      if (aVal === bVal) return 0;
+      if (aVal === null || aVal === undefined) return 1;
+      if (bVal === null || bVal === undefined) return -1;
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      const cmp = String(aVal).localeCompare(String(bVal));
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [filteredOrders, sortCol, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedOrders.length / pageSize));
   const paginatedOrders = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
-    return filteredOrders.slice(start, start + pageSize);
-  }, [filteredOrders, currentPage, pageSize]);
+    return sortedOrders.slice(start, start + pageSize);
+  }, [sortedOrders, currentPage, pageSize]);
 
   return (
     <div className="space-y-4 w-full min-w-0">
@@ -859,16 +891,31 @@ export default function Flow() {
                 {ALL_COLUMNS.filter((c) => visibleColumns.has(c.key)).map((col) => (
                   <th
                     key={col.key}
+                    onClick={() => handleSort(col.key)}
                     style={{ width: getColWidth(col) }}
-                    className={`py-2.5 px-1.5 truncate ${
+                    className={`py-2.5 px-1.5 truncate cursor-pointer select-none transition-colors hover:bg-slate-300 dark:hover:bg-slate-700 ${
                       col.align === 'center'
                         ? 'text-center'
                         : col.align === 'right'
                         ? 'text-right'
                         : 'text-left'
-                    }`}
+                    } ${sortCol === col.key ? 'text-sky-600 dark:text-sky-400 font-black' : ''}`}
+                    title={`Click to sort by ${col.label} (Ascending/Descending)`}
                   >
-                    {col.label}
+                    <div className={`inline-flex items-center gap-1 ${col.align === 'center' ? 'justify-center' : col.align === 'right' ? 'justify-end' : 'justify-start'} w-full`}>
+                      <span className="truncate">{col.label}</span>
+                      <span className="shrink-0 inline-flex">
+                        {sortCol === col.key ? (
+                          sortDir === 'asc' ? (
+                            <ArrowUp size={11} className="text-sky-500" />
+                          ) : (
+                            <ArrowDown size={11} className="text-sky-500" />
+                          )
+                        ) : (
+                          <ArrowUpDown size={10} className="text-slate-400 opacity-40 hover:opacity-100" />
+                        )}
+                      </span>
+                    </div>
                   </th>
                 ))}
               </tr>

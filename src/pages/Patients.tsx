@@ -5,8 +5,6 @@ import { Plus, MoreVertical, Users, LayoutGrid, List } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
-import { SearchInput } from '@/components/ui/SearchInput';
-import { Select } from '@/components/ui/Select';
 import { Pagination } from '@/components/ui/Pagination';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -14,7 +12,8 @@ import { formatDate } from '@/utils/format';
 import { api } from '@/services/api';
 import { useStore } from '@/hooks/useStore';
 import { store } from '@/services/store';
-import { useTableState } from '@/hooks/useTableState';
+import { TableTools, SortTh } from '@/components/ui/TableTools';
+import { useAdvancedTable } from '@/hooks/useAdvancedTable';
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'All Status' },
@@ -22,25 +21,39 @@ const STATUS_OPTIONS = [
   { value: 'Inactive', label: 'Inactive' },
 ];
 
+const GENDER_OPTIONS = [
+  { value: 'all', label: 'All Genders' },
+  { value: 'M', label: 'Male' },
+  { value: 'F', label: 'Female' },
+];
+
+const PATIENT_COLUMNS = [
+  { id: 'name', label: 'Patient', defaultVisible: true },
+  { id: 'contact', label: 'Contact', defaultVisible: true },
+  { id: 'clinicName', label: 'Clinic / Doctor', defaultVisible: true },
+  { id: 'ordersCount', label: 'Orders', defaultVisible: true },
+  { id: 'status', label: 'Status', defaultVisible: true },
+  { id: 'lastVisit', label: 'Last Visit', defaultVisible: true },
+  { id: 'actions', label: 'Actions', defaultVisible: true },
+];
+
 export default function Patients() {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const allPatients = useStore(s => s.getPatients());
 
-  const {
-    search,
-    setSearch,
-    statusFilter,
-    setStatusFilter,
-    page,
-    setPage,
-    totalPages,
-    paginated: patients,
-    handleSort,
-  } = useTableState({
+  const table = useAdvancedTable({
     data: allPatients || [],
-    searchFields: ['name', 'email', 'clinicName', 'doctorName', 'phone'],
+    columns: PATIENT_COLUMNS,
+    searchFields: ['name', 'email', 'clinicName', 'doctorName', 'phone', 'id'],
+    filterConfigs: [
+      { key: 'status', label: 'Status', options: STATUS_OPTIONS, defaultValue: 'all' },
+      { key: 'gender', label: 'Gender', options: GENDER_OPTIONS, defaultValue: 'all' },
+    ],
+    pageSize: 10,
   });
+
+  const patients = table.paginatedData;
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [newPatient, setNewPatient] = useState({ name: '', email: '', phone: '', clinicName: 'Bright Smile Dental' });
@@ -74,36 +87,28 @@ export default function Patients() {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-wrap gap-4 justify-between items-center">
-          <div className="flex flex-wrap gap-3 flex-1">
-            <div className="w-full sm:w-72">
-              <SearchInput value={search} onChange={setSearch} placeholder="Search patients..." />
+        <TableTools
+          table={table}
+          searchPlaceholder="Search patients by name, clinic, doctor, email..."
+          rightActions={
+            <div className="flex items-center gap-1 border border-gray-200 dark:border-gray-700 rounded-md p-1 bg-gray-50 dark:bg-gray-900 shrink-0">
+              <button 
+                onClick={() => setViewMode('table')}
+                className={`p-1.5 rounded transition-colors ${viewMode === 'table' ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                title="Table View"
+              >
+                <List className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                title="Card Grid View"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
             </div>
-            <Select
-              options={STATUS_OPTIONS}
-              value={statusFilter || 'all'}
-              onChange={setStatusFilter}
-              className="w-44"
-            />
-          </div>
-
-          <div className="flex items-center gap-1 border border-gray-200 dark:border-gray-700 rounded-md p-1 bg-gray-50 dark:bg-gray-900 shrink-0">
-            <button 
-              onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded transition-colors ${viewMode === 'table' ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
-              title="Table View"
-            >
-              <List className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
-              title="Card Grid View"
-            >
-              <LayoutGrid className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+          }
+        />
 
         {patients.length === 0 ? (
           <EmptyState
@@ -116,13 +121,27 @@ export default function Patients() {
             <table className="w-full min-w-[650px] text-sm text-left text-gray-500 dark:text-gray-400 divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-900 dark:text-gray-300">
                 <tr>
-                  <th className="px-4 py-3 cursor-pointer" onClick={() => handleSort('name')}>Patient</th>
-                  <th className="hidden sm:table-cell px-4 py-3">Contact</th>
-                  <th className="hidden md:table-cell px-4 py-3">Clinic / Doctor</th>
-                  <th className="hidden lg:table-cell px-4 py-3 cursor-pointer text-center" onClick={() => handleSort('ordersCount')}>Orders</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="hidden xl:table-cell px-4 py-3 cursor-pointer" onClick={() => handleSort('lastVisit')}>Last Visit</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
+                  {table.isColVisible('name') && (
+                    <SortTh field="name" label="Patient" sortField={table.sortField} sortOrder={table.sortOrder} onSort={table.handleSort} />
+                  )}
+                  {table.isColVisible('contact') && (
+                    <th className="hidden sm:table-cell px-4 py-3">Contact</th>
+                  )}
+                  {table.isColVisible('clinicName') && (
+                    <SortTh field="clinicName" label="Clinic / Doctor" sortField={table.sortField} sortOrder={table.sortOrder} onSort={table.handleSort} className="hidden md:table-cell" />
+                  )}
+                  {table.isColVisible('ordersCount') && (
+                    <SortTh field="ordersCount" label="Orders" sortField={table.sortField} sortOrder={table.sortOrder} onSort={table.handleSort} className="hidden lg:table-cell text-center" />
+                  )}
+                  {table.isColVisible('status') && (
+                    <SortTh field="status" label="Status" sortField={table.sortField} sortOrder={table.sortOrder} onSort={table.handleSort} />
+                  )}
+                  {table.isColVisible('lastVisit') && (
+                    <SortTh field="lastVisit" label="Last Visit" sortField={table.sortField} sortOrder={table.sortOrder} onSort={table.handleSort} className="hidden xl:table-cell" />
+                  )}
+                  {table.isColVisible('actions') && (
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -132,33 +151,47 @@ export default function Patients() {
                     className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-slate-800 cursor-pointer transition-colors"
                     onClick={() => navigate(`/patients/${patient.id}`)}
                   >
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <Avatar name={patient.name} size="sm" />
-                        <div>
-                          <div className="font-medium text-gray-900 dark:text-white truncate max-w-[140px]">{patient.name}</div>
-                          <div className="text-xs text-gray-500">{patient.gender === 'M' ? 'Male' : 'Female'}, {formatDate(patient.dob)}</div>
+                    {table.isColVisible('name') && (
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <Avatar name={patient.name} size="sm" />
+                          <div>
+                            <div className="font-medium text-gray-900 dark:text-white truncate max-w-[140px]">{patient.name}</div>
+                            <div className="text-xs text-gray-500">{patient.gender === 'M' ? 'Male' : 'Female'}, {formatDate(patient.dob)}</div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="hidden sm:table-cell px-4 py-3">
-                      <div className="text-gray-900 dark:text-white font-mono text-xs">{patient.phone}</div>
-                      <div className="text-gray-500 text-xs truncate max-w-[130px]">{patient.email}</div>
-                    </td>
-                    <td className="hidden md:table-cell px-4 py-3">
-                      <div className="font-medium text-gray-900 dark:text-white truncate max-w-[130px]">{patient.clinicName}</div>
-                      <div className="text-gray-500 text-xs truncate max-w-[130px]">{patient.doctorName}</div>
-                    </td>
-                    <td className="hidden lg:table-cell px-4 py-3 text-center font-semibold text-gray-900 dark:text-white">{patient.ordersCount}</td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={patient.status} />
-                    </td>
-                    <td className="hidden xl:table-cell px-4 py-3 text-xs font-mono">{patient.lastVisit ? formatDate(patient.lastVisit) : 'N/A'}</td>
-                    <td className="px-4 py-3 text-right">
-                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/patients/${patient.id}`); }}>
-                        <MoreVertical className="w-4 h-4" />
-                      </Button>
-                    </td>
+                      </td>
+                    )}
+                    {table.isColVisible('contact') && (
+                      <td className="hidden sm:table-cell px-4 py-3">
+                        <div className="text-gray-900 dark:text-white font-mono text-xs">{patient.phone}</div>
+                        <div className="text-gray-500 text-xs truncate max-w-[130px]">{patient.email}</div>
+                      </td>
+                    )}
+                    {table.isColVisible('clinicName') && (
+                      <td className="hidden md:table-cell px-4 py-3">
+                        <div className="font-medium text-gray-900 dark:text-white truncate max-w-[130px]">{patient.clinicName}</div>
+                        <div className="text-gray-500 text-xs truncate max-w-[130px]">{patient.doctorName}</div>
+                      </td>
+                    )}
+                    {table.isColVisible('ordersCount') && (
+                      <td className="hidden lg:table-cell px-4 py-3 text-center font-semibold text-gray-900 dark:text-white">{patient.ordersCount}</td>
+                    )}
+                    {table.isColVisible('status') && (
+                      <td className="px-4 py-3">
+                        <StatusBadge status={patient.status} />
+                      </td>
+                    )}
+                    {table.isColVisible('lastVisit') && (
+                      <td className="hidden xl:table-cell px-4 py-3 text-xs font-mono">{patient.lastVisit ? formatDate(patient.lastVisit) : 'N/A'}</td>
+                    )}
+                    {table.isColVisible('actions') && (
+                      <td className="px-4 py-3 text-right">
+                        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/patients/${patient.id}`); }}>
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -203,7 +236,7 @@ export default function Patients() {
 
         {patients.length > 0 && (
           <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+            <Pagination page={table.page} totalPages={table.totalPages} onPageChange={table.setPage} />
           </div>
         )}
       </div>

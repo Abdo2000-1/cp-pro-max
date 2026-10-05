@@ -11,7 +11,10 @@ import {
   Printer,
   ChevronDown,
   Award,
-  TrendingUp
+  TrendingUp,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown
 } from 'lucide-react';
 import { UIStateSwitcher, type UIStateType } from '@/components/ui/UIStateSwitcher';
 import { LoadingState } from '@/components/ui/LoadingState';
@@ -65,6 +68,35 @@ export default function Task31StaffTargets() {
       return true;
     });
   }, [selectedDept, search]);
+
+  const [sortField, setSortField] = useState<string>('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+  };
+
+  const sortedStaff = useMemo(() => {
+    const list = [...filteredStaff];
+    if (!sortField) return list;
+    return list.sort((a, b) => {
+      let aVal = (a as any)[sortField];
+      let bVal = (b as any)[sortField];
+      if (aVal === bVal) return 0;
+      if (aVal === null || aVal === undefined) return 1;
+      if (bVal === null || bVal === undefined) return -1;
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      const cmp = String(aVal).localeCompare(String(bVal));
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [filteredStaff, sortField, sortDir]);
 
   const totalQuota = filteredStaff.reduce((acc, s) => acc + s.quota, 0);
   const totalAchieved = filteredStaff.reduce((acc, s) => acc + s.achieved, 0);
@@ -231,19 +263,44 @@ export default function Task31StaffTargets() {
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold text-slate-500 uppercase select-none">
-                    <th className="py-3 px-3 w-16">Staff ID</th>
-                    <th className="py-3 px-3 w-40">Specialist Name</th>
-                    <th className="py-3 px-3 w-44">Department</th>
+                    <th onClick={() => handleSort('id')} className="py-3 px-3 w-16 cursor-pointer hover:text-slate-800 dark:hover:text-white">
+                      <div className="flex items-center gap-1">
+                        <span>Staff ID</span>
+                        {sortField === 'id' ? (sortDir === 'asc' ? <ArrowUp size={11} className="text-cyan-500" /> : <ArrowDown size={11} className="text-cyan-500" />) : <ArrowUpDown size={10} className="text-slate-400 opacity-40" />}
+                      </div>
+                    </th>
+                    <th onClick={() => handleSort('name')} className="py-3 px-3 w-40 cursor-pointer hover:text-slate-800 dark:hover:text-white">
+                      <div className="flex items-center gap-1">
+                        <span>Specialist Name</span>
+                        {sortField === 'name' ? (sortDir === 'asc' ? <ArrowUp size={11} className="text-cyan-500" /> : <ArrowDown size={11} className="text-cyan-500" />) : <ArrowUpDown size={10} className="text-slate-400 opacity-40" />}
+                      </div>
+                    </th>
+                    <th onClick={() => handleSort('department')} className="py-3 px-3 w-44 cursor-pointer hover:text-slate-800 dark:hover:text-white">
+                      <div className="flex items-center gap-1">
+                        <span>Department</span>
+                        {sortField === 'department' ? (sortDir === 'asc' ? <ArrowUp size={11} className="text-cyan-500" /> : <ArrowDown size={11} className="text-cyan-500" />) : <ArrowUpDown size={10} className="text-slate-400 opacity-40" />}
+                      </div>
+                    </th>
                     <th className="py-3 px-3 w-44">Email & Phone</th>
-                    <th className="py-3 px-3 w-24">Quota</th>
-                    <th className="py-3 px-3 w-24">Achieved</th>
+                    <th onClick={() => handleSort('quota')} className="py-3 px-3 w-24 cursor-pointer hover:text-slate-800 dark:hover:text-white">
+                      <div className="flex items-center gap-1">
+                        <span>Quota</span>
+                        {sortField === 'quota' ? (sortDir === 'asc' ? <ArrowUp size={11} className="text-cyan-500" /> : <ArrowDown size={11} className="text-cyan-500" />) : <ArrowUpDown size={10} className="text-slate-400 opacity-40" />}
+                      </div>
+                    </th>
+                    <th onClick={() => handleSort('achieved')} className="py-3 px-3 w-24 cursor-pointer hover:text-slate-800 dark:hover:text-white">
+                      <div className="flex items-center gap-1">
+                        <span>Achieved</span>
+                        {sortField === 'achieved' ? (sortDir === 'asc' ? <ArrowUp size={11} className="text-cyan-500" /> : <ArrowDown size={11} className="text-cyan-500" />) : <ArrowUpDown size={10} className="text-slate-400 opacity-40" />}
+                      </div>
+                    </th>
                     <th className="py-3 px-3 w-36">Quarter Progress</th>
                     <th className="py-3 px-3 w-40">Monthly Slices (M1 / M2 / M3)</th>
                     <th className="py-3 px-3 text-right w-24">Bonus Tier</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
-                  {filteredStaff.map((staff) => {
+                  {sortedStaff.map((staff) => {
                     const pct = Math.round((staff.achieved / staff.quota) * 100);
                     return (
                       <tr key={staff.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition-colors">
