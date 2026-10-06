@@ -210,7 +210,7 @@ export default function Login() {
 
             <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold font-mono">
               <ShieldCheck size={13} />
-              <span>TLS 256-Bit</span>
+              <span>HIPAA Compliant</span>
             </span>
           </div>
 

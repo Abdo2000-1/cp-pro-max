@@ -94,7 +94,7 @@ export default function WorkflowBoard() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Workflow Production Hub</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            {activeCount} active cases in progress • Seamless responsive pipeline with zero horizontal scrolling
+            {activeCount} active cases in progress across the production pipeline
           </p>
         </div>
 

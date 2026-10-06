@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
+import { ConfigProvider } from '@/contexts/ConfigContext';
 import { Layout } from '@/components/layout/Layout';
 import { lazy, Suspense, useEffect } from 'react';
 
@@ -17,6 +18,7 @@ const Task31StaffTargets = lazy(() => import('@/pages/Task31StaffTargets'));
 const EditCasePage = lazy(() => import('@/pages/EditCasePage'));
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const Profile = lazy(() => import('@/pages/Profile'));
+const ConfigManager = lazy(() => import('@/pages/ConfigManager'));
 
 // Auxiliary ERP & CRM Pages
 const Login = lazy(() => import('@/pages/Login'));
@@ -79,27 +81,30 @@ function LegacyTaskQueryHandler() {
 export default function App() {
   return (
     <BrowserRouter>
-      <ThemeProvider>
-        <LanguageProvider>
-          <LegacyTaskQueryHandler />
-          <Routes>
-            <Route path="/login" element={<SuspenseWrapper><Login /></SuspenseWrapper>} />
-            <Route path="/" element={<Layout />}>
-              {/* Default landing: 3DDX CP PRO MAX Login */}
-              <Route index element={<Navigate to="/login" replace />} />
-              
-              {/* 8 Target Modernized Pages */}
-              <Route path="flow" element={<SuspenseWrapper><Flow /></SuspenseWrapper>} />
-              <Route path="orders" element={<SuspenseWrapper><Flow /></SuspenseWrapper>} />
-              <Route path="add-case" element={<SuspenseWrapper><AddCase /></SuspenseWrapper>} />
-              <Route path="order-details" element={<SuspenseWrapper><OrderDetailsPage /></SuspenseWrapper>} />
-              <Route path="quarter-targets" element={<SuspenseWrapper><QuarterTargetsReport /></SuspenseWrapper>} />
-              <Route path="task-47" element={<SuspenseWrapper><Task47ModelWorkReport /></SuspenseWrapper>} />
-              <Route path="task-31" element={<SuspenseWrapper><Task31StaffTargets /></SuspenseWrapper>} />
-              <Route path="edit-case" element={<SuspenseWrapper><EditCasePage /></SuspenseWrapper>} />
-              <Route path="dashboard" element={<SuspenseWrapper><Dashboard /></SuspenseWrapper>} />
-              <Route path="profile" element={<SuspenseWrapper><Profile /></SuspenseWrapper>} />
-              <Route path="newcp/index.php" element={<Navigate to="/dashboard" replace />} />
+      <ConfigProvider>
+        <ThemeProvider>
+          <LanguageProvider>
+            <LegacyTaskQueryHandler />
+            <Routes>
+              <Route path="/login" element={<SuspenseWrapper><Login /></SuspenseWrapper>} />
+              <Route path="/" element={<Layout />}>
+                {/* Default landing: 3DDX CP PRO MAX Login */}
+                <Route index element={<Navigate to="/login" replace />} />
+                
+                {/* 8 Target Modernized Pages */}
+                <Route path="flow" element={<SuspenseWrapper><Flow /></SuspenseWrapper>} />
+                <Route path="orders" element={<SuspenseWrapper><Flow /></SuspenseWrapper>} />
+                <Route path="add-case" element={<SuspenseWrapper><AddCase /></SuspenseWrapper>} />
+                <Route path="order-details" element={<SuspenseWrapper><OrderDetailsPage /></SuspenseWrapper>} />
+                <Route path="quarter-targets" element={<SuspenseWrapper><QuarterTargetsReport /></SuspenseWrapper>} />
+                <Route path="task-47" element={<SuspenseWrapper><Task47ModelWorkReport /></SuspenseWrapper>} />
+                <Route path="task-31" element={<SuspenseWrapper><Task31StaffTargets /></SuspenseWrapper>} />
+                <Route path="edit-case" element={<SuspenseWrapper><EditCasePage /></SuspenseWrapper>} />
+                <Route path="dashboard" element={<SuspenseWrapper><Dashboard /></SuspenseWrapper>} />
+                <Route path="profile" element={<SuspenseWrapper><Profile /></SuspenseWrapper>} />
+                <Route path="config-manager" element={<SuspenseWrapper><ConfigManager /></SuspenseWrapper>} />
+                <Route path="cms" element={<SuspenseWrapper><ConfigManager /></SuspenseWrapper>} />
+                <Route path="newcp/index.php" element={<Navigate to="/dashboard" replace />} />
 
               {/* Auxiliary ERP & CRM Routes */}
               <Route path="orders/:orderId" element={<SuspenseWrapper><ViewOrder /></SuspenseWrapper>} />
@@ -129,6 +134,7 @@ export default function App() {
           </Routes>
         </LanguageProvider>
       </ThemeProvider>
+      </ConfigProvider>
     </BrowserRouter>
   );
 }

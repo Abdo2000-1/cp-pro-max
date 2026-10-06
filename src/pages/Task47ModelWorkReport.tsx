@@ -363,7 +363,7 @@ export default function Task47ModelWorkReport() {
 
             <div className="p-3 bg-slate-50 dark:bg-slate-900/60 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 flex justify-between">
               <span>Displaying <strong>{filteredRows.length}</strong> model work appliance cases</span>
-              <span className="font-mono text-cyan-600">Zero horizontal scroll verified @ 1920px</span>
+              <span className="font-mono text-emerald-600 font-bold">Live Production Pipeline</span>
             </div>
           </div>
 

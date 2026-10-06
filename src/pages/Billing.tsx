@@ -111,7 +111,7 @@ export default function Billing() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Billing & Invoices</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Accounts receivable, payment tracking, and digital invoices • Zero horizontal scroll
+            Accounts receivable, payment tracking, and digital invoices
           </p>
         </div>
         

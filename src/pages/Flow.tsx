@@ -260,15 +260,15 @@ export interface ColumnDefinition {
 }
 
 export const ALL_COLUMNS: ColumnDefinition[] = [
-  { key: 'tl', label: '# tl', baseWidth: 4.5, category: 'Core', align: 'center' },
-  { key: 'scanCenter', label: 'Scan Center', baseWidth: 6.5, category: 'Clinician' },
-  { key: 'doctor', label: 'Doctor', baseWidth: 6.5, category: 'Clinician' },
-  { key: 'patient', label: 'Patient', baseWidth: 6.5, category: 'Clinician' },
+  { key: 'tl', label: '# tl', baseWidth: 6.5, category: 'Core', align: 'center' },
+  { key: 'scanCenter', label: 'Scan Center', baseWidth: 8.0, category: 'Clinician' },
+  { key: 'doctor', label: 'Doctor', baseWidth: 7.5, category: 'Clinician' },
+  { key: 'patient', label: 'Patient', baseWidth: 7.5, category: 'Clinician' },
   { key: 'lock', label: 'Lock', baseWidth: 3.5, category: 'Core', align: 'center' },
   { key: 'notes', label: 'Notes', baseWidth: 3.5, category: 'Core', align: 'center' },
   { key: 'archive', label: 'Archive', baseWidth: 4.5, category: 'Core', align: 'center' },
   { key: 'more', label: '...', baseWidth: 2.0, category: 'Core', align: 'center' },
-  { key: 'order', label: 'Order', baseWidth: 9.0, category: 'Service' },
+  { key: 'order', label: 'Order', baseWidth: 8.5, category: 'Service' },
   { key: 'billTo', label: 'Bill To', baseWidth: 6.0, category: 'Financial' },
   { key: 'max', label: 'Max.', baseWidth: 3.0, category: 'Anatomy', align: 'center' },
   { key: 'mand', label: 'Mand.', baseWidth: 3.0, category: 'Anatomy', align: 'center' },
@@ -362,6 +362,7 @@ export default function Flow() {
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [servicesFilter, setServicesFilter] = useState<ServiceFilterState>(DEFAULT_FILTERS);
   const [viewFilter, setViewFilter] = useState<'all' | 'multi-tp' | 'action-required'>('all');
+  const [showServiceFilters, setShowServiceFilters] = useState<boolean>(false);
 
   // Closed / Collapsed by default as requested: "وعايز مقفول بالافتراضي"
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
@@ -435,7 +436,37 @@ export default function Flow() {
     setShowColumnPicker(false);
   };
 
-  // Calculate dynamic column width so visible columns strictly sum to 100%
+  // Dynamic Column Resizing (Excel-like drag resize)
+  const [colWidthOverrides, setColWidthOverrides] = useState<Record<string, number>>({});
+  const resizingColRef = React.useRef<{ key: string; startX: number; startWidth: number } | null>(null);
+
+  const startResizing = (key: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const th = (e.currentTarget as HTMLElement).closest('th');
+    const startWidth = th ? th.getBoundingClientRect().width : 100;
+    resizingColRef.current = { key, startX: e.clientX, startWidth };
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (!resizingColRef.current) return;
+      const delta = moveEvent.clientX - resizingColRef.current.startX;
+      const newWidth = Math.max(35, resizingColRef.current.startWidth + delta);
+      setColWidthOverrides(prev => ({ ...prev, [resizingColRef.current!.key]: newWidth }));
+    };
+
+    const handleMouseUp = () => {
+      resizingColRef.current = null;
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'default';
+    };
+
+    document.body.style.cursor = 'col-resize';
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  // Calculate dynamic column width so visible columns strictly sum to 100% or use pixel override
   const totalVisibleBaseWidth = useMemo(() => {
     return ALL_COLUMNS.filter((c) => visibleColumns.has(c.key)).reduce(
       (sum, c) => sum + c.baseWidth,
@@ -444,6 +475,9 @@ export default function Flow() {
   }, [visibleColumns]);
 
   const getColWidth = (col: ColumnDefinition) => {
+    if (colWidthOverrides[col.key]) {
+      return `${colWidthOverrides[col.key]}px`;
+    }
     return `${((col.baseWidth / totalVisibleBaseWidth) * 100).toFixed(2)}%`;
   };
 
@@ -545,11 +579,34 @@ export default function Flow() {
         if (!hasAlert) return false;
       }
 
+      // Check if at least one service in the order matches active service filters
+      if (activeServicesCount < 13) {
+        const activeCodes = new Set<string>();
+        if (servicesFilter.tp) activeCodes.add('TP');
+        if (servicesFilter.conv) activeCodes.add('CONV');
+        if (servicesFilter.rep) activeCodes.add('RAD');
+        if (servicesFilter.vr) activeCodes.add('VR');
+        if (servicesFilter.sg) activeCodes.add('SG');
+        if (servicesFilter.GFMR) activeCodes.add('GFMR');
+        if (servicesFilter.FMP) activeCodes.add('FMP');
+        if (servicesFilter.mod) activeCodes.add('MOD');
+        if (servicesFilter.restTemp) activeCodes.add('TEMP');
+        if (servicesFilter.restFinal) activeCodes.add('REST');
+        if (servicesFilter.soft) activeCodes.add('SOFT');
+        if (servicesFilter.misc) activeCodes.add('MISC');
+        if (servicesFilter.other) activeCodes.add('OTH');
+        // IO is considered foundation unless no services match
+        activeCodes.add('IO');
+
+        const hasMatchingService = order.services.some(s => activeCodes.has(s.typeCode));
+        if (!hasMatchingService) return false;
+      }
+
       return true;
     });
-  }, [enrichedOrders, search, viewFilter]);
+  }, [enrichedOrders, search, viewFilter, servicesFilter, activeServicesCount]);
 
-  const [sortCol, setSortCol] = useState<string>('orderNumber');
+  const [sortCol, setSortCol] = useState<string>('tl');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   const handleSort = (colKey: string) => {
@@ -565,15 +622,71 @@ export default function Flow() {
     const list = [...filteredOrders];
     if (!sortCol) return list;
     return list.sort((a, b) => {
-      let aVal = (a as any)[sortCol];
-      let bVal = (b as any)[sortCol];
+      let aVal: any = '';
+      let bVal: any = '';
+
+      const getOrderColVal = (order: MasterWorkflowOrder, col: string) => {
+        const prim = order.services[0];
+        switch (col) {
+          case 'tl':
+            return order.orderNum;
+          case 'scanCenter':
+            return order.scanCenter;
+          case 'doctor':
+            return order.doctorName;
+          case 'patient':
+            return order.patientName;
+          case 'lock':
+            return order.isLocked ? 1 : 0;
+          case 'notes':
+            return order.notes;
+          case 'archive':
+            return order.archiveDate;
+          case 'more':
+            return order.serial;
+          case 'order':
+            return order.services.map(s => s.typeCode).join(' ');
+          case 'billTo':
+            return prim?.billTo || '';
+          case 'max':
+            return prim?.maxilla || '';
+          case 'mand':
+            return prim?.mandible || '';
+          case 'format':
+            return prim?.format || '';
+          case 'amount':
+            return order.services.reduce((acc, s) => acc + s.amount, 0);
+          case 'vouch':
+            return prim?.vouchers || '';
+          case 'received':
+            return prim?.receivedTime || '';
+          case 'sent':
+            return prim?.sentTime || '';
+          case 'update':
+            return prim?.updateTime || '';
+          case 'charged':
+            return prim?.chargedOn || '';
+          case 'action':
+            return prim?.actionLabel || '';
+          case 'cr':
+            return prim?.changeRequest || '';
+          case 'csTask':
+            return prim?.csTask?.assignee || '';
+          default:
+            return (order as any)[col] || '';
+        }
+      };
+
+      aVal = getOrderColVal(a, sortCol);
+      bVal = getOrderColVal(b, sortCol);
+
       if (aVal === bVal) return 0;
-      if (aVal === null || aVal === undefined) return 1;
-      if (bVal === null || bVal === undefined) return -1;
+      if (aVal === null || aVal === undefined || aVal === '') return 1;
+      if (bVal === null || bVal === undefined || bVal === '') return -1;
       if (typeof aVal === 'number' && typeof bVal === 'number') {
         return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
       }
-      const cmp = String(aVal).localeCompare(String(bVal));
+      const cmp = String(aVal).localeCompare(String(bVal), undefined, { numeric: true, sensitivity: 'base' });
       return sortDir === 'asc' ? cmp : -cmp;
     });
   }, [filteredOrders, sortCol, sortDir]);
@@ -602,7 +715,7 @@ export default function Flow() {
             </span>
           </div>
           <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">
-            22 Columns Specification • Service Tags in Order Column • Zero Horizontal Scroll
+            22 Columns Specification • Real-time Multi-Service Production Pipeline
           </p>
         </div>
 
@@ -618,68 +731,93 @@ export default function Flow() {
         </div>
       </div>
 
-      {/* 2. Service Filter Bar */}
-      <div className="bg-white dark:bg-[#0b101d] p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-2">
-            <SlidersHorizontal size={15} className="text-sky-500" />
-            <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
-              {t('action.filter', 'Service Modules Filter')}
+      {/* 2. Encapsulated Service Modules Filter Accordion */}
+      <div className="bg-white dark:bg-[#0b101d] rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs overflow-hidden transition-all">
+        <div
+          onClick={() => setShowServiceFilters(!showServiceFilters)}
+          className="p-3.5 flex flex-wrap items-center justify-between gap-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/50 select-none"
+        >
+          <div className="flex items-center gap-2.5">
+            <span className="p-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800">
+              <SlidersHorizontal size={14} />
             </span>
-            <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 bg-transparent">
+            <div>
+              <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider block">
+                {t('action.filter', 'Filter by Clinical Service Modules')}
+              </span>
+              <span className="text-[10px] text-slate-400">
+                Click to expand/collapse 13 multi-department clinical filters
+              </span>
+            </div>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-sky-500/10 text-sky-600 border border-sky-500/30">
               {activeServicesCount}/13 Active
             </span>
           </div>
 
-          <div className="flex items-center gap-2 text-xs">
-            <button
-              type="button"
-              onClick={() => setAllServices(true)}
-              className="text-sky-600 dark:text-sky-400 hover:underline font-bold text-[11px] cursor-pointer"
-            >
-              Select All
-            </button>
-            <span className="text-slate-300">|</span>
-            <button
-              type="button"
-              onClick={() => setAllServices(false)}
-              className="text-slate-500 hover:underline font-bold text-[11px] cursor-pointer"
-            >
-              Clear All
-            </button>
+          <div className="flex items-center gap-3">
+            {showServiceFilters && (
+              <div className="flex items-center gap-2 text-xs" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() => setAllServices(true)}
+                  className="text-sky-600 dark:text-sky-400 hover:underline font-bold text-[11px] cursor-pointer"
+                >
+                  Select All
+                </button>
+                <span className="text-slate-300">|</span>
+                <button
+                  type="button"
+                  onClick={() => setAllServices(false)}
+                  className="text-slate-500 hover:underline font-bold text-[11px] cursor-pointer"
+                >
+                  Clear All
+                </button>
+              </div>
+            )}
+
+            <ChevronDown
+              size={15}
+              className={`text-slate-400 transition-transform duration-200 ${
+                showServiceFilters ? 'rotate-180 text-sky-500' : ''
+              }`}
+            />
           </div>
         </div>
 
-        {/* 4 Categorized Modules */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-          {SERVICE_GROUPS.map((grp) => (
-            <div key={grp.category} className="p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800/80 space-y-1.5 bg-transparent">
-              <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-                {grp.category}
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {grp.items.map((item) => {
-                  const active = servicesFilter[item.key as keyof ServiceFilterState];
-                  return (
-                    <button
-                      key={item.key}
-                      type="button"
-                      onClick={() => toggleService(item.key as keyof ServiceFilterState)}
-                      className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
-                        active
-                          ? 'border-sky-500/60 text-sky-600 dark:text-sky-400 bg-transparent'
-                          : 'border-slate-300 dark:border-slate-700 text-slate-400 opacity-60 hover:opacity-100 bg-transparent'
-                      }`}
-                    >
-                      <span className="font-mono text-[9.5px] opacity-75">{item.code}</span>
-                      <span>{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
+        {/* 4 Categorized Modules Dropdown Area */}
+        {showServiceFilters && (
+          <div className="p-4 pt-1 border-t border-slate-100 dark:border-slate-800 space-y-3 animate-slide-up">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+              {SERVICE_GROUPS.map((grp) => (
+                <div key={grp.category} className="p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800/80 space-y-1.5 bg-slate-50/50 dark:bg-slate-900/30">
+                  <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                    {grp.category}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {grp.items.map((item) => {
+                      const active = servicesFilter[item.key as keyof ServiceFilterState];
+                      return (
+                        <button
+                          key={item.key}
+                          type="button"
+                          onClick={() => toggleService(item.key as keyof ServiceFilterState)}
+                          className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
+                            active
+                              ? 'border-sky-500/60 text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40'
+                              : 'border-slate-300 dark:border-slate-700 text-slate-400 opacity-60 hover:opacity-100 bg-transparent'
+                          }`}
+                        >
+                          <span className="font-mono text-[9.5px] opacity-75">{item.code}</span>
+                          <span>{item.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* 3. Search & Filter Bar */}
@@ -875,10 +1013,6 @@ export default function Flow() {
                 <span>Cards</span>
               </button>
             </div>
-
-            <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-bold px-2 py-1 rounded border border-emerald-500/30 bg-transparent hidden sm:inline">
-              Zero Horizontal Scroll
-            </span>
           </div>
         </div>
 
@@ -893,14 +1027,14 @@ export default function Flow() {
                     key={col.key}
                     onClick={() => handleSort(col.key)}
                     style={{ width: getColWidth(col) }}
-                    className={`py-2.5 px-1.5 truncate cursor-pointer select-none transition-colors hover:bg-slate-300 dark:hover:bg-slate-700 ${
+                    className={`py-2.5 px-1.5 truncate cursor-pointer select-none transition-colors hover:bg-slate-300 dark:hover:bg-slate-700 relative group/th ${
                       col.align === 'center'
                         ? 'text-center'
                         : col.align === 'right'
                         ? 'text-right'
                         : 'text-left'
                     } ${sortCol === col.key ? 'text-sky-600 dark:text-sky-400 font-black' : ''}`}
-                    title={`Click to sort by ${col.label} (Ascending/Descending)`}
+                    title={`Click to sort by ${col.label} (Ascending/Descending) • Drag right border to resize`}
                   >
                     <div className={`inline-flex items-center gap-1 ${col.align === 'center' ? 'justify-center' : col.align === 'right' ? 'justify-end' : 'justify-start'} w-full`}>
                       <span className="truncate">{col.label}</span>
@@ -916,6 +1050,14 @@ export default function Flow() {
                         )}
                       </span>
                     </div>
+
+                    {/* Excel-like column resize grip handle */}
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      onMouseDown={(e) => startResizing(col.key, e)}
+                      className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-sky-500/50 active:bg-sky-600 z-10 transition-colors"
+                      title="Drag to resize column"
+                    />
                   </th>
                 ))}
               </tr>
@@ -950,11 +1092,11 @@ export default function Flow() {
                       >
                         {/* 1. # tl */}
                         {visibleColumns.has('tl') && (
-                          <td className="py-2.5 px-1.5 text-center">
-                            <div className="flex items-center gap-1 justify-center">
+                          <td className="py-2.5 px-2 text-left whitespace-nowrap">
+                            <div className="flex items-center gap-1.5">
                               <span
                                 onClick={(e) => toggleOrderExpand(order.id, e)}
-                                className={`p-0.5 rounded transition-transform duration-200 cursor-pointer ${
+                                className={`p-0.5 rounded transition-transform duration-200 cursor-pointer shrink-0 ${
                                   isExpanded
                                     ? 'text-sky-500 rotate-90'
                                     : 'text-slate-400 group-hover:text-sky-500'
@@ -963,11 +1105,11 @@ export default function Flow() {
                               >
                                 <ChevronRight size={14} className="stroke-[3]" />
                               </span>
-                              <div className="flex flex-col items-start">
+                              <div className="flex flex-col items-start leading-tight">
                                 <span className="font-mono font-black text-amber-600 dark:text-amber-500 text-[11px]">
                                   {order.orderNum}
                                 </span>
-                                <span className={`inline-block px-1 py-0.5 rounded text-[8px] tracking-wider uppercase ${getSourceBadgeStyle(order.source)}`}>
+                                <span className={`inline-block px-1 py-0.2 rounded text-[7.5px] tracking-wider uppercase mt-0.5 ${getSourceBadgeStyle(order.source)}`}>
                                   {order.source}
                                 </span>
                               </div>
@@ -1372,33 +1514,95 @@ export default function Flow() {
                                       </table>
                                     </div>
                                   ) : (
-                                    /* Sub-Orders View Mode 2: Cards */
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    /* Sub-Orders View Mode 2: Enhanced Comprehensive 22-Field Cards */
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
                                       {order.services.map((sub, srvIdx) => (
                                         <div
                                           key={sub.id}
-                                          className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0b101d] space-y-2"
+                                          className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0b101d] space-y-2.5 shadow-xs hover:border-sky-400 dark:hover:border-sky-500 transition-all"
                                         >
-                                          <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-1.5">
-                                              <span className={`px-1.5 py-0.5 rounded text-[9.5px] font-black border bg-transparent ${getServiceTagStyle(sub.typeCode)}`}>
+                                          {/* Card Header: Type Badge, Title, Amount */}
+                                          <div className="flex items-start justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                                            <div className="flex items-center gap-2">
+                                              <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black border bg-transparent ${getServiceTagStyle(sub.typeCode)}`}>
                                                 {sub.typeCode}
                                               </span>
-                                              <span className="font-bold text-xs text-slate-900 dark:text-white truncate">
-                                                {sub.title}
+                                              <div>
+                                                <h5 className="font-extrabold text-xs text-slate-900 dark:text-white line-clamp-1" title={sub.title}>
+                                                  {sub.title}
+                                                </h5>
+                                                <div className="text-[10px] text-slate-400">Sub-Service #{srvIdx + 1}</div>
+                                              </div>
+                                            </div>
+                                            <div className="text-right">
+                                              <span className="font-mono font-black text-xs text-slate-900 dark:text-white block">
+                                                ${sub.amount}.00
+                                              </span>
+                                              <span className="text-[9px] text-slate-400 font-mono">Billed USD</span>
+                                            </div>
+                                          </div>
+
+                                          {/* Clinical & Financial Specs Grid */}
+                                          <div className="grid grid-cols-2 gap-2 text-[10px] bg-slate-50/70 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
+                                            <div>
+                                              <span className="text-slate-400 block font-medium">Bill To Entity:</span>
+                                              <span className="font-bold text-slate-800 dark:text-slate-200 truncate block" title={sub.billTo}>
+                                                {sub.billTo}
                                               </span>
                                             </div>
-                                            <span className="font-mono font-bold text-xs text-slate-900 dark:text-white">
-                                              ${sub.amount}.00
-                                            </span>
+                                            <div>
+                                              <span className="text-slate-400 block font-medium">Export Format:</span>
+                                              <span className="font-mono font-bold text-slate-800 dark:text-slate-200 block">
+                                                {sub.format}
+                                              </span>
+                                            </div>
+                                            <div>
+                                              <span className="text-slate-400 block font-medium">Anatomy Arches:</span>
+                                              <span className="font-bold text-emerald-600 dark:text-emerald-400 block">
+                                                Max: {sub.maxilla} / Mand: {sub.mandible}
+                                              </span>
+                                            </div>
+                                            <div>
+                                              <span className="text-slate-400 block font-medium">Voucher Ref:</span>
+                                              <span className="font-mono text-slate-700 dark:text-slate-300 block">
+                                                {sub.vouchers || 'N/A'}
+                                              </span>
+                                            </div>
                                           </div>
-                                          <div className="text-[10px] text-slate-500 flex justify-between">
-                                            <span>Format: <strong>{sub.format}</strong></span>
-                                            <span>Jaws: <strong>{sub.maxilla}/{sub.mandible}</strong></span>
+
+                                          {/* Timeline & CS Assignment Strip */}
+                                          <div className="space-y-1 text-[9.5px] font-mono text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-2">
+                                            <div className="flex justify-between items-center">
+                                              <span>Received: <strong className="text-slate-700 dark:text-slate-300">{sub.receivedTime}</strong></span>
+                                              <span>Sent: <strong className="text-slate-700 dark:text-slate-300">{sub.sentTime}</strong></span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                              <span>Updated: <strong className="text-slate-700 dark:text-slate-300">{sub.updateTime}</strong></span>
+                                              <span>Charged: <strong className="text-slate-700 dark:text-slate-300">{sub.chargedOn}</strong></span>
+                                            </div>
+                                            <div className="flex justify-between items-center pt-1 border-t border-slate-100/60 dark:border-slate-800/60">
+                                              <span>CR: <strong className="text-rose-500">{sub.changeRequest}</strong></span>
+                                              <span>CS-Task: <strong className="text-indigo-500">{sub.csTask.assignee ? `Assigned to ${sub.csTask.assignee}` : 'Unassigned'}</strong></span>
+                                            </div>
                                           </div>
-                                          <div className="flex justify-between items-center pt-1 border-t border-slate-100 dark:border-slate-800">
-                                            <span className="text-[10px] text-slate-400 truncate max-w-[140px]">{sub.billTo}</span>
-                                            {renderActionStatusBadge(sub.actionLabel, sub.hasActionAlert, sub.actionButtonText)}
+
+                                          {/* Action Footer */}
+                                          <div className="flex justify-between items-center pt-1">
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                navigate(`/order-details?ID=${order.orderNum}`);
+                                              }}
+                                              className="text-[10px] text-sky-600 dark:text-sky-400 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                                            >
+                                              <span>Inspect Service</span>
+                                              <ExternalLink size={10} />
+                                            </button>
+                                            {renderActionStatusBadge(sub.actionLabel, sub.hasActionAlert, sub.actionButtonText, (e) => {
+                                              e.stopPropagation();
+                                              navigate(`/order-details?ID=${order.orderNum}`);
+                                            })}
                                           </div>
                                         </div>
                                       ))}

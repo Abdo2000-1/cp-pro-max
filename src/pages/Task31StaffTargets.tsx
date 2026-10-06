@@ -356,7 +356,7 @@ export default function Task31StaffTargets() {
 
             <div className="p-3 bg-slate-50 dark:bg-slate-900/60 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 flex justify-between">
               <span>Displaying <strong>{filteredStaff.length}</strong> evaluated staff targets for {selectedQuarter}</span>
-              <span className="font-mono text-cyan-600">Zero horizontal scroll verified @ 1920px</span>
+              <span className="font-mono text-emerald-600 font-bold">Live Production Pipeline</span>
             </div>
           </div>
 

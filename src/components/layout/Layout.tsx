@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ConvertibleNav, NavPosition } from './ConvertibleNav';
+import { Footer } from './Footer';
 import { ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -161,6 +162,8 @@ export function Layout() {
             <Outlet />
           </div>
         </main>
+        {/* Footer with dynamic version, branding, and links */}
+        <Footer />
       </div>
 
     </div>

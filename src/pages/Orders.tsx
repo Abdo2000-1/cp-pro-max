@@ -83,7 +83,7 @@ export default function Orders() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Orders Directory</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            Manage dental restoration cases ({table.totalItems} total) • Zero horizontal scrolling
+            Manage dental restoration cases ({table.totalItems} total)
           </p>
         </div>
 

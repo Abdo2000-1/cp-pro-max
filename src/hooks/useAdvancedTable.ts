@@ -155,17 +155,38 @@ export function useAdvancedTable<T = any>({
   const sortedData = useMemo(() => {
     if (!sortField) return filteredData;
 
-    return [...filteredData].sort((a: any, b: any) => {
-      let aVal = a[sortField];
-      let bVal = b[sortField];
+    const resolveValue = (item: any, path: string) => {
+      if (!item) return '';
+      if (item[path] !== undefined && item[path] !== null) return item[path];
+      // Check dotted path
+      if (path.includes('.')) {
+        const parts = path.split('.');
+        let current = item;
+        for (const p of parts) {
+          if (current === undefined || current === null) return '';
+          current = current[p];
+        }
+        return current ?? '';
+      }
+      return '';
+    };
 
-      // Handle nested or undefined
-      if (aVal === undefined || aVal === null) aVal = '';
-      if (bVal === undefined || bVal === null) bVal = '';
+    return [...filteredData].sort((a: any, b: any) => {
+      let aVal = resolveValue(a, sortField);
+      let bVal = resolveValue(b, sortField);
+
+      // Handle undefined/null/empty
+      if (aVal === bVal) return 0;
+      if (aVal === undefined || aVal === null || aVal === '') return 1;
+      if (bVal === undefined || bVal === null || bVal === '') return -1;
+
+      // Clean currency or numeric strings like "$400.00" -> 400
+      let cleanA = typeof aVal === 'string' ? aVal.replace(/[$,]/g, '').trim() : aVal;
+      let cleanB = typeof bVal === 'string' ? bVal.replace(/[$,]/g, '').trim() : bVal;
 
       // Numeric comparison
-      const aNum = Number(aVal);
-      const bNum = Number(bVal);
+      const aNum = Number(cleanA);
+      const bNum = Number(cleanB);
       if (!isNaN(aNum) && !isNaN(bNum) && typeof aVal !== 'boolean' && typeof bVal !== 'boolean') {
         return sortDirection === 'asc' ? aNum - bNum : bNum - aNum;
       }

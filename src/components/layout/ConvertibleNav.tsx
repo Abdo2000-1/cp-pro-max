@@ -58,9 +58,11 @@ export function ConvertibleNav({
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [dockPickerOpen, setDockPickerOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [opsMenuOpen, setOpsMenuOpen] = useState(false);
 
   const langRef = useRef<HTMLDivElement>(null);
   const dockPickerRef = useRef<HTMLDivElement>(null);
+  const opsMenuRef = useRef<HTMLDivElement>(null);
 
   const profile = useStore((s) => s.getProfile());
 
@@ -124,6 +126,9 @@ export function ConvertibleNav({
       }
       if (dockPickerRef.current && !dockPickerRef.current.contains(e.target as Node)) {
         setDockPickerOpen(false);
+      }
+      if (opsMenuRef.current && !opsMenuRef.current.contains(e.target as Node)) {
+        setOpsMenuOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -284,31 +289,151 @@ export function ConvertibleNav({
               </NavLink>
             </div>
 
-            {/* Center: Navigation Links for 8 Target Pages (Fits Horizontally on 22" 1920px Display) */}
-            <nav className="flex items-center gap-1 xl:gap-2 overflow-x-hidden py-1 shrink-1">
-              {targetNavItems.map((item) => {
-                const isActive = location.pathname === item.path || 
-                  (item.path === '/flow' && (location.pathname === '/orders' || location.pathname === '/flow'));
-                return (
-                  <NavLink
-                    key={item.id}
-                    to={item.path}
-                    className={`group relative flex items-center gap-1.5 px-2.5 xl:px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-150 ${
-                      isActive
-                        ? 'bg-gradient-to-r from-[#0284c7]/20 to-[#ea580c]/15 text-[#0284c7] dark:text-sky-300 shadow-xs border border-[#0284c7]/40 ring-1 ring-[#0284c7]/30'
-                        : 'text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <item.icon
-                      size={15}
-                      className={`transition-colors shrink-0 ${
-                        isActive ? 'text-[#0284c7] dark:text-sky-400 drop-shadow-[0_0_6px_rgba(2,132,199,0.5)]' : 'text-slate-400 group-hover:text-[#0284c7]'
-                      }`}
-                    />
-                    <span>{item.label}</span>
-                  </NavLink>
-                );
-              })}
+            {/* Center: Clean & Focused Navigation (Primary Pages + Operations Dropdown) */}
+            <nav className="flex items-center gap-1 xl:gap-2 py-1">
+              <NavLink
+                to="/dashboard"
+                className={({ isActive }) =>
+                  `flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    isActive
+                      ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`
+                }
+              >
+                <LayoutDashboard size={14} />
+                <span>Dashboard</span>
+              </NavLink>
+
+              <NavLink
+                to="/flow"
+                className={({ isActive }) =>
+                  `flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    isActive || location.pathname === '/orders'
+                      ? 'bg-gradient-to-r from-[#0284c7] to-[#0369a1] text-white shadow-xs'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`
+                }
+              >
+                <Layers size={14} />
+                <span>Workflow Queue</span>
+              </NavLink>
+
+              <NavLink
+                to="/add-case"
+                className={({ isActive }) =>
+                  `flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    isActive
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`
+                }
+              >
+                <FilePlus2 size={14} />
+                <span>Add Case</span>
+              </NavLink>
+
+              {/* Operations & Analytics Dropdown Menu */}
+              <div className="relative" ref={opsMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setOpsMenuOpen(!opsMenuOpen)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                    opsMenuOpen || ['/quarter-targets', '/task-47', '/task-31', '/order-details', '/edit-case'].includes(location.pathname)
+                      ? 'border-[#0284c7]/60 text-[#0284c7] dark:text-sky-400 bg-sky-500/10'
+                      : 'border-transparent text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                  title="Open Operations & Clinical Modules Menu"
+                >
+                  <Boxes size={14} />
+                  <span>Operations & Analytics</span>
+                  <ChevronDown size={12} className={`transition-transform duration-200 ${opsMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {opsMenuOpen && (
+                  <div className="absolute top-11 left-0 w-64 rounded-2xl bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-slate-800 shadow-2xl p-2 z-50 animate-slide-up space-y-1">
+                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider px-2.5 py-1">
+                      Analytics & Production Reports
+                    </div>
+                    
+                    <NavLink
+                      to="/quarter-targets"
+                      onClick={() => setOpsMenuOpen(false)}
+                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors text-slate-800 dark:text-slate-200"
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+                        <TrendingUp size={14} />
+                      </div>
+                      <div>
+                        <div className="text-slate-900 dark:text-white">Quarter Targets & Power BI</div>
+                        <div className="text-[10px] text-slate-400 font-normal">Executive metrics & live report</div>
+                      </div>
+                    </NavLink>
+
+                    <NavLink
+                      to="/task-47"
+                      onClick={() => setOpsMenuOpen(false)}
+                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors text-slate-800 dark:text-slate-200"
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                        <Boxes size={14} />
+                      </div>
+                      <div>
+                        <div className="text-slate-900 dark:text-white">Task 47: Models Report</div>
+                        <div className="text-[10px] text-slate-400 font-normal">Operator models & cost logs</div>
+                      </div>
+                    </NavLink>
+
+                    <NavLink
+                      to="/task-31"
+                      onClick={() => setOpsMenuOpen(false)}
+                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors text-slate-800 dark:text-slate-200"
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                        <Users2 size={14} />
+                      </div>
+                      <div>
+                        <div className="text-slate-900 dark:text-white">Task 31: Staff Targets</div>
+                        <div className="text-[10px] text-slate-400 font-normal">Technician volume & bonus tiers</div>
+                      </div>
+                    </NavLink>
+
+                    <div className="border-t border-slate-100 dark:border-slate-800 my-1 pt-1" />
+
+                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider px-2.5 py-1">
+                      Case Inspection
+                    </div>
+
+                    <NavLink
+                      to="/order-details"
+                      onClick={() => setOpsMenuOpen(false)}
+                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors text-slate-800 dark:text-slate-200"
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                        <FileText size={14} />
+                      </div>
+                      <div>
+                        <div className="text-slate-900 dark:text-white">Order Details Inspection</div>
+                        <div className="text-[10px] text-slate-400 font-normal">Deep order telemetry & notes</div>
+                      </div>
+                    </NavLink>
+
+                    <NavLink
+                      to="/edit-case"
+                      onClick={() => setOpsMenuOpen(false)}
+                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors text-slate-800 dark:text-slate-200"
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                        <FileEdit size={14} />
+                      </div>
+                      <div>
+                        <div className="text-slate-900 dark:text-white">Edit Clinical Case</div>
+                        <div className="text-[10px] text-slate-400 font-normal">Form revision & remake auth</div>
+                      </div>
+                    </NavLink>
+                  </div>
+                )}
+              </div>
             </nav>
 
             {/* Right: Language Switcher, Theme Toggle & Profile Button (No Search Bar) */}

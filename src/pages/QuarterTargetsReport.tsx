@@ -45,6 +45,7 @@ import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAppConfig } from '@/contexts/ConfigContext';
 
 // Real quarterly targets & performance data
 const QUARTER_DATA = [
@@ -85,7 +86,7 @@ export default function QuarterTargetsReport() {
   const { t } = useLanguage();
   const [uiState, setUiState] = useState<'normal' | 'loading' | 'empty' | 'error'>('normal');
   // Default to the native interactive Power BI analytics dashboard so it ALWAYS works smoothly!
-  const [activeView, setActiveView] = useState<'dashboard' | 'matrix' | 'powerbi' | 'config'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'matrix' | 'powerbi' | 'embed' | 'config'>('dashboard');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedQuarter, setSelectedQuarter] = useState<'all' | 'Q1' | 'Q2' | 'Q3' | 'Q4'>('all');
@@ -208,9 +209,10 @@ export default function QuarterTargetsReport() {
     }
   }, [selectedQuarter]);
 
-  // Power BI tenant embed URL (defaults to Microsoft Power BI Public Report)
+  const { config } = useAppConfig();
   const [powerBiEmbedUrl, setPowerBiEmbedUrl] = useState(
-    'https://app.powerbi.com/view?r=eyJrIjoiNTRjMzI0MmQtNTA3YS00N2MwLWI0ZTctMGEyOGUwOGI0OTRhIiwidCI6IjI1ZDIwZjU1LWIxMGMtNDk5MS1hMTJlLWRlOWZkZDA2YTY0MCIsImMiOjZ9'
+    config.powerBi?.defaultEmbedUrl ||
+      'https://app.powerbi.com/view?r=eyJrIjoiNTRjMzI0MmQtNTA3YS00N2MwLWI0ZTctMGEyOGUwOGI0OTRhIiwidCI6IjI1ZDIwZjU1LWIxMGMtNDk5MS1hMTJlLWRlOWZkZDA2YTY0MCIsImMiOjZ9'
   );
 
   const handleRefresh = () => {
@@ -339,8 +341,21 @@ export default function QuarterTargetsReport() {
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
+                <Layers size={14} />
+                <span>Power BI Studio Canvas</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveView('embed')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  activeView === 'embed'
+                    ? 'bg-white dark:bg-slate-800 text-[#0284c7] dark:text-sky-400 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
                 <ExternalLink size={14} />
-                <span>External Frame / Web URL</span>
+                <span>Live Power BI Embed</span>
               </button>
 
               <button
@@ -984,6 +999,53 @@ export default function QuarterTargetsReport() {
 
               </div>
 
+            </div>
+          )}
+
+          {/* VIEW: LIVE POWER BI EMBED (GENUINE MICROSOFT POWER BI EMBEDDED IFRAME / CLIENT) */}
+          {activeView === 'embed' && (
+            <div className="space-y-4">
+              <div className="p-4 rounded-2xl bg-white dark:bg-[#0b101d] border border-slate-200 dark:border-slate-800 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-3">
+                  <span className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-bold flex items-center gap-1.5">
+                    <ExternalLink size={15} />
+                    <span>Real Microsoft Power BI Service Embed</span>
+                  </span>
+                  <span className="font-mono text-[11px] text-slate-500 truncate max-w-md">
+                    {powerBiEmbedUrl}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <a
+                    href={powerBiEmbedUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    <ExternalLink size={13} />
+                    <span>Open in PowerBI Service</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setActiveView('config')}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0284c7] hover:bg-sky-600 text-white font-bold shadow-xs transition-colors cursor-pointer"
+                  >
+                    <SlidersHorizontal size={13} />
+                    <span>Change Embed URL</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Secure Power BI Container */}
+              <div className="w-full h-[720px] rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-md bg-slate-950 relative">
+                <iframe
+                  title="3DDX Real Power BI Embedded Intelligence"
+                  src={powerBiEmbedUrl}
+                  className="w-full h-full border-0"
+                  allowFullScreen
+                />
+              </div>
             </div>
           )}
 
