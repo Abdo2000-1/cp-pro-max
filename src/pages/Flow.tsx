@@ -260,28 +260,28 @@ export interface ColumnDefinition {
 }
 
 export const ALL_COLUMNS: ColumnDefinition[] = [
-  { key: 'tl', label: '# tl', baseWidth: 6.5, category: 'Core', align: 'center' },
-  { key: 'scanCenter', label: 'Scan Center', baseWidth: 8.0, category: 'Clinician' },
-  { key: 'doctor', label: 'Doctor', baseWidth: 7.5, category: 'Clinician' },
-  { key: 'patient', label: 'Patient', baseWidth: 7.5, category: 'Clinician' },
+  { key: 'tl', label: '# tl', baseWidth: 7.5, category: 'Core', align: 'center' },
+  { key: 'scanCenter', label: 'Scan Center', baseWidth: 9.0, category: 'Clinician' },
+  { key: 'doctor', label: 'Doctor', baseWidth: 8.5, category: 'Clinician' },
+  { key: 'patient', label: 'Patient', baseWidth: 8.5, category: 'Clinician' },
   { key: 'lock', label: 'Lock', baseWidth: 3.5, category: 'Core', align: 'center' },
-  { key: 'notes', label: 'Notes', baseWidth: 3.5, category: 'Core', align: 'center' },
-  { key: 'archive', label: 'Archive', baseWidth: 4.5, category: 'Core', align: 'center' },
-  { key: 'more', label: '...', baseWidth: 2.0, category: 'Core', align: 'center' },
-  { key: 'order', label: 'Order', baseWidth: 8.5, category: 'Service' },
-  { key: 'billTo', label: 'Bill To', baseWidth: 6.0, category: 'Financial' },
-  { key: 'max', label: 'Max.', baseWidth: 3.0, category: 'Anatomy', align: 'center' },
-  { key: 'mand', label: 'Mand.', baseWidth: 3.0, category: 'Anatomy', align: 'center' },
-  { key: 'format', label: 'Format', baseWidth: 4.0, category: 'Technical', align: 'center' },
-  { key: 'amount', label: 'Amount', baseWidth: 4.5, category: 'Financial', align: 'right' },
-  { key: 'vouch', label: 'Vouch.', baseWidth: 3.0, category: 'Financial', align: 'center' },
-  { key: 'received', label: 'Received', baseWidth: 6.0, category: 'Timeline' },
-  { key: 'sent', label: 'Sent', baseWidth: 4.5, category: 'Timeline', align: 'center' },
-  { key: 'update', label: 'Update', baseWidth: 4.5, category: 'Timeline', align: 'center' },
-  { key: 'charged', label: 'Charged', baseWidth: 4.5, category: 'Financial', align: 'center' },
-  { key: 'action', label: 'Action', baseWidth: 7.5, category: 'Status', align: 'center' },
+  { key: 'notes', label: 'Notes', baseWidth: 4.0, category: 'Core', align: 'center' },
+  { key: 'archive', label: 'Archive', baseWidth: 5.0, category: 'Core', align: 'center' },
+  { key: 'more', label: '...', baseWidth: 2.5, category: 'Core', align: 'center' },
+  { key: 'order', label: 'Order', baseWidth: 10.0, category: 'Service' },
+  { key: 'billTo', label: 'Bill To', baseWidth: 7.0, category: 'Financial' },
+  { key: 'max', label: 'Max.', baseWidth: 3.5, category: 'Anatomy', align: 'center' },
+  { key: 'mand', label: 'Mand.', baseWidth: 3.5, category: 'Anatomy', align: 'center' },
+  { key: 'format', label: 'Format', baseWidth: 4.5, category: 'Technical', align: 'center' },
+  { key: 'amount', label: 'Amount', baseWidth: 5.5, category: 'Financial', align: 'right' },
+  { key: 'vouch', label: 'Vouch.', baseWidth: 3.5, category: 'Financial', align: 'center' },
+  { key: 'received', label: 'Received', baseWidth: 7.0, category: 'Timeline' },
+  { key: 'sent', label: 'Sent', baseWidth: 5.0, category: 'Timeline', align: 'center' },
+  { key: 'update', label: 'Update', baseWidth: 5.0, category: 'Timeline', align: 'center' },
+  { key: 'charged', label: 'Charged', baseWidth: 5.0, category: 'Financial', align: 'center' },
+  { key: 'action', label: 'Action', baseWidth: 8.5, category: 'Status', align: 'center' },
   { key: 'cr', label: 'CR', baseWidth: 3.5, category: 'Status', align: 'center' },
-  { key: 'csTask', label: 'CS-Task', baseWidth: 5.0, category: 'Status', align: 'center' },
+  { key: 'csTask', label: 'CS-Task', baseWidth: 5.5, category: 'Status', align: 'center' },
 ];
 
 export interface ServiceFilterState {
@@ -438,32 +438,47 @@ export default function Flow() {
 
   // Dynamic Column Resizing (Excel-like drag resize)
   const [colWidthOverrides, setColWidthOverrides] = useState<Record<string, number>>({});
-  const resizingColRef = React.useRef<{ key: string; startX: number; startWidth: number } | null>(null);
 
   const startResizing = (key: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
     const th = (e.currentTarget as HTMLElement).closest('th');
-    const startWidth = th ? th.getBoundingClientRect().width : 100;
-    resizingColRef.current = { key, startX: e.clientX, startWidth };
+    if (!th) return;
+
+    const startX = e.clientX;
+    const startWidth = th.getBoundingClientRect().width;
+    let animationFrameId: number | null = null;
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
-      if (!resizingColRef.current) return;
-      const delta = moveEvent.clientX - resizingColRef.current.startX;
-      const newWidth = Math.max(35, resizingColRef.current.startWidth + delta);
-      setColWidthOverrides(prev => ({ ...prev, [resizingColRef.current!.key]: newWidth }));
+      moveEvent.preventDefault();
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      animationFrameId = requestAnimationFrame(() => {
+        const delta = moveEvent.clientX - startX;
+        const newWidth = Math.max(45, Math.round(startWidth + delta));
+        setColWidthOverrides(prev => {
+          if (prev[key] === newWidth) return prev;
+          return { ...prev, [key]: newWidth };
+        });
+      });
     };
 
     const handleMouseUp = () => {
-      resizingColRef.current = null;
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+      }
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = 'default';
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
     };
 
     document.body.style.cursor = 'col-resize';
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', handleMouseMove, { passive: false });
+    document.addEventListener('mouseup', handleMouseUp, { once: true });
   };
 
   // Calculate dynamic column width so visible columns strictly sum to 100% or use pixel override
@@ -1016,9 +1031,9 @@ export default function Flow() {
           </div>
         </div>
 
-        {/* Table Container - Strict overflow-hidden with table-fixed to guarantee ZERO horizontal scrollbar */}
-        <div className="w-full overflow-hidden">
-          <table className="w-full text-left text-xs border-collapse table-fixed select-none">
+        {/* Table Container - Responsive scrollable container allowing natural column expansion */}
+        <div className="w-full overflow-x-auto">
+          <table className="w-full min-w-full text-left text-xs border-collapse table-fixed select-none">
             <thead>
               {/* DYNAMIC HEADERS FROM VISIBLE COLUMNS - PROPORTIONALLY RESIZED TO 100% */}
               <tr className="bg-slate-200/80 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-extrabold text-[10.5px]">
@@ -1358,8 +1373,8 @@ export default function Flow() {
 
                                   {/* Sub-Orders View Mode 1: Table Matrix */}
                                   {subOrderViewMode === 'matrix' ? (
-                                    <div className="overflow-hidden border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-[#0b101d]">
-                                      <table className="w-full text-left text-xs border-collapse table-fixed select-none">
+                                    <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-[#0b101d]">
+                                      <table className="w-full min-w-full text-left text-xs border-collapse table-fixed select-none">
                                         <thead>
                                           <tr className="bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-extrabold text-[10px]">
                                             {ALL_COLUMNS.filter((c) => visibleColumns.has(c.key)).map((col) => (
