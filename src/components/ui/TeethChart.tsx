@@ -1,10 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
-  Check, RotateCcw, Smile, Zap, Info, X, Activity
+  Check, RotateCcw, Smile, Zap, Info, X, Activity, Filter, Layers, Sparkles
 } from 'lucide-react';
 
 export type ToothSystem = 'universal' | 'fdi';
-export type RestorationType = 'crown' | 'bridge' | 'veneer' | 'implant' | 'inlay' | 'extraction';
+
+export type DentalServiceId = 
+  | 'sg'        // Surgical Guide
+  | 'tp'        // Treatment Plan (Co-Diagnostix / Prosthetically Driven)
+  | 'conv'      // DICOM Conversion
+  | 'mod'       // Model Work
+  | 'rep'       // Radiology Report
+  | 'restTemp'  // Temp Restoration (Provisional PMMA)
+  | 'restFinal' // Final Restoration (Zirconia / Ceramic / Hybrid)
+  | 'vr'        // Virtual Reality & Digital Smile Design
+  | 'ortho';    // Orthodontics & ISmile Aligners
+
+export type RestorationType = 
+  | 'crown' 
+  | 'bridge' 
+  | 'veneer' 
+  | 'implant' 
+  | 'inlay' 
+  | 'extraction'
+  | 'sleeve'
+  | 'anchor'
+  | 'bone_reduction'
+  | 'sinus_lift'
+  | 'nerve_trace'
+  | 'segmentation'
+  | 'die_prep'
+  | 'analog'
+  | 'impacted'
+  | 'pathology'
+  | 'temp_crown'
+  | 'temp_bridge'
+  | 'attachment'
+  | 'ipr'
+  | 'smile_design';
+
+export type ArchFocus = 'maxilla' | 'mandible' | 'dual' | 'both' | 'upper' | 'lower';
 
 export interface ToothOdontoData {
   universal: number;
@@ -66,19 +101,92 @@ export const TOOTH_DATABASE = ODONTO_DATABASE;
 export const RESTORATION_TYPES: {
   id: RestorationType;
   label: string;
+  labelAr?: string;
   icon: string;
   color: string;
   textColor: string;
   bgColor: string;
   borderColor: string;
+  description?: string;
+  serviceCategories?: DentalServiceId[];
 }[] = [
-  { id: 'crown', label: 'Crown', icon: '👑', color: '#00d8fe', textColor: 'text-cyan-600 dark:text-cyan-400', bgColor: 'bg-cyan-50 dark:bg-cyan-950/40', borderColor: 'border-cyan-500' },
-  { id: 'bridge', label: 'Bridge Unit', icon: '🌉', color: '#6366f1', textColor: 'text-indigo-600 dark:text-indigo-400', bgColor: 'bg-indigo-50 dark:bg-indigo-950/40', borderColor: 'border-indigo-500' },
-  { id: 'veneer', label: 'Veneer', icon: '✨', color: '#a855f7', textColor: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-50 dark:bg-purple-950/40', borderColor: 'border-purple-500' },
-  { id: 'implant', label: 'Implant', icon: '🔩', color: '#f59e0b', textColor: 'text-amber-600 dark:text-amber-400', bgColor: 'bg-amber-50 dark:bg-amber-950/40', borderColor: 'border-amber-500' },
-  { id: 'inlay', label: 'Inlay / Onlay', icon: '💎', color: '#10b981', textColor: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-950/40', borderColor: 'border-emerald-500' },
-  { id: 'extraction', label: 'Missing / Pontic', icon: '❌', color: '#f43f5e', textColor: 'text-rose-600 dark:text-rose-400', bgColor: 'bg-rose-50 dark:bg-rose-950/40', borderColor: 'border-rose-500' },
+  // --- Core Restorative & Surgical ---
+  { id: 'crown', label: 'Crown', labelAr: 'تاج كامل', icon: '👑', color: '#00d8fe', textColor: 'text-cyan-600 dark:text-cyan-400', bgColor: 'bg-cyan-50 dark:bg-cyan-950/40', borderColor: 'border-cyan-500', serviceCategories: ['tp', 'restFinal', 'vr'] },
+  { id: 'bridge', label: 'Bridge Unit', labelAr: 'جسر أسنان', icon: '🌉', color: '#6366f1', textColor: 'text-indigo-600 dark:text-indigo-400', bgColor: 'bg-indigo-50 dark:bg-indigo-950/40', borderColor: 'border-indigo-500', serviceCategories: ['tp', 'restFinal'] },
+  { id: 'veneer', label: 'Veneer', labelAr: 'عدسة فينير', icon: '✨', color: '#a855f7', textColor: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-50 dark:bg-purple-950/40', borderColor: 'border-purple-500', serviceCategories: ['tp', 'restFinal', 'vr'] },
+  { id: 'implant', label: 'Implant', labelAr: 'زرعة تيتانيوم', icon: '🔩', color: '#f59e0b', textColor: 'text-amber-600 dark:text-amber-400', bgColor: 'bg-amber-50 dark:bg-amber-950/40', borderColor: 'border-amber-500', serviceCategories: ['sg', 'tp', 'conv'] },
+  { id: 'inlay', label: 'Inlay / Onlay', labelAr: 'حشوة مصبوبة', icon: '💎', color: '#10b981', textColor: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-950/40', borderColor: 'border-emerald-500', serviceCategories: ['restFinal'] },
+  { id: 'extraction', label: 'Missing / Pontic', labelAr: 'سن مفقود / قلع', icon: '❌', color: '#f43f5e', textColor: 'text-rose-600 dark:text-rose-400', bgColor: 'bg-rose-50 dark:bg-rose-950/40', borderColor: 'border-rose-500', serviceCategories: ['sg', 'tp', 'conv', 'mod', 'rep', 'restTemp', 'restFinal', 'ortho'] },
+
+  // --- Surgical Guide (SG) Specific ---
+  { id: 'sleeve', label: 'Guide Sleeve', labelAr: 'كم توجيه جراحي', icon: '⭕', color: '#0284c7', textColor: 'text-sky-600 dark:text-sky-400', bgColor: 'bg-sky-50 dark:bg-sky-950/40', borderColor: 'border-sky-500', serviceCategories: ['sg'] },
+  { id: 'anchor', label: 'Anchor Pin', labelAr: 'مسمار تثبيت الدليل', icon: '📌', color: '#d97706', textColor: 'text-amber-700 dark:text-amber-400', bgColor: 'bg-amber-50 dark:bg-amber-950/40', borderColor: 'border-amber-600', serviceCategories: ['sg'] },
+  { id: 'bone_reduction', label: 'Bone Reduction', labelAr: 'تخفيض عظمي', icon: '📐', color: '#e11d48', textColor: 'text-rose-700 dark:text-rose-400', bgColor: 'bg-rose-50 dark:bg-rose-950/40', borderColor: 'border-rose-600', serviceCategories: ['sg'] },
+
+  // --- Treatment Plan (TP) Specific ---
+  { id: 'sinus_lift', label: 'Sinus Lift', labelAr: 'رفع الجيب الفكي', icon: '🌊', color: '#06b6d4', textColor: 'text-cyan-700 dark:text-cyan-400', bgColor: 'bg-cyan-50 dark:bg-cyan-950/40', borderColor: 'border-cyan-600', serviceCategories: ['tp', 'rep'] },
+  { id: 'nerve_trace', label: 'IAN Safety Zone', labelAr: 'مسار العصب الفكي', icon: '⚡', color: '#f97316', textColor: 'text-orange-600 dark:text-orange-400', bgColor: 'bg-orange-50 dark:bg-orange-950/40', borderColor: 'border-orange-500', serviceCategories: ['tp', 'conv'] },
+
+  // --- Conversion & Model Work ---
+  { id: 'segmentation', label: 'Segmentation ROI', labelAr: 'منطقة استخلاص 3D', icon: '🧩', color: '#8b5cf6', textColor: 'text-violet-600 dark:text-violet-400', bgColor: 'bg-violet-50 dark:bg-violet-950/40', borderColor: 'border-violet-500', serviceCategories: ['conv'] },
+  { id: 'die_prep', label: 'Removable Die', labelAr: 'سن مجهز متحرك', icon: '🏷️', color: '#14b8a6', textColor: 'text-teal-600 dark:text-teal-400', bgColor: 'bg-teal-50 dark:bg-teal-950/40', borderColor: 'border-teal-500', serviceCategories: ['mod'] },
+  { id: 'analog', label: 'Implant Analog', labelAr: 'أنالوج في النموذج', icon: '📍', color: '#f59e0b', textColor: 'text-amber-600 dark:text-amber-400', bgColor: 'bg-amber-50 dark:bg-amber-950/40', borderColor: 'border-amber-500', serviceCategories: ['mod'] },
+
+  // --- Radiology Specific ---
+  { id: 'impacted', label: 'Impacted Tooth', labelAr: 'سن مطمور', icon: '🔍', color: '#ec4899', textColor: 'text-pink-600 dark:text-pink-400', bgColor: 'bg-pink-50 dark:bg-pink-950/40', borderColor: 'border-pink-500', serviceCategories: ['rep'] },
+  { id: 'pathology', label: 'Pathology / Radiolucency', labelAr: 'آفة ذروية / فحص', icon: '⚠️', color: '#dc2626', textColor: 'text-red-700 dark:text-red-400', bgColor: 'bg-red-50 dark:bg-red-950/40', borderColor: 'border-red-600', serviceCategories: ['rep'] },
+
+  // --- Provisional & Orthodontics ---
+  { id: 'temp_crown', label: 'Temp Crown', labelAr: 'تاج مؤقت PMMA', icon: '⏳', color: '#3b82f6', textColor: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-50 dark:bg-blue-950/40', borderColor: 'border-blue-500', serviceCategories: ['restTemp'] },
+  { id: 'temp_bridge', label: 'Temp Bridge', labelAr: 'جسر مؤقت', icon: '⏱️', color: '#6366f1', textColor: 'text-indigo-600 dark:text-indigo-400', bgColor: 'bg-indigo-50 dark:bg-indigo-950/40', borderColor: 'border-indigo-500', serviceCategories: ['restTemp'] },
+  { id: 'attachment', label: 'Aligner Attachment', labelAr: 'أتاشمنت تقويم', icon: '🔘', color: '#10b981', textColor: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-950/40', borderColor: 'border-emerald-500', serviceCategories: ['ortho'] },
+  { id: 'ipr', label: 'IPR Contact', labelAr: 'برد مابين الأسنان', icon: '↔️', color: '#8b5cf6', textColor: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-50 dark:bg-purple-950/40', borderColor: 'border-purple-500', serviceCategories: ['ortho'] },
+  { id: 'smile_design', label: 'Smile Design', labelAr: 'تصميم الابتسامة DSD', icon: '🪄', color: '#ec4899', textColor: 'text-pink-600 dark:text-pink-400', bgColor: 'bg-pink-50 dark:bg-pink-950/40', borderColor: 'border-pink-500', serviceCategories: ['vr'] }
 ];
+
+export const SERVICE_PROCEDURES_MAP: Record<string, RestorationType[]> = {
+  sg: ['implant', 'sleeve', 'anchor', 'bone_reduction', 'extraction'],
+  tp: ['implant', 'crown', 'bridge', 'veneer', 'sinus_lift', 'nerve_trace', 'extraction'],
+  conv: ['segmentation', 'implant', 'nerve_trace', 'extraction'],
+  mod: ['die_prep', 'analog', 'extraction'],
+  rep: ['impacted', 'pathology', 'sinus_lift', 'extraction'],
+  restTemp: ['temp_crown', 'temp_bridge', 'extraction'],
+  restFinal: ['crown', 'bridge', 'veneer', 'inlay', 'extraction'],
+  vr: ['smile_design', 'veneer', 'crown', 'extraction'],
+  ortho: ['attachment', 'ipr', 'extraction']
+};
+
+export const SERVICE_METADATA: Record<string, { name: string; nameAr: string; icon: string }> = {
+  sg: { name: 'Surgical Guide (SG)', nameAr: 'دليل جراحي', icon: '🎯' },
+  tp: { name: 'Treatment Plan (TP)', nameAr: 'خطة علاجية', icon: '📋' },
+  conv: { name: 'DICOM Conversion', nameAr: 'تحويل DICOM', icon: '🔄' },
+  mod: { name: 'Model Work (MOD)', nameAr: 'نماذج طباعة', icon: '📦' },
+  rep: { name: 'Radiology Report', nameAr: 'تقرير أشعة', icon: '🔬' },
+  restTemp: { name: 'Temp Restoration', nameAr: 'تركيبات مؤقتة', icon: '⏳' },
+  restFinal: { name: 'Final Restoration', nameAr: 'تركيبات نهائية', icon: '👑' },
+  vr: { name: 'Virtual Reality VR', nameAr: 'واقع افتراضي وتصميم', icon: '👓' },
+  ortho: { name: 'Orthodontics & ISmile', nameAr: 'تقويم أسنان وقوالب', icon: '✨' }
+};
+
+export function getProceduresForServices(serviceIds?: string[]): typeof RESTORATION_TYPES {
+  if (!serviceIds || serviceIds.length === 0 || serviceIds.includes('all')) {
+    return RESTORATION_TYPES;
+  }
+
+  const allowedIds = new Set<RestorationType>();
+  serviceIds.forEach(srv => {
+    const list = SERVICE_PROCEDURES_MAP[srv];
+    if (list) {
+      list.forEach(item => allowedIds.add(item));
+    }
+  });
+
+  if (allowedIds.size === 0) {
+    return RESTORATION_TYPES;
+  }
+
+  return RESTORATION_TYPES.filter(r => allowedIds.has(r.id));
+}
 
 /**
  * Maps any tooth 1..32 to its master anatomical base shape (1..8 for upper, 25..32 for lower)
@@ -117,8 +225,14 @@ function ClinicalToothSilhouette({
   const resInfo = RESTORATION_TYPES.find(r => r.id === restoration);
   const strokeColor = isSelected ? (resInfo?.color || '#00d8fe') : 'currentColor';
   const crownFill = isSelected ? (resInfo ? `${resInfo.color}25` : 'rgba(0,216,254,0.18)') : 'none';
-  const isImplant = Boolean(isSelected && restoration === 'implant');
+  const isImplant = Boolean(isSelected && (restoration === 'implant' || restoration === 'analog'));
   const isExtraction = Boolean(isSelected && restoration === 'extraction');
+  const isSleeve = Boolean(isSelected && restoration === 'sleeve');
+  const isAttachment = Boolean(isSelected && restoration === 'attachment');
+  const isAnchor = Boolean(isSelected && restoration === 'anchor');
+  const isSinus = Boolean(isSelected && restoration === 'sinus_lift');
+  const isNerve = Boolean(isSelected && restoration === 'nerve_trace');
+  const isBoneReduction = Boolean(isSelected && restoration === 'bone_reduction');
 
   const isUpper = toothNumber >= 1 && toothNumber <= 16;
   const isLeftQuadrant = (toothNumber >= 9 && toothNumber <= 16) || (toothNumber >= 17 && toothNumber <= 24);
@@ -505,21 +619,89 @@ function ClinicalToothSilhouette({
           <line x1="42" y1="12" x2="8" y2="88" />
         </g>
       )}
+
+      {/* Surgical Guide Sleeve Ring */}
+      {isSleeve && (
+        <g stroke="#0284c7" fill="none" strokeWidth="2">
+          <circle cx="25" cy={isUpper ? 64 : 26} r="10" strokeDasharray="3 2" />
+          <circle cx="25" cy={isUpper ? 64 : 26} r="6" />
+        </g>
+      )}
+
+      {/* Guide Anchor Pin Marker */}
+      {isAnchor && (
+        <g fill="#d97706" stroke="#92400e" strokeWidth="1">
+          <circle cx="25" cy={isUpper ? 20 : 70} r="4.5" />
+          <line x1="25" y1={isUpper ? 24 : 66} x2="25" y2={isUpper ? 42 : 48} stroke="#d97706" strokeWidth="2" />
+        </g>
+      )}
+
+      {/* Clear Aligner Attachment Bump */}
+      {isAttachment && (
+        <rect
+          x="21"
+          y={isUpper ? 60 : 22}
+          width="8"
+          height="7"
+          rx="1.5"
+          fill="#10b981"
+          stroke="#059669"
+          strokeWidth="1.2"
+        />
+      )}
+
+      {/* Sinus Elevation Indicator */}
+      {isSinus && (
+        <path
+          d={isUpper ? "M 10 18 Q 25 8 40 18" : "M 10 72 Q 25 82 40 72"}
+          fill="none"
+          stroke="#06b6d4"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        />
+      )}
+
+      {/* Mandibular Nerve Trace Zone */}
+      {isNerve && (
+        <path
+          d={isUpper ? "M 12 14 L 20 22 L 28 14 L 38 22" : "M 12 76 L 20 68 L 28 76 L 38 68"}
+          fill="none"
+          stroke="#f97316"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      )}
+
+      {/* Bone Reduction Plateau */}
+      {isBoneReduction && (
+        <line
+          x1="8"
+          y1={isUpper ? 46 : 44}
+          x2="42"
+          y2={isUpper ? 46 : 44}
+          stroke="#e11d48"
+          strokeWidth="2.5"
+          strokeDasharray="4 2"
+        />
+      )}
     </svg>
   );
 }
 
-interface TeethChartProps {
+export interface TeethChartProps {
   selected?: number[];
   selectedTeeth?: number[];
   onToggle?: (tooth: number) => void;
   onToggleTooth?: (tooth: number) => void;
-  toothRestorations?: Record<number, RestorationType>;
+  toothRestorations?: Record<number, RestorationType | string>;
   onAssignRestoration?: (tooth: number, type: RestorationType) => void;
   onClearAll?: () => void;
   onSelectionChange?: (selected: number[], restorations: Record<number, RestorationType>) => void;
   readonly?: boolean;
   activeService?: string;
+  activeServices?: DentalServiceId[] | string[];
+  serviceId?: DentalServiceId | string;
+  archFocus?: ArchFocus;
   showToolbar?: boolean;
   className?: string;
 }
@@ -534,6 +716,10 @@ export function TeethChart({
   onClearAll,
   onSelectionChange,
   readonly = false,
+  activeService,
+  activeServices,
+  serviceId,
+  archFocus = 'dual',
   showToolbar = true,
   className = ''
 }: TeethChartProps) {
@@ -543,15 +729,47 @@ export function TeethChart({
     14: 'implant',
     15: 'crown',
     16: 'crown',
-    ...toothRestorations
+    ...(toothRestorations as Record<number, RestorationType>)
   });
 
+  // Normalize incoming service IDs
+  const normalizedServices: string[] = useMemo(() => {
+    const list: string[] = [];
+    if (serviceId) list.push(String(serviceId));
+    if (activeService) list.push(String(activeService));
+    if (activeServices && Array.isArray(activeServices)) {
+      activeServices.forEach(s => {
+        if (s && !list.includes(String(s))) list.push(String(s));
+      });
+    }
+    return list;
+  }, [serviceId, activeService, activeServices]);
+
+  const [filterByService, setFilterByService] = useState<boolean>(true);
+  const effectiveActiveServices = (filterByService && normalizedServices.length > 0)
+    ? normalizedServices
+    : [];
+
+  const availableProcedures = useMemo(() => {
+    return getProceduresForServices(effectiveActiveServices);
+  }, [effectiveActiveServices]);
+
   // Sync internal selected when external prop changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (propSelected !== undefined) {
       setInternalSelected(propSelected);
     }
   }, [propSelected]);
+
+  // Synchronize external restorations when provided
+  useEffect(() => {
+    if (toothRestorations && Object.keys(toothRestorations).length > 0) {
+      setLocalRestorations(prev => ({
+        ...prev,
+        ...(toothRestorations as Record<number, RestorationType>)
+      }));
+    }
+  }, [toothRestorations]);
 
   const activeSelected = propSelected !== undefined ? propSelected : internalSelected;
   const handleToggle = onToggle ?? onToggleTooth;
@@ -559,6 +777,13 @@ export function TeethChart({
   const [system, setSystem] = useState<ToothSystem>('universal');
   const [selectedTool, setSelectedTool] = useState<RestorationType>('crown');
   const [hoveredTooth, setHoveredTooth] = useState<ToothOdontoData | null>(null);
+
+  // Ensure selected tool is valid for the current filtered list
+  useEffect(() => {
+    if (availableProcedures.length > 0 && !availableProcedures.some(p => p.id === selectedTool)) {
+      setSelectedTool(availableProcedures[0].id);
+    }
+  }, [availableProcedures, selectedTool]);
 
   // Grouped into the standard 4 quadrants
   const upperRight = ODONTO_DATABASE.filter(t => t.quadrant === 'UR');
@@ -610,7 +835,7 @@ export function TeethChart({
     }
   };
 
-  const handleSelectBatch = (type: 'all' | 'upper' | 'lower' | 'smile' | 'posteriors' | 'clear') => {
+  const handleSelectBatch = (type: 'all' | 'both' | 'upper' | 'lower' | 'smile' | 'posteriors' | 'clear') => {
     if (readonly) return;
     if (type === 'clear') {
       const prev = [...activeSelected];
@@ -625,7 +850,7 @@ export function TeethChart({
     }
 
     let targets: ToothOdontoData[] = [];
-    if (type === 'all') targets = ODONTO_DATABASE;
+    if (type === 'all' || type === 'both') targets = ODONTO_DATABASE;
     if (type === 'upper') targets = ODONTO_DATABASE.filter(t => t.arch === 'upper');
     if (type === 'lower') targets = ODONTO_DATABASE.filter(t => t.arch === 'lower');
     if (type === 'smile') targets = ODONTO_DATABASE.filter(t => t.isAnterior);
@@ -671,7 +896,7 @@ export function TeethChart({
   const renderToothCard = (tooth: ToothOdontoData, arch: 'upper' | 'lower') => {
     const isSelected = activeSelected.includes(tooth.universal);
     const assignedRes = isSelected 
-      ? (localRestorations[tooth.universal] || toothRestorations[tooth.universal] || 'crown') 
+      ? ((localRestorations[tooth.universal] || toothRestorations[tooth.universal] || 'crown') as RestorationType) 
       : undefined;
     const displayNum = system === 'universal' ? tooth.universal : tooth.fdi;
 
@@ -742,7 +967,7 @@ export function TeethChart({
       {showToolbar && (
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/20">
                 <Activity className="w-4 h-4" />
               </span>
@@ -752,6 +977,24 @@ export function TeethChart({
               <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30">
                 {activeSelected.length} Selected
               </span>
+
+              {/* Active Prescribed Services Indicators */}
+              {normalizedServices.length > 0 && (
+                <div className="flex items-center gap-1.5 flex-wrap ml-1">
+                  {normalizedServices.map(srvId => {
+                    const srv = SERVICE_METADATA[srvId as DentalServiceId];
+                    return (
+                      <span
+                        key={srvId}
+                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800"
+                      >
+                        <span>{srv?.icon || '⚙️'}</span>
+                        <span>{srv?.name || srvId.toUpperCase()}</span>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               Universal Numbering System • Classical 4-Quadrant Anatomical Odontogram Grid.
@@ -807,28 +1050,54 @@ export function TeethChart({
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1 flex items-center gap-1">
               <Zap className="w-3 h-3 text-cyan-400" /> Active Tool:
             </span>
-            {RESTORATION_TYPES.map((res) => {
+            {availableProcedures.map((res) => {
               const isCurrent = selectedTool === res.id;
               return (
                 <button
                   key={res.id}
                   type="button"
                   onClick={() => setSelectedTool(res.id)}
+                  style={{
+                    borderColor: isCurrent ? res.color : undefined
+                  }}
                   className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold border transition-all ${
                     isCurrent
-                      ? `${res.bgColor} ${res.borderColor} ${res.textColor} shadow-xs ring-1 ring-current`
+                      ? `${res.bgColor} ${res.textColor} shadow-xs ring-1 ring-current`
                       : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
+                  title={res.description}
                 >
                   <span className="text-sm">{res.icon}</span>
                   <span>{res.label}</span>
                 </button>
               );
             })}
+
+            {/* Toggle show all procedures if filtered */}
+            {normalizedServices.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setFilterByService(!filterByService)}
+                className="text-[11px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 underline ml-1 cursor-pointer flex items-center gap-1"
+              >
+                <Filter className="w-3 h-3" />
+                <span>{filterByService ? '+ Show All Procedures' : 'Filter to Active Services'}</span>
+              </button>
+            )}
           </div>
 
           {/* Quick Select Presets */}
           <div className="flex items-center gap-1.5 flex-wrap">
+            {/* BOTH ARCHES (ALL 32 TEETH AT ONCE) */}
+            <button
+              type="button"
+              onClick={() => handleSelectBatch('both')}
+              className="flex items-center gap-1 px-3 py-1 text-xs font-bold text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-lg shadow-xs transition-all cursor-pointer"
+              title="Select all 32 teeth in both upper and lower arches at once"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>+ Both Arches (1-32)</span>
+            </button>
             <button
               type="button"
               onClick={() => handleSelectBatch('upper')}
@@ -978,7 +1247,7 @@ export function TeethChart({
 
         {hoveredTooth && activeSelected.includes(hoveredTooth.universal) && (
           <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5 shrink-0">
-            <Check className="w-4 h-4 stroke-[3]" /> Assigned: {toothRestorations[hoveredTooth.universal] || selectedTool}
+            <Check className="w-4 h-4 stroke-[3]" /> Assigned: {localRestorations[hoveredTooth.universal] || toothRestorations[hoveredTooth.universal] || selectedTool}
           </span>
         )}
       </div>
@@ -992,7 +1261,7 @@ export function TeethChart({
               {[...activeSelected].sort((a, b) => a - b).map((num) => {
                 const t = ODONTO_DATABASE.find(item => item.universal === num);
                 const display = system === 'universal' ? `#${num}` : `FDI ${t?.fdi || num}`;
-                const res = toothRestorations[num] || selectedTool;
+                const res = localRestorations[num] || toothRestorations[num] || 'crown';
                 const resInfo = RESTORATION_TYPES.find(r => r.id === res);
 
                 return (
@@ -1004,14 +1273,23 @@ export function TeethChart({
                     <span className="text-[10px] text-cyan-600 dark:text-cyan-400 font-sans font-medium">
                       ({resInfo?.label || res})
                     </span>
-                    {!readonly && handleToggle && (
+                    {!readonly && (
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleToggle(num);
+                          const nextSelected = activeSelected.filter(n => n !== num);
+                          const nextRestorations = { ...localRestorations };
+                          delete nextRestorations[num];
+                          setInternalSelected(nextSelected);
+                          setLocalRestorations(nextRestorations);
+                          if (onSelectionChange) {
+                            onSelectionChange(nextSelected, nextRestorations);
+                          } else {
+                            handleToggle?.(num);
+                          }
                         }}
-                        className="hover:text-rose-500 ml-1 transition-colors"
+                        className="hover:text-rose-500 ml-1 transition-colors p-0.5 cursor-pointer"
                         title="Remove selection"
                       >
                         <X className="w-3 h-3" />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -20,7 +20,7 @@ import {
   ShieldCheck,
   RotateCcw
 } from 'lucide-react';
-import { TeethChart } from '@/components/ui/TeethChart';
+import { TeethChart, type DentalServiceId, type RestorationType } from '@/components/ui/TeethChart';
 import { UIStateSwitcher, type UIStateType } from '@/components/ui/UIStateSwitcher';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -67,7 +67,19 @@ export default function AddCase() {
 
   // Tooth Chart selections (Universal 1-32)
   const [selectedTeeth, setSelectedTeeth] = useState<number[]>([14, 15, 16]);
+  const [toothProcedures, setToothProcedures] = useState<Record<number, RestorationType>>({
+    14: 'implant',
+    15: 'implant',
+    16: 'crown'
+  });
   const [toothActionCategory, setToothActionCategory] = useState<'implants' | 'missing' | 'extracted' | 'abutments' | 'crowns'>('implants');
+
+  // Convert active services boolean map into DentalServiceId array
+  const activeServiceIds = useMemo(() => {
+    return Object.entries(services)
+      .filter(([_, active]) => active)
+      .map(([id]) => id as DentalServiceId);
+  }, [services]);
 
   // Files
   const [dicomFile, setDicomFile] = useState<string | null>('Patient_CT_Scan_Volume.zip');
@@ -87,9 +99,17 @@ export default function AddCase() {
   };
 
   const handleToothToggle = (toothNum: number) => {
-    setSelectedTeeth((prev) =>
-      prev.includes(toothNum) ? prev.filter((t) => t !== toothNum) : [...prev, toothNum]
-    );
+    if (selectedTeeth.includes(toothNum)) {
+      setSelectedTeeth((prev) => prev.filter((t) => t !== toothNum));
+      setToothProcedures((prev) => {
+        const next = { ...prev };
+        delete next[toothNum];
+        return next;
+      });
+    } else {
+      setSelectedTeeth((prev) => [...prev, toothNum]);
+      setToothProcedures((prev) => ({ ...prev, [toothNum]: 'crown' }));
+    }
   };
 
   const handleSubmit = (e?: React.FormEvent | React.MouseEvent) => {
@@ -522,18 +542,43 @@ export default function AddCase() {
                     <div className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
                       <TeethChart
                         selectedTeeth={selectedTeeth}
+                        activeServices={activeServiceIds}
+                        toothRestorations={toothProcedures}
+                        archFocus={archSelection === 'Maxilla' ? 'upper' : archSelection === 'Mandible' ? 'lower' : 'both'}
                         onToggleTooth={handleToothToggle}
-                        onClearAll={() => setSelectedTeeth([])}
-                        onSelectionChange={(sel) => setSelectedTeeth(sel)}
+                        onClearAll={() => {
+                          setSelectedTeeth([]);
+                          setToothProcedures({});
+                        }}
+                        onSelectionChange={(sel, restorations) => {
+                          setSelectedTeeth(sel);
+                          if (restorations) {
+                            setToothProcedures(restorations);
+                          }
+                        }}
                       />
                     </div>
 
-                    <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/60 text-xs font-mono flex items-center justify-between">
-                      <span>Selected Sites: <strong>{selectedTeeth.sort((a,b)=>a-b).join(', ') || 'None'}</strong></span>
+                    <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/60 text-xs font-mono flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold text-slate-700 dark:text-slate-300">Selected Sites:</span>
+                        {selectedTeeth.length > 0 ? (
+                          selectedTeeth.sort((a,b)=>a-b).map(t => (
+                            <span key={t} className="px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-bold border border-cyan-500/20">
+                              #{t} ({toothProcedures[t] || 'crown'})
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-slate-400 font-normal">None</span>
+                        )}
+                      </div>
                       <button
                         type="button"
-                        onClick={() => setSelectedTeeth([])}
-                        className="text-rose-500 hover:underline"
+                        onClick={() => {
+                          setSelectedTeeth([]);
+                          setToothProcedures({});
+                        }}
+                        className="text-rose-500 hover:underline font-bold"
                       >
                         Reset Teeth
                       </button>
@@ -567,8 +612,12 @@ export default function AddCase() {
                           <strong className="text-slate-900 dark:text-white">{guideSupport}</strong>
                         </div>
                         <div>
-                          <span className="text-slate-500 dark:text-slate-400 block">Target Teeth</span>
-                          <strong className="text-[#0284c7] font-mono">{selectedTeeth.sort((a,b)=>a-b).join(', ') || 'General / Non-Specific'}</strong>
+                          <span className="text-slate-500 dark:text-slate-400 block">Target Teeth & Procedures</span>
+                          <strong className="text-[#0284c7] font-mono block truncate" title={selectedTeeth.map(t => `#${t} (${toothProcedures[t] || 'crown'})`).join(', ')}>
+                            {selectedTeeth.length > 0
+                              ? selectedTeeth.sort((a,b)=>a-b).map(t => `#${t} (${toothProcedures[t] || 'crown'})`).join(', ')
+                              : 'General / Non-Specific'}
+                          </strong>
                         </div>
                       </div>
                     </div>
