@@ -629,8 +629,22 @@ export default function CreateOrder() {
               selected={form.selectedTeeth}
               onToggle={handleToggleTooth}
               toothRestorations={form.toothRestorations}
+              activeServices={form.selectedServices.map(s => {
+                if (s === 'surgical-guide') return 'sg';
+                if (s === 'treatment-plan') return 'tp';
+                if (s === 'temp-restoration') return 'restTemp';
+                if (s === 'final-restoration') return 'restFinal';
+                return s;
+              })}
               onAssignRestoration={handleAssignRestoration}
               onClearAll={handleClearAllTeeth}
+              onSelectionChange={(sel, rest) => {
+                setForm(f => ({
+                  ...f,
+                  selectedTeeth: sel,
+                  toothRestorations: rest as Record<number, RestorationType>
+                }));
+              }}
             />
           </motion.div>
         )}

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-export type LanguageCode = 'en' | 'fr' | 'de' | 'it' | 'es';
+export type LanguageCode = 'en' | 'ar' | 'fr' | 'de' | 'it' | 'es';
 
 export interface LanguageOption {
   code: LanguageCode;
@@ -11,6 +11,7 @@ export interface LanguageOption {
 
 export const LANGUAGES: LanguageOption[] = [
   { code: 'en', label: 'English', flag: '🇬🇧', nativeName: 'English' },
+  { code: 'ar', label: 'العربية', flag: '🇪🇬', nativeName: 'العربية' },
   { code: 'fr', label: 'French', flag: '🇫🇷', nativeName: 'Français' },
   { code: 'de', label: 'German', flag: '🇩🇪', nativeName: 'Deutsch' },
   { code: 'it', label: 'Italian', flag: '🇮🇹', nativeName: 'Italiano' },
@@ -108,6 +109,9 @@ const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
     'report.monthlyRunRate': 'Monthly Run Rate & Target Envelope',
 
     // Teeth Chart
+    'teeth.chartTitle': 'Anatomical Dental Odontogram & 3D Arches',
+    'teeth.view3D': '3D Arch View',
+    'teeth.view2D': '2D Grid View',
     'teeth.upper': '+ Upper (1-16)',
     'teeth.lower': '+ Lower (17-32)',
     'teeth.smile': 'Smile Zone',
@@ -568,6 +572,52 @@ const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
     'profile.title': 'Perfil de Especialista CP PRO MAX y Ajustes',
     'profile.save': 'Guardar Preferencias',
   },
+  ar: {
+    // Brand & System
+    'brand.name': '3D Diagnostix',
+    'brand.subtitle': 'منصة حلول طب الأسنان السحابية',
+    'brand.version': 'الإصدار 2.0',
+    
+    // Navigation
+    'nav.dashboard': 'لوحة التحكم',
+    'nav.flow': 'تدفق الطلبات الرئيسي',
+    'nav.addCase': 'إضافة حالة جديدة',
+    'nav.teethChart': 'مخطط الأسنان التشريحي',
+    
+    // Actions
+    'action.search': 'بحث سريع...',
+    'action.reset': 'إعادة ضبط',
+    'action.selectAll': 'تحديد الكل',
+    'action.clearAll': 'مسح التحديد',
+    'action.save': 'حفظ التغييرات',
+    'action.cancel': 'إلغاء',
+
+    // Teeth Chart Specific Keys
+    'teeth.chartTitle': 'مخطط الأسنان والأقواس الفكية',
+    'teeth.view3D': 'عرض الأقواس 3D',
+    'teeth.view2D': 'مخطط 2D التقليدي',
+    'teeth.systemUniversal': 'الترقيم الأمريكي (1-32)',
+    'teeth.systemFdi': 'الترقيم الدولي (FDI)',
+    'teeth.activeTool': 'الأداة النشطة:',
+    'teeth.maxillary': 'الفك العلوي (Maxillary)',
+    'teeth.mandibular': 'الفك السفلي (Mandibular)',
+    'teeth.midline': 'خط المنتصف',
+    'teeth.occlusal': 'الحد الإطباقي واللثوي',
+    'teeth.quadrant1': 'الربع 1 (UR) · يمين المريض',
+    'teeth.quadrant2': 'الربع 2 (UL) · يسار المريض',
+    'teeth.quadrant3': 'الربع 3 (LL) · يسار المريض',
+    'teeth.quadrant4': 'الربع 4 (LR) · يمين المريض',
+    'teeth.crown': 'تاج (Crown)',
+    'teeth.bridge': 'جسر (Bridge)',
+    'teeth.veneer': 'فينير (Veneer)',
+    'teeth.implant': 'زرعة (Implant)',
+    'teeth.inlay': 'حشوة مصبوبة (Inlay)',
+    'teeth.extraction': 'مخلوع / مفقود (Missing)',
+
+    // Theme
+    'theme.toLight': 'التبديل إلى الوضع النهاري',
+    'theme.toDark': 'التبديل إلى الوضع الليلي',
+  },
 };
 
 interface LanguageContextType {
@@ -581,8 +631,8 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<LanguageCode>(() => {
-    const saved = localStorage.getItem('3ddx-language');
-    if (saved && (saved === 'en' || saved === 'fr' || saved === 'de' || saved === 'it' || saved === 'es')) {
+    const saved = localStorage.getItem('3ddx-language') as LanguageCode;
+    if (saved && (saved === 'en' || saved === 'ar' || saved === 'fr' || saved === 'de' || saved === 'it' || saved === 'es')) {
       return saved;
     }
     return 'en';
@@ -592,6 +642,11 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     setLanguageState(lang);
     localStorage.setItem('3ddx-language', lang);
   };
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+  }, [language]);
 
   const currentOption = LANGUAGES.find((l) => l.code === language) || LANGUAGES[0];
 

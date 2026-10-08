@@ -20,7 +20,8 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  Sparkles
+  Sparkles,
+  Smile
 } from 'lucide-react';
 import { useStore } from '@/hooks/useStore';
 
@@ -35,6 +36,7 @@ const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: Package, label: 'Orders', path: '/orders' },
   { icon: FolderOpen, label: 'Cases', path: '/cases' },
+  { icon: Smile, label: 'Teeth Chart', path: '/teeth-chart', badge: 'PRO' },
   { icon: GitBranch, label: 'Workflow', path: '/workflow-board' },
   { icon: ScanLine, label: 'Scan Center', path: '/scan-center' },
   { icon: Users, label: 'Patients', path: '/patients' },

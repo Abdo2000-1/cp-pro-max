@@ -19,6 +19,7 @@ const EditCasePage = lazy(() => import('@/pages/EditCasePage'));
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const Profile = lazy(() => import('@/pages/Profile'));
 const ConfigManager = lazy(() => import('@/pages/ConfigManager'));
+const TeethChartPage = lazy(() => import('@/pages/TeethChartPage'));
 
 // Auxiliary ERP & CRM Pages
 const Login = lazy(() => import('@/pages/Login'));
@@ -103,6 +104,7 @@ export default function App() {
                 <Route path="dashboard" element={<SuspenseWrapper><Dashboard /></SuspenseWrapper>} />
                 <Route path="profile" element={<SuspenseWrapper><Profile /></SuspenseWrapper>} />
                 <Route path="config-manager" element={<SuspenseWrapper><ConfigManager /></SuspenseWrapper>} />
+                <Route path="teeth-chart" element={<SuspenseWrapper><TeethChartPage /></SuspenseWrapper>} />
                 <Route path="cms" element={<SuspenseWrapper><ConfigManager /></SuspenseWrapper>} />
                 <Route path="newcp/index.php" element={<Navigate to="/dashboard" replace />} />
 

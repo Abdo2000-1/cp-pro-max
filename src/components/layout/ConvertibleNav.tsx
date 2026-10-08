@@ -211,251 +211,37 @@ export function ConvertibleNav({
             position === 'top' ? 'sticky top-0 border-b' : 'fixed bottom-0 left-0 right-0 border-t shadow-2xl'
           }`}
         >
-          <div className="w-full max-w-[1920px] mx-auto px-3 sm:px-5 lg:px-6 h-16 flex items-center justify-between gap-2 lg:gap-4">
-            
-            {/* Left: Drag Handle, 4-Way Dock Quick Picker & Brand Logo */}
-            <div className="flex items-center gap-2 shrink-0">
-              {/* Hand Drag Handle: Works with Pointer & HTML5 */}
-              <div
-                draggable
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-                onPointerDown={handlePointerDownDrag}
-                title={t('action.dragHandle', 'Click & drag with hand/mouse to dock at any edge (Top / Left / Right / Bottom)')}
-                className="flex items-center justify-center p-2 rounded-xl text-slate-400 hover:text-[#0284c7] dark:hover:text-sky-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-grab active:cursor-grabbing transition-colors group"
-              >
-                <GripVertical size={20} className="group-hover:scale-110 transition-transform text-[#0284c7] dark:text-sky-400" />
+          <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+            {/* Left: Company Logo ONLY */}
+            <NavLink to="/teeth-chart" className="flex items-center group" title="3D Diagnostix">
+              <div className="h-10 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center shadow-xs hover:border-[#0284c7] transition-colors">
+                <img
+                  src="/logo-3ddx-full.png"
+                  alt="3D Diagnostix"
+                  className="h-7 w-auto object-contain"
+                />
               </div>
+            </NavLink>
 
-              {/* 4-Way Docking Quick Selector */}
-              <div className="relative" ref={dockPickerRef}>
-                <button
-                  type="button"
-                  onClick={() => setDockPickerOpen(!dockPickerOpen)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-[#0284c7] hover:bg-sky-50 dark:hover:bg-sky-950/40 border border-slate-200/80 dark:border-slate-800 transition-colors"
-                  title="Snap Navigation Dock"
-                >
-                  <Compass size={14} className="text-[#ea580c]" />
-                  <span className="capitalize hidden md:inline">{position}</span>
-                  <ChevronDown size={12} className="text-slate-400" />
-                </button>
-
-                {dockPickerOpen && (
-                  <div className="absolute top-10 left-0 w-48 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-1.5 z-50 animate-slide-up text-xs font-bold">
-                    <div className="text-[10px] text-slate-400 uppercase tracking-wider px-2 py-1">
-                      Snap Dock Position
-                    </div>
-                    <button
-                      onClick={() => { onChangePosition('top'); setDockPickerOpen(false); }}
-                      className={`w-full flex items-center gap-2 p-2 rounded-lg text-left ${(position as string) === 'top' ? 'bg-[#0284c7]/15 text-[#0284c7]' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-                    >
-                      <PanelTopClose size={14} />
-                      <span>Top Navbar</span>
-                    </button>
-                    <button
-                      onClick={() => { onChangePosition('left'); setDockPickerOpen(false); }}
-                      className={`w-full flex items-center gap-2 p-2 rounded-lg text-left ${(position as string) === 'left' ? 'bg-[#0284c7]/15 text-[#0284c7]' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-                    >
-                      <PanelLeftClose size={14} />
-                      <span>Left Sidebar (Collapsed)</span>
-                    </button>
-                    <button
-                      onClick={() => { onChangePosition('right'); setDockPickerOpen(false); }}
-                      className={`w-full flex items-center gap-2 p-2 rounded-lg text-left ${(position as string) === 'right' ? 'bg-[#0284c7]/15 text-[#0284c7]' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-                    >
-                      <PanelRightClose size={14} />
-                      <span>Right Sidebar (Collapsed)</span>
-                    </button>
-                    <button
-                      onClick={() => { onChangePosition('bottom'); setDockPickerOpen(false); }}
-                      className={`w-full flex items-center gap-2 p-2 rounded-lg text-left ${(position as string) === 'bottom' ? 'bg-[#0284c7]/15 text-[#0284c7]' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-                    >
-                      <PanelBottomClose size={14} />
-                      <span>Bottom Dock</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Official 3D Diagnostix Logo (Brand text removed to maximize space for links) */}
-              <NavLink to="/dashboard" className="flex items-center group mr-1" title="3D Diagnostix CP">
-                <div className="h-9 px-2.5 py-1 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center shadow-xs hover:border-[#0284c7] transition-colors">
-                  <img
-                    src="/logo-3ddx-full.png"
-                    alt="3D Diagnostix"
-                    className="h-6 w-auto object-contain"
-                  />
-                </div>
-              </NavLink>
-            </div>
-
-            {/* Center: Clean & Focused Navigation (Primary Pages + Operations Dropdown) */}
-            <nav className="flex items-center gap-1 xl:gap-2 py-1">
-              <NavLink
-                to="/dashboard"
-                className={({ isActive }) =>
-                  `flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                    isActive
-                      ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`
-                }
-              >
-                <LayoutDashboard size={14} />
-                <span>Dashboard</span>
-              </NavLink>
-
-              <NavLink
-                to="/flow"
-                className={({ isActive }) =>
-                  `flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                    isActive || location.pathname === '/orders'
-                      ? 'bg-gradient-to-r from-[#0284c7] to-[#0369a1] text-white shadow-xs'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`
-                }
-              >
-                <Layers size={14} />
-                <span>Workflow Queue</span>
-              </NavLink>
-
-              <NavLink
-                to="/add-case"
-                className={({ isActive }) =>
-                  `flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                    isActive
-                      ? 'bg-emerald-600 text-white shadow-xs'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`
-                }
-              >
-                <FilePlus2 size={14} />
-                <span>Add Case</span>
-              </NavLink>
-
-              {/* Operations & Analytics Dropdown Menu */}
-              <div className="relative" ref={opsMenuRef}>
-                <button
-                  type="button"
-                  onClick={() => setOpsMenuOpen(!opsMenuOpen)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
-                    opsMenuOpen || ['/quarter-targets', '/task-47', '/task-31', '/order-details', '/edit-case'].includes(location.pathname)
-                      ? 'border-[#0284c7]/60 text-[#0284c7] dark:text-sky-400 bg-sky-500/10'
-                      : 'border-transparent text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
-                  title="Open Operations & Clinical Modules Menu"
-                >
-                  <Boxes size={14} />
-                  <span>Operations & Analytics</span>
-                  <ChevronDown size={12} className={`transition-transform duration-200 ${opsMenuOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {opsMenuOpen && (
-                  <div className="absolute top-11 left-0 w-64 rounded-2xl bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-slate-800 shadow-2xl p-2 z-50 animate-slide-up space-y-1">
-                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider px-2.5 py-1">
-                      Analytics & Production Reports
-                    </div>
-                    
-                    <NavLink
-                      to="/quarter-targets"
-                      onClick={() => setOpsMenuOpen(false)}
-                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors text-slate-800 dark:text-slate-200"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
-                        <TrendingUp size={14} />
-                      </div>
-                      <div>
-                        <div className="text-slate-900 dark:text-white">Quarter Targets & Power BI</div>
-                        <div className="text-[10px] text-slate-400 font-normal">Executive metrics & live report</div>
-                      </div>
-                    </NavLink>
-
-                    <NavLink
-                      to="/task-47"
-                      onClick={() => setOpsMenuOpen(false)}
-                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors text-slate-800 dark:text-slate-200"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-                        <Boxes size={14} />
-                      </div>
-                      <div>
-                        <div className="text-slate-900 dark:text-white">Task 47: Models Report</div>
-                        <div className="text-[10px] text-slate-400 font-normal">Operator models & cost logs</div>
-                      </div>
-                    </NavLink>
-
-                    <NavLink
-                      to="/task-31"
-                      onClick={() => setOpsMenuOpen(false)}
-                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors text-slate-800 dark:text-slate-200"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                        <Users2 size={14} />
-                      </div>
-                      <div>
-                        <div className="text-slate-900 dark:text-white">Task 31: Staff Targets</div>
-                        <div className="text-[10px] text-slate-400 font-normal">Technician volume & bonus tiers</div>
-                      </div>
-                    </NavLink>
-
-                    <div className="border-t border-slate-100 dark:border-slate-800 my-1 pt-1" />
-
-                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider px-2.5 py-1">
-                      Case Inspection
-                    </div>
-
-                    <NavLink
-                      to="/order-details"
-                      onClick={() => setOpsMenuOpen(false)}
-                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors text-slate-800 dark:text-slate-200"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                        <FileText size={14} />
-                      </div>
-                      <div>
-                        <div className="text-slate-900 dark:text-white">Order Details Inspection</div>
-                        <div className="text-[10px] text-slate-400 font-normal">Deep order telemetry & notes</div>
-                      </div>
-                    </NavLink>
-
-                    <NavLink
-                      to="/edit-case"
-                      onClick={() => setOpsMenuOpen(false)}
-                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors text-slate-800 dark:text-slate-200"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-                        <FileEdit size={14} />
-                      </div>
-                      <div>
-                        <div className="text-slate-900 dark:text-white">Edit Clinical Case</div>
-                        <div className="text-[10px] text-slate-400 font-normal">Form revision & remake auth</div>
-                      </div>
-                    </NavLink>
-                  </div>
-                )}
-              </div>
-            </nav>
-
-            {/* Right: Language Switcher, Theme Toggle & Profile Button (No Search Bar) */}
-            <div className="flex items-center gap-2 shrink-0">
-              
+            {/* Right: Language Switcher & Day/Night Theme Toggle ONLY */}
+            <div className="flex items-center gap-3">
               {/* Language Switcher */}
               <div className="relative" ref={langRef}>
                 <button
                   type="button"
                   onClick={() => setLangDropdownOpen(!langDropdownOpen)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
                   title="Change System Language"
                 >
-                  <span className="text-sm">{currentOption.flag}</span>
-                  <span className="font-extrabold text-[11px] uppercase">{currentOption.code}</span>
-                  <ChevronDown size={12} className="text-slate-400" />
+                  <span className="text-base">{currentOption.flag}</span>
+                  <span className="font-extrabold text-xs uppercase">{currentOption.nativeName}</span>
+                  <ChevronDown size={14} className="text-slate-400" />
                 </button>
 
                 {langDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-44 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-1.5 z-50 animate-slide-up">
+                  <div className="absolute right-0 rtl:left-0 rtl:right-auto mt-2 w-48 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-1.5 z-50 animate-slide-up">
                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1">
-                      Select Language
+                      {language === 'ar' ? 'اختر اللغة' : 'Select Language'}
                     </div>
                     {LANGUAGES.map((lang) => (
                       <button
@@ -464,55 +250,35 @@ export function ConvertibleNav({
                           setLanguage(lang.code);
                           setLangDropdownOpen(false);
                         }}
-                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                           language === lang.code
                             ? 'bg-[#0284c7]/15 text-[#0284c7] dark:text-sky-300'
                             : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                         }`}
                       >
                         <div className="flex items-center gap-2">
-                          <span className="text-sm">{lang.flag}</span>
+                          <span className="text-base">{lang.flag}</span>
                           <span>{lang.nativeName}</span>
                         </div>
-                        {language === lang.code && <Check size={13} className="text-[#0284c7]" />}
+                        {language === lang.code && <Check size={14} className="text-[#0284c7]" />}
                       </button>
                     ))}
                   </div>
                 )}
               </div>
 
-              {/* Theme Toggle */}
+              {/* Day / Night Theme Toggle */}
               <button
                 onClick={toggleTheme}
                 type="button"
-                className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-[#0284c7] transition-colors cursor-pointer"
-                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                className="p-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-[#0284c7] border border-slate-200 dark:border-slate-800 transition-colors cursor-pointer"
+                title={theme === 'dark' ? (language === 'ar' ? 'التبديل إلى الوضع النهاري' : 'Switch to Light Mode') : (language === 'ar' ? 'التبديل إلى الوضع الليلي' : 'Switch to Dark Mode')}
               >
                 {theme === 'dark' ? (
                   <Sun size={18} className="text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
                 ) : (
                   <Moon size={18} className="text-slate-700" />
                 )}
-              </button>
-
-              {/* User Profile Avatar Button: Navigates to /profile */}
-              <button
-                type="button"
-                onClick={() => navigate('/profile')}
-                className="flex items-center gap-2 p-1 pl-1.5 pr-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-[#0284c7] dark:hover:border-sky-500 bg-slate-50/80 dark:bg-slate-900/80 transition-all cursor-pointer group"
-                title="View Operator Profile & Workstation Settings"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-tr from-[#0284c7] to-[#ea580c] text-xs font-black text-white shadow-xs group-hover:scale-105 transition-transform">
-                  {profile?.avatarInitials || '3D'}
-                </div>
-                <div className="flex flex-col text-left leading-tight hidden 2xl:flex">
-                  <span className="text-[11px] font-black text-slate-900 dark:text-white truncate max-w-[100px]">
-                    {profile?.firstName || 'Abdu M.'}
-                  </span>
-                  <span className="text-[9px] font-bold text-[#ea580c]">
-                    Technician
-                  </span>
-                </div>
               </button>
             </div>
           </div>

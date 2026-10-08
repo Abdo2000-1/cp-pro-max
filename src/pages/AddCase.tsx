@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -67,7 +67,18 @@ export default function AddCase() {
 
   // Tooth Chart selections (Universal 1-32)
   const [selectedTeeth, setSelectedTeeth] = useState<number[]>([14, 15, 16]);
+  const [toothProcedures, setToothProcedures] = useState<Record<number, string>>({
+    14: 'implant',
+    15: 'crown',
+    16: 'crown'
+  });
   const [toothActionCategory, setToothActionCategory] = useState<'implants' | 'missing' | 'extracted' | 'abutments' | 'crowns'>('implants');
+
+  const activeServiceIds = useMemo(() => {
+    return Object.entries(services)
+      .filter(([_, active]) => active)
+      .map(([key]) => key);
+  }, [services]);
 
   // Files
   const [dicomFile, setDicomFile] = useState<string | null>('Patient_CT_Scan_Volume.zip');
@@ -522,9 +533,18 @@ export default function AddCase() {
                     <div className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
                       <TeethChart
                         selectedTeeth={selectedTeeth}
+                        toothRestorations={toothProcedures}
+                        activeServices={activeServiceIds}
+                        archFocus={archSelection === 'Dual Arch' ? 'dual' : archSelection === 'Maxilla' ? 'maxilla' : 'mandible'}
                         onToggleTooth={handleToothToggle}
-                        onClearAll={() => setSelectedTeeth([])}
-                        onSelectionChange={(sel) => setSelectedTeeth(sel)}
+                        onClearAll={() => {
+                          setSelectedTeeth([]);
+                          setToothProcedures({});
+                        }}
+                        onSelectionChange={(sel, rest) => {
+                          setSelectedTeeth(sel);
+                          if (rest) setToothProcedures(rest);
+                        }}
                       />
                     </div>
 
@@ -532,8 +552,11 @@ export default function AddCase() {
                       <span>Selected Sites: <strong>{selectedTeeth.sort((a,b)=>a-b).join(', ') || 'None'}</strong></span>
                       <button
                         type="button"
-                        onClick={() => setSelectedTeeth([])}
-                        className="text-rose-500 hover:underline"
+                        onClick={() => {
+                          setSelectedTeeth([]);
+                          setToothProcedures({});
+                        }}
+                        className="text-rose-500 hover:underline cursor-pointer"
                       >
                         Reset Teeth
                       </button>
@@ -567,8 +590,22 @@ export default function AddCase() {
                           <strong className="text-slate-900 dark:text-white">{guideSupport}</strong>
                         </div>
                         <div>
-                          <span className="text-slate-500 dark:text-slate-400 block">Target Teeth</span>
-                          <strong className="text-[#0284c7] font-mono">{selectedTeeth.sort((a,b)=>a-b).join(', ') || 'General / Non-Specific'}</strong>
+                          <span className="text-slate-500 dark:text-slate-400 block">Arch Focus</span>
+                          <strong className="text-cyan-600 dark:text-cyan-400 font-bold">{archSelection}</strong>
+                        </div>
+                        <div className="col-span-2 sm:col-span-4 pt-1 border-t border-sky-100 dark:border-sky-900/40">
+                          <span className="text-slate-500 dark:text-slate-400 block mb-1">Target Sites & Assigned Procedures</span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {selectedTeeth.length === 0 ? (
+                              <span className="text-slate-400 font-mono">General / Non-Specific</span>
+                            ) : (
+                              [...selectedTeeth].sort((a,b)=>a-b).map(num => (
+                                <span key={num} className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-sky-300 dark:border-sky-800 font-mono text-[11px] font-bold text-sky-700 dark:text-sky-300 shadow-2xs">
+                                  #{num} <span className="font-sans font-normal opacity-80">({toothProcedures[num] || 'crown'})</span>
+                                </span>
+                              ))
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
