@@ -1,48 +1,10 @@
 import React, { useState } from 'react';
 import { 
-  Check, RotateCcw, Smile, Zap, Info, X, Activity, Box, Grid, Sparkles, Filter, Layers
+  Check, RotateCcw, Smile, Zap, Info, X, Activity
 } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { TeethChart3DArch } from './TeethChart3DArch';
-import { TeethChartRealistic, REALISTIC_TEETH_DATA } from './TeethChartRealistic';
 
 export type ToothSystem = 'universal' | 'fdi';
-
-export type DentalServiceId = 
-  | 'sg'        // Surgical Guide
-  | 'tp'        // Treatment Plan (Co-Diagnostix / Prosthetically Driven)
-  | 'conv'      // DICOM Conversion
-  | 'mod'       // Model Work
-  | 'rep'       // Radiology Report
-  | 'restTemp'  // Temp Restoration (Provisional PMMA)
-  | 'restFinal' // Final Restoration (Zirconia / Ceramic / Hybrid)
-  | 'vr'        // Virtual Reality & Digital Smile Design
-  | 'ortho';    // Orthodontics & ISmile Aligners
-
-export type RestorationType = 
-  | 'crown' 
-  | 'bridge' 
-  | 'veneer' 
-  | 'implant' 
-  | 'inlay' 
-  | 'extraction'
-  | 'sleeve'
-  | 'anchor'
-  | 'bone_reduction'
-  | 'sinus_lift'
-  | 'nerve_trace'
-  | 'segmentation'
-  | 'die_prep'
-  | 'analog'
-  | 'impacted'
-  | 'pathology'
-  | 'temp_crown'
-  | 'temp_bridge'
-  | 'attachment'
-  | 'ipr'
-  | 'smile_design';
-
-export type ArchFocus = 'maxilla' | 'mandible' | 'dual' | 'both';
+export type RestorationType = 'crown' | 'bridge' | 'veneer' | 'implant' | 'inlay' | 'extraction';
 
 export interface ToothOdontoData {
   universal: number;
@@ -104,92 +66,19 @@ export const TOOTH_DATABASE = ODONTO_DATABASE;
 export const RESTORATION_TYPES: {
   id: RestorationType;
   label: string;
-  labelAr?: string;
   icon: string;
   color: string;
   textColor: string;
   bgColor: string;
   borderColor: string;
-  description?: string;
-  serviceCategories?: DentalServiceId[];
 }[] = [
-  // --- Core Restorative & Surgical ---
-  { id: 'crown', label: 'Crown', labelAr: 'تاج كامل', icon: '👑', color: '#00d8fe', textColor: 'text-cyan-600 dark:text-cyan-400', bgColor: 'bg-cyan-50 dark:bg-cyan-950/40', borderColor: 'border-cyan-500', serviceCategories: ['tp', 'restFinal', 'vr'] },
-  { id: 'bridge', label: 'Bridge Unit', labelAr: 'جسر أسنان', icon: '🌉', color: '#6366f1', textColor: 'text-indigo-600 dark:text-indigo-400', bgColor: 'bg-indigo-50 dark:bg-indigo-950/40', borderColor: 'border-indigo-500', serviceCategories: ['tp', 'restFinal'] },
-  { id: 'veneer', label: 'Veneer', labelAr: 'عدسة فينير', icon: '✨', color: '#a855f7', textColor: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-50 dark:bg-purple-950/40', borderColor: 'border-purple-500', serviceCategories: ['tp', 'restFinal', 'vr'] },
-  { id: 'implant', label: 'Implant', labelAr: 'زرعة تيتانيوم', icon: '🔩', color: '#f59e0b', textColor: 'text-amber-600 dark:text-amber-400', bgColor: 'bg-amber-50 dark:bg-amber-950/40', borderColor: 'border-amber-500', serviceCategories: ['sg', 'tp', 'conv'] },
-  { id: 'inlay', label: 'Inlay / Onlay', labelAr: 'حشوة مصبوبة', icon: '💎', color: '#10b981', textColor: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-950/40', borderColor: 'border-emerald-500', serviceCategories: ['restFinal'] },
-  { id: 'extraction', label: 'Missing / Pontic', labelAr: 'سن مفقود / قلع', icon: '❌', color: '#f43f5e', textColor: 'text-rose-600 dark:text-rose-400', bgColor: 'bg-rose-50 dark:bg-rose-950/40', borderColor: 'border-rose-500', serviceCategories: ['sg', 'tp', 'conv', 'mod', 'rep', 'restTemp', 'restFinal', 'ortho'] },
-
-  // --- Surgical Guide (SG) Specific ---
-  { id: 'sleeve', label: 'Guide Sleeve', labelAr: 'كم توجيه جراحي', icon: '⭕', color: '#0284c7', textColor: 'text-sky-600 dark:text-sky-400', bgColor: 'bg-sky-50 dark:bg-sky-950/40', borderColor: 'border-sky-500', serviceCategories: ['sg'] },
-  { id: 'anchor', label: 'Anchor Pin', labelAr: 'مسمار تثبيت الدليل', icon: '📌', color: '#d97706', textColor: 'text-amber-700 dark:text-amber-400', bgColor: 'bg-amber-50 dark:bg-amber-950/40', borderColor: 'border-amber-600', serviceCategories: ['sg'] },
-  { id: 'bone_reduction', label: 'Bone Reduction', labelAr: 'تخفيض عظمي', icon: '📐', color: '#e11d48', textColor: 'text-rose-700 dark:text-rose-400', bgColor: 'bg-rose-50 dark:bg-rose-950/40', borderColor: 'border-rose-600', serviceCategories: ['sg'] },
-
-  // --- Treatment Plan (TP) Specific ---
-  { id: 'sinus_lift', label: 'Sinus Lift', labelAr: 'رفع الجيب الفكي', icon: '🌊', color: '#06b6d4', textColor: 'text-cyan-700 dark:text-cyan-400', bgColor: 'bg-cyan-50 dark:bg-cyan-950/40', borderColor: 'border-cyan-600', serviceCategories: ['tp', 'rep'] },
-  { id: 'nerve_trace', label: 'IAN Safety Zone', labelAr: 'مسار العصب الفكي', icon: '⚡', color: '#f97316', textColor: 'text-orange-600 dark:text-orange-400', bgColor: 'bg-orange-50 dark:bg-orange-950/40', borderColor: 'border-orange-500', serviceCategories: ['tp', 'conv'] },
-
-  // --- Conversion & Model Work ---
-  { id: 'segmentation', label: 'Segmentation ROI', labelAr: 'منطقة استخلاص 3D', icon: '🧩', color: '#8b5cf6', textColor: 'text-violet-600 dark:text-violet-400', bgColor: 'bg-violet-50 dark:bg-violet-950/40', borderColor: 'border-violet-500', serviceCategories: ['conv'] },
-  { id: 'die_prep', label: 'Removable Die', labelAr: 'سن مجهز متحرك', icon: '🏷️', color: '#14b8a6', textColor: 'text-teal-600 dark:text-teal-400', bgColor: 'bg-teal-50 dark:bg-teal-950/40', borderColor: 'border-teal-500', serviceCategories: ['mod'] },
-  { id: 'analog', label: 'Implant Analog', labelAr: 'أنالوج في النموذج', icon: '📍', color: '#f59e0b', textColor: 'text-amber-600 dark:text-amber-400', bgColor: 'bg-amber-50 dark:bg-amber-950/40', borderColor: 'border-amber-500', serviceCategories: ['mod'] },
-
-  // --- Radiology Specific ---
-  { id: 'impacted', label: 'Impacted Tooth', labelAr: 'سن مطمور', icon: '🔍', color: '#ec4899', textColor: 'text-pink-600 dark:text-pink-400', bgColor: 'bg-pink-50 dark:bg-pink-950/40', borderColor: 'border-pink-500', serviceCategories: ['rep'] },
-  { id: 'pathology', label: 'Pathology / Radiolucency', labelAr: 'آفة ذروية / فحص', icon: '⚠️', color: '#dc2626', textColor: 'text-red-700 dark:text-red-400', bgColor: 'bg-red-50 dark:bg-red-950/40', borderColor: 'border-red-600', serviceCategories: ['rep'] },
-
-  // --- Provisional & Orthodontics ---
-  { id: 'temp_crown', label: 'Temp Crown', labelAr: 'تاج مؤقت PMMA', icon: '⏳', color: '#3b82f6', textColor: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-50 dark:bg-blue-950/40', borderColor: 'border-blue-500', serviceCategories: ['restTemp'] },
-  { id: 'temp_bridge', label: 'Temp Bridge', labelAr: 'جسر مؤقت', icon: '⏱️', color: '#6366f1', textColor: 'text-indigo-600 dark:text-indigo-400', bgColor: 'bg-indigo-50 dark:bg-indigo-950/40', borderColor: 'border-indigo-500', serviceCategories: ['restTemp'] },
-  { id: 'attachment', label: 'Aligner Attachment', labelAr: 'أتاشمنت تقويم', icon: '🔘', color: '#10b981', textColor: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-950/40', borderColor: 'border-emerald-500', serviceCategories: ['ortho'] },
-  { id: 'ipr', label: 'IPR Contact', labelAr: 'برد مابين الأسنان', icon: '↔️', color: '#8b5cf6', textColor: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-50 dark:bg-purple-950/40', borderColor: 'border-purple-500', serviceCategories: ['ortho'] },
-  { id: 'smile_design', label: 'Smile Design', labelAr: 'تصميم الابتسامة DSD', icon: '🪄', color: '#ec4899', textColor: 'text-pink-600 dark:text-pink-400', bgColor: 'bg-pink-50 dark:bg-pink-950/40', borderColor: 'border-pink-500', serviceCategories: ['vr'] }
+  { id: 'crown', label: 'Crown', icon: '👑', color: '#00d8fe', textColor: 'text-cyan-600 dark:text-cyan-400', bgColor: 'bg-cyan-50 dark:bg-cyan-950/40', borderColor: 'border-cyan-500' },
+  { id: 'bridge', label: 'Bridge Unit', icon: '🌉', color: '#6366f1', textColor: 'text-indigo-600 dark:text-indigo-400', bgColor: 'bg-indigo-50 dark:bg-indigo-950/40', borderColor: 'border-indigo-500' },
+  { id: 'veneer', label: 'Veneer', icon: '✨', color: '#a855f7', textColor: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-50 dark:bg-purple-950/40', borderColor: 'border-purple-500' },
+  { id: 'implant', label: 'Implant', icon: '🔩', color: '#f59e0b', textColor: 'text-amber-600 dark:text-amber-400', bgColor: 'bg-amber-50 dark:bg-amber-950/40', borderColor: 'border-amber-500' },
+  { id: 'inlay', label: 'Inlay / Onlay', icon: '💎', color: '#10b981', textColor: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-950/40', borderColor: 'border-emerald-500' },
+  { id: 'extraction', label: 'Missing / Pontic', icon: '❌', color: '#f43f5e', textColor: 'text-rose-600 dark:text-rose-400', bgColor: 'bg-rose-50 dark:bg-rose-950/40', borderColor: 'border-rose-500' },
 ];
-
-export const SERVICE_PROCEDURES_MAP: Record<string, RestorationType[]> = {
-  sg: ['implant', 'sleeve', 'anchor', 'bone_reduction', 'extraction'],
-  tp: ['implant', 'crown', 'bridge', 'veneer', 'sinus_lift', 'nerve_trace', 'extraction'],
-  conv: ['segmentation', 'implant', 'nerve_trace', 'extraction'],
-  mod: ['die_prep', 'analog', 'extraction'],
-  rep: ['impacted', 'pathology', 'sinus_lift', 'extraction'],
-  restTemp: ['temp_crown', 'temp_bridge', 'extraction'],
-  restFinal: ['crown', 'bridge', 'veneer', 'inlay', 'extraction'],
-  vr: ['smile_design', 'veneer', 'crown', 'extraction'],
-  ortho: ['attachment', 'ipr', 'extraction']
-};
-
-export const SERVICE_METADATA: Record<string, { name: string; nameAr: string; icon: string }> = {
-  sg: { name: 'Surgical Guide (SG)', nameAr: 'دليل جراحي', icon: '🎯' },
-  tp: { name: 'Treatment Plan (TP)', nameAr: 'خطة علاجية', icon: '📋' },
-  conv: { name: 'DICOM Conversion', nameAr: 'تحويل DICOM', icon: '🔄' },
-  mod: { name: 'Model Work (MOD)', nameAr: 'نماذج طباعة', icon: '📦' },
-  rep: { name: 'Radiology Report', nameAr: 'تقرير أشعة', icon: '🔬' },
-  restTemp: { name: 'Temp Restoration', nameAr: 'تركيبات مؤقتة', icon: '⏳' },
-  restFinal: { name: 'Final Restoration', nameAr: 'تركيبات نهائية', icon: '👑' },
-  vr: { name: 'Virtual Reality VR', nameAr: 'واقع افتراضي وتصميم', icon: '👓' },
-  ortho: { name: 'Orthodontics & ISmile', nameAr: 'تقويم أسنان وقوالب', icon: '✨' }
-};
-
-export function getProceduresForServices(serviceIds?: string[]): typeof RESTORATION_TYPES {
-  if (!serviceIds || serviceIds.length === 0 || serviceIds.includes('all')) {
-    return RESTORATION_TYPES;
-  }
-
-  const allowedIds = new Set<RestorationType>();
-  serviceIds.forEach(srv => {
-    const list = SERVICE_PROCEDURES_MAP[srv];
-    if (list) {
-      list.forEach(item => allowedIds.add(item));
-    }
-  });
-
-  if (allowedIds.size === 0) {
-    return RESTORATION_TYPES;
-  }
-
-  return RESTORATION_TYPES.filter(r => allowedIds.has(r.id));
-}
 
 /**
  * Maps any tooth 1..32 to its master anatomical base shape (1..8 for upper, 25..32 for lower)
@@ -228,14 +117,8 @@ function ClinicalToothSilhouette({
   const resInfo = RESTORATION_TYPES.find(r => r.id === restoration);
   const strokeColor = isSelected ? (resInfo?.color || '#00d8fe') : 'currentColor';
   const crownFill = isSelected ? (resInfo ? `${resInfo.color}25` : 'rgba(0,216,254,0.18)') : 'none';
-  const isImplant = Boolean(isSelected && (restoration === 'implant' || restoration === 'analog'));
+  const isImplant = Boolean(isSelected && restoration === 'implant');
   const isExtraction = Boolean(isSelected && restoration === 'extraction');
-  const isSleeve = Boolean(isSelected && restoration === 'sleeve');
-  const isAttachment = Boolean(isSelected && restoration === 'attachment');
-  const isAnchor = Boolean(isSelected && restoration === 'anchor');
-  const isSinus = Boolean(isSelected && restoration === 'sinus_lift');
-  const isNerve = Boolean(isSelected && restoration === 'nerve_trace');
-  const isBoneReduction = Boolean(isSelected && restoration === 'bone_reduction');
 
   const isUpper = toothNumber >= 1 && toothNumber <= 16;
   const isLeftQuadrant = (toothNumber >= 9 && toothNumber <= 16) || (toothNumber >= 17 && toothNumber <= 24);
@@ -622,89 +505,21 @@ function ClinicalToothSilhouette({
           <line x1="42" y1="12" x2="8" y2="88" />
         </g>
       )}
-
-      {/* Surgical Guide Sleeve Ring */}
-      {isSleeve && (
-        <g stroke="#0284c7" fill="none" strokeWidth="2">
-          <circle cx="25" cy={isUpper ? 64 : 26} r="10" strokeDasharray="3 2" />
-          <circle cx="25" cy={isUpper ? 64 : 26} r="6" />
-        </g>
-      )}
-
-      {/* Guide Anchor Pin Marker */}
-      {isAnchor && (
-        <g fill="#d97706" stroke="#92400e" strokeWidth="1">
-          <circle cx="25" cy={isUpper ? 20 : 70} r="4.5" />
-          <line x1="25" y1={isUpper ? 24 : 66} x2="25" y2={isUpper ? 42 : 48} stroke="#d97706" strokeWidth="2" />
-        </g>
-      )}
-
-      {/* Clear Aligner Attachment Bump */}
-      {isAttachment && (
-        <rect
-          x="21"
-          y={isUpper ? 60 : 22}
-          width="8"
-          height="7"
-          rx="1.5"
-          fill="#10b981"
-          stroke="#059669"
-          strokeWidth="1.2"
-        />
-      )}
-
-      {/* Sinus Elevation Indicator */}
-      {isSinus && (
-        <path
-          d={isUpper ? "M 10 18 Q 25 8 40 18" : "M 10 72 Q 25 82 40 72"}
-          fill="none"
-          stroke="#06b6d4"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-        />
-      )}
-
-      {/* Mandibular Nerve Trace Zone */}
-      {isNerve && (
-        <path
-          d={isUpper ? "M 12 14 L 20 22 L 28 14 L 38 22" : "M 12 76 L 20 68 L 28 76 L 38 68"}
-          fill="none"
-          stroke="#f97316"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-      )}
-
-      {/* Bone Reduction Plateau */}
-      {isBoneReduction && (
-        <line
-          x1="8"
-          y1={isUpper ? 46 : 44}
-          x2="42"
-          y2={isUpper ? 46 : 44}
-          stroke="#e11d48"
-          strokeWidth="2.5"
-          strokeDasharray="4 2"
-        />
-      )}
     </svg>
   );
 }
 
-export interface TeethChartProps {
+interface TeethChartProps {
   selected?: number[];
   selectedTeeth?: number[];
   onToggle?: (tooth: number) => void;
   onToggleTooth?: (tooth: number) => void;
-  toothRestorations?: Record<number, string>;
+  toothRestorations?: Record<number, RestorationType>;
   onAssignRestoration?: (tooth: number, type: RestorationType) => void;
   onClearAll?: () => void;
-  onSelectionChange?: (selected: number[], restorations: Record<number, string>) => void;
+  onSelectionChange?: (selected: number[], restorations: Record<number, RestorationType>) => void;
   readonly?: boolean;
   activeService?: string;
-  activeServices?: DentalServiceId[] | string[];
-  serviceId?: DentalServiceId | string;
-  archFocus?: ArchFocus;
   showToolbar?: boolean;
   className?: string;
 }
@@ -719,42 +534,17 @@ export function TeethChart({
   onClearAll,
   onSelectionChange,
   readonly = false,
-  activeService,
-  activeServices,
-  serviceId,
-  archFocus = 'both',
   showToolbar = true,
   className = ''
 }: TeethChartProps) {
-  const { t } = useLanguage();
   const propSelected = selected ?? selectedTeeth;
   const [internalSelected, setInternalSelected] = useState<number[]>(propSelected || []);
-  const [localRestorations, setLocalRestorations] = useState<Record<number, string>>({
-    25: 'implant',
+  const [localRestorations, setLocalRestorations] = useState<Record<number, RestorationType>>({
+    14: 'implant',
+    15: 'crown',
+    16: 'crown',
     ...toothRestorations
   });
-
-  // Normalize incoming service IDs
-  const normalizedServices: string[] = React.useMemo(() => {
-    const list: string[] = [];
-    if (serviceId) list.push(String(serviceId));
-    if (activeService) list.push(String(activeService));
-    if (activeServices && Array.isArray(activeServices)) {
-      activeServices.forEach(s => {
-        if (s && !list.includes(String(s))) list.push(String(s));
-      });
-    }
-    return list;
-  }, [serviceId, activeService, activeServices]);
-
-  const [filterByService, setFilterByService] = useState<boolean>(true);
-  const effectiveActiveServices = (filterByService && normalizedServices.length > 0)
-    ? normalizedServices
-    : [];
-
-  const availableProcedures = React.useMemo(() => {
-    return getProceduresForServices(effectiveActiveServices);
-  }, [effectiveActiveServices]);
 
   // Sync internal selected when external prop changes
   React.useEffect(() => {
@@ -763,30 +553,12 @@ export function TeethChart({
     }
   }, [propSelected]);
 
-  // Synchronize external restorations when provided
-  React.useEffect(() => {
-    if (toothRestorations && Object.keys(toothRestorations).length > 0) {
-      setLocalRestorations(prev => ({
-        ...prev,
-        ...toothRestorations
-      }));
-    }
-  }, [toothRestorations]);
-
   const activeSelected = propSelected !== undefined ? propSelected : internalSelected;
   const handleToggle = onToggle ?? onToggleTooth;
 
   const [system, setSystem] = useState<ToothSystem>('universal');
   const [selectedTool, setSelectedTool] = useState<RestorationType>('crown');
   const [hoveredTooth, setHoveredTooth] = useState<ToothOdontoData | null>(null);
-  const [viewMode, setViewMode] = useState<'realistic' | 'cards' | '3d'>('realistic');
-
-  // Ensure selected tool is valid for the current filtered list
-  React.useEffect(() => {
-    if (availableProcedures.length > 0 && !availableProcedures.some(p => p.id === selectedTool)) {
-      setSelectedTool(availableProcedures[0].id);
-    }
-  }, [availableProcedures, selectedTool]);
 
   // Grouped into the standard 4 quadrants
   const upperRight = ODONTO_DATABASE.filter(t => t.quadrant === 'UR');
@@ -838,7 +610,7 @@ export function TeethChart({
     }
   };
 
-  const handleSelectBatch = (type: 'all' | 'both' | 'upper' | 'lower' | 'smile' | 'posteriors' | 'clear') => {
+  const handleSelectBatch = (type: 'all' | 'upper' | 'lower' | 'smile' | 'posteriors' | 'clear') => {
     if (readonly) return;
     if (type === 'clear') {
       const prev = [...activeSelected];
@@ -853,7 +625,7 @@ export function TeethChart({
     }
 
     let targets: ToothOdontoData[] = [];
-    if (type === 'all' || type === 'both') targets = ODONTO_DATABASE;
+    if (type === 'all') targets = ODONTO_DATABASE;
     if (type === 'upper') targets = ODONTO_DATABASE.filter(t => t.arch === 'upper');
     if (type === 'lower') targets = ODONTO_DATABASE.filter(t => t.arch === 'lower');
     if (type === 'smile') targets = ODONTO_DATABASE.filter(t => t.isAnterior);
@@ -921,38 +693,15 @@ export function TeethChart({
             : 'hover:bg-slate-100/80 dark:hover:bg-slate-800/60'
         }`}
       >
-        {/* Upper teeth: Photographic tooth anatomy, then number directly below it */}
+        {/* Upper teeth: Silhouette first, then number directly below it (meeting occlusal cross) */}
         {arch === 'upper' && (
           <>
-            <div className="w-8 sm:w-11 h-24 sm:h-28 flex items-center justify-center transition-transform group-hover:scale-110 relative">
-              {assignedRes === 'implant' ? (
-                <div className="relative w-full h-full flex items-center justify-center">
-                  <img
-                    src={`/assets/teeth-anatomy/tooth_${tooth.universal}.png`}
-                    alt={tooth.name}
-                    className="max-h-full max-w-full object-contain filter drop-shadow-xs"
-                    style={{ clipPath: 'inset(45% 0 0 0)' }}
-                  />
-                  <img
-                    src="/assets/teeth-anatomy/implant_fixture_upper.png"
-                    alt="Titanium Implant"
-                    className="absolute top-1 w-5/12 h-1/2 object-contain filter drop-shadow-md"
-                  />
-                </div>
-              ) : (
-                <div className="relative w-full h-full flex items-center justify-center">
-                  <img
-                    src={`/assets/teeth-anatomy/tooth_${tooth.universal}.png`}
-                    alt={tooth.name}
-                    className={`max-h-full max-w-full object-contain transition-all duration-150 ${
-                      assignedRes === 'extraction' ? 'opacity-25 filter grayscale' : 'drop-shadow-xs'
-                    }`}
-                  />
-                  {assignedRes === 'extraction' && (
-                    <span className="absolute inset-0 flex items-center justify-center text-rose-500 font-black text-xl">✕</span>
-                  )}
-                </div>
-              )}
+            <div className="w-8 sm:w-10 h-22 sm:h-26 flex items-center justify-center transition-transform group-hover:scale-105">
+              <ClinicalToothSilhouette
+                toothNumber={tooth.universal}
+                isSelected={isSelected}
+                restoration={assignedRes}
+              />
             </div>
             <span className={`text-[12px] font-mono font-bold px-1.5 py-0.5 mt-0.5 rounded transition-colors ${
               isSelected
@@ -964,7 +713,7 @@ export function TeethChart({
           </>
         )}
 
-        {/* Lower teeth: Number first, then photographic tooth anatomy below it */}
+        {/* Lower teeth: Number first (meeting occlusal cross), then Silhouette below it */}
         {arch === 'lower' && (
           <>
             <span className={`text-[12px] font-mono font-bold px-1.5 py-0.5 mb-0.5 rounded transition-colors ${
@@ -974,35 +723,12 @@ export function TeethChart({
             }`}>
               {displayNum}
             </span>
-            <div className="w-8 sm:w-11 h-24 sm:h-28 flex items-center justify-center transition-transform group-hover:scale-110 relative">
-              {assignedRes === 'implant' ? (
-                <div className="relative w-full h-full flex items-center justify-center">
-                  <img
-                    src={`/assets/teeth-anatomy/tooth_${tooth.universal}.png`}
-                    alt={tooth.name}
-                    className="max-h-full max-w-full object-contain filter drop-shadow-xs"
-                    style={{ clipPath: 'inset(0 0 50% 0)' }}
-                  />
-                  <img
-                    src="/assets/teeth-anatomy/implant_fixture_lower.png"
-                    alt="Titanium Implant"
-                    className="absolute bottom-1 w-5/12 h-1/2 object-contain filter drop-shadow-md"
-                  />
-                </div>
-              ) : (
-                <div className="relative w-full h-full flex items-center justify-center">
-                  <img
-                    src={`/assets/teeth-anatomy/tooth_${tooth.universal}.png`}
-                    alt={tooth.name}
-                    className={`max-h-full max-w-full object-contain transition-all duration-150 ${
-                      assignedRes === 'extraction' ? 'opacity-25 filter grayscale' : 'drop-shadow-xs'
-                    }`}
-                  />
-                  {assignedRes === 'extraction' && (
-                    <span className="absolute inset-0 flex items-center justify-center text-rose-500 font-black text-xl">✕</span>
-                  )}
-                </div>
-              )}
+            <div className="w-8 sm:w-10 h-22 sm:h-26 flex items-center justify-center transition-transform group-hover:scale-105">
+              <ClinicalToothSilhouette
+                toothNumber={tooth.universal}
+                isSelected={isSelected}
+                restoration={assignedRes}
+              />
             </div>
           </>
         )}
@@ -1021,88 +747,41 @@ export function TeethChart({
                 <Activity className="w-4 h-4" />
               </span>
               <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white tracking-tight">
-                {t('teeth.chartTitle', 'Anatomical Dental Odontogram (Universal 1–32)')}
+                Anatomical Dental Odontogram (Universal 1–32)
               </h3>
               <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30">
                 {activeSelected.length} Selected
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              {viewMode === 'realistic'
-                ? 'Photorealistic Anatomical Odontogram (1:1 Photographic Reference) • مخطط الأسنان التشريحي الواقعي فائق الدقة.'
-                : viewMode === '3d'
-                ? 'Interactive 3D Anatomical Dental Arches • Smooth 360° Orbit, Zoom & Occlusal Inspection.'
-                : 'Universal Numbering System • Classical 4-Quadrant Anatomical Odontogram Grid.'}
+              Universal Numbering System • Classical 4-Quadrant Anatomical Odontogram Grid.
             </p>
           </div>
 
-          <div className="flex items-center gap-2 self-stretch md:self-auto justify-between md:justify-end flex-wrap">
-            {/* View Mode Switcher: Realistic Panoramic vs 4-Quadrant Cards vs 3D Orbit Arch */}
-            <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700">
-              <button
-                type="button"
-                onClick={() => setViewMode('realistic')}
-                className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                  viewMode === 'realistic'
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-xs'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-                title="Ultra-Realistic Anatomical Odontogram Chart (1:1 Photographic Reference)"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>الواقعي (Realistic)</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('cards')}
-                className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                  viewMode === 'cards'
-                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-                title="4-Quadrant Dental Cards Grid"
-              >
-                <Grid className="w-3.5 h-3.5" />
-                <span>الشبكة (Grid)</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('3d')}
-                className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                  viewMode === '3d'
-                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-xs'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-                title="3D Dental Arch Orbit Canvas"
-              >
-                <Box className="w-3.5 h-3.5" />
-                <span>3D مجسم</span>
-              </button>
-            </div>
-
+          <div className="flex items-center gap-2 self-stretch md:self-auto justify-between md:justify-end">
             {/* Numbering System Switcher */}
             <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700">
               <button
                 type="button"
                 onClick={() => setSystem('universal')}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
                   system === 'universal'
                     ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                {t('teeth.systemUniversal', 'Universal (1-32)')}
+                Universal (1-32)
               </button>
               <button
                 type="button"
                 onClick={() => setSystem('fdi')}
-                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
                   system === 'fdi'
                     ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                {t('teeth.systemFdi', 'FDI (11-48)')}
+                FDI (11-48)
               </button>
             </div>
 
@@ -1111,9 +790,9 @@ export function TeethChart({
               <button
                 type="button"
                 onClick={() => handleSelectBatch('clear')}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors border border-rose-200 dark:border-rose-900/30 cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors border border-rose-200 dark:border-rose-900/30"
               >
-                <RotateCcw className="w-3.5 h-3.5" /> {t('action.clearAll', 'Clear All')}
+                <RotateCcw className="w-3.5 h-3.5" /> Clear All
               </button>
             )}
           </div>
@@ -1122,143 +801,76 @@ export function TeethChart({
 
       {/* RESTORATION PALETTE & QUICK ACTION BUTTONS */}
       {!readonly && showToolbar && (
-        <div className="py-3.5 space-y-3 border-b border-slate-100 dark:border-slate-800/80">
-          {/* Service Workflow Banner if prescribed services exist */}
-          {normalizedServices.length > 0 && (
-            <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-800/60 text-xs">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-bold text-cyan-800 dark:text-cyan-200 flex items-center gap-1.5">
-                  <Filter className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
-                  <span>Prescribed Service Filter:</span>
-                </span>
-                {normalizedServices.map(sid => {
-                  const meta = SERVICE_METADATA[sid];
-                  return (
-                    <span key={sid} className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 font-bold text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/60 shadow-2xs">
-                      {meta?.icon || '🎯'} {meta?.name || sid}
-                    </span>
-                  );
-                })}
-                <span className="text-slate-500 dark:text-slate-400 text-[11px]">
-                  ({availableProcedures.length} logical procedures available)
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setFilterByService(!filterByService)}
-                className="text-[11px] font-bold text-cyan-700 dark:text-cyan-300 hover:underline cursor-pointer"
-              >
-                {filterByService ? 'Show All 17 Procedures' : 'Re-apply Service Filter'}
-              </button>
-            </div>
-          )}
+        <div className="py-3.5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800/80">
+          {/* Active Procedure Brush */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1 flex items-center gap-1">
+              <Zap className="w-3 h-3 text-cyan-400" /> Active Tool:
+            </span>
+            {RESTORATION_TYPES.map((res) => {
+              const isCurrent = selectedTool === res.id;
+              return (
+                <button
+                  key={res.id}
+                  type="button"
+                  onClick={() => setSelectedTool(res.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold border transition-all ${
+                    isCurrent
+                      ? `${res.bgColor} ${res.borderColor} ${res.textColor} shadow-xs ring-1 ring-current`
+                      : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <span className="text-sm">{res.icon}</span>
+                  <span>{res.label}</span>
+                </button>
+              );
+            })}
+          </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            {/* Active Procedure Brush */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1 flex items-center gap-1">
-                <Zap className="w-3 h-3 text-cyan-400" /> {t('teeth.activeTool', 'Active Tool:')}
-              </span>
-              {availableProcedures.map((res) => {
-                const isCurrent = selectedTool === res.id;
-                return (
-                  <button
-                    key={res.id}
-                    type="button"
-                    onClick={() => setSelectedTool(res.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                      isCurrent
-                        ? `${res.bgColor} ${res.borderColor} ${res.textColor} shadow-xs ring-1 ring-current`
-                        : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <span className="text-sm">{res.icon}</span>
-                    <span>{t(`teeth.${res.id}`, res.label)}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Quick Select Presets */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <button
-                type="button"
-                onClick={() => handleSelectBatch('both')}
-                className="flex items-center gap-1 px-3 py-1 text-xs font-bold bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-100 dark:hover:bg-cyan-900/50 rounded-lg border border-cyan-300 dark:border-cyan-800 transition-colors shadow-2xs"
-                title="Select All 32 Teeth across both Upper & Lower Arches"
-              >
-                <Layers className="w-3.5 h-3.5 text-cyan-500" /> Both Arches (1-32)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSelectBatch('upper')}
-                className="px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
-              >
-                + Upper (1-16)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSelectBatch('lower')}
-                className="px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
-              >
-                + Lower (17-32)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSelectBatch('smile')}
-                className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800/40 transition-colors"
-                title="Aesthetic Anterior Smile Zone (Canine to Canine)"
-              >
-                <Smile className="w-3.5 h-3.5" /> Smile Zone
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSelectBatch('posteriors')}
-                className="px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
-              >
-                + Posteriors
-              </button>
-            </div>
+          {/* Quick Select Presets */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button
+              type="button"
+              onClick={() => handleSelectBatch('upper')}
+              className="px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
+            >
+              + Upper (1-16)
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSelectBatch('lower')}
+              className="px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
+            >
+              + Lower (17-32)
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSelectBatch('smile')}
+              className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800/40 transition-colors"
+              title="Aesthetic Anterior Smile Zone (Canine to Canine)"
+            >
+              <Smile className="w-3.5 h-3.5" /> Smile Zone
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSelectBatch('posteriors')}
+              className="px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
+            >
+              + Posteriors
+            </button>
           </div>
         </div>
       )}
 
-      {/* VIEW CONDITIONAL: REALISTIC PANORAMIC VS 3D ARCH VS 4-QUADRANT CARDS */}
-      {viewMode === 'realistic' ? (
-        <div className="py-2">
-          <TeethChartRealistic
-            selected={activeSelected}
-            toothRestorations={localRestorations}
-            system={system}
-            selectedTool={selectedTool}
-            onToothClick={handleToothClick}
-            hoveredTooth={hoveredTooth}
-            setHoveredTooth={setHoveredTooth}
-            readonly={readonly}
-          />
-        </div>
-      ) : viewMode === '3d' ? (
-        <div className="py-4">
-          <TeethChart3DArch
-            selected={activeSelected}
-            toothRestorations={localRestorations}
-            system={system}
-            selectedTool={selectedTool}
-            onToothClick={handleToothClick}
-            readonly={readonly}
-          />
-        </div>
-      ) : (
-        <>
-          {/* EXACT 4-QUADRANT DENTAL ARCH GRID (MATCHING REFERENCE SKETCH 1:1) */}
-          <div className="py-6 overflow-x-auto">
-          <div className="min-w-[700px] max-w-4xl mx-auto space-y-3">
+      {/* EXACT 4-QUADRANT DENTAL ARCH GRID (MATCHING REFERENCE SKETCH 1:1) */}
+      <div className="py-6 overflow-x-auto">
+        <div className="min-w-[700px] max-w-4xl mx-auto space-y-3">
           
           {/* 1. TOP QUADRANT LABELS */}
           <div className="grid grid-cols-[1fr_auto_1fr] items-center text-xs font-bold text-slate-600 dark:text-slate-300 px-2 pb-1">
             <div className="flex items-center justify-between pr-4">
               <span className="px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-mono text-[11px] border border-cyan-500/20">
-                {t('teeth.quadrant1', 'UR • Maxillary Right')}
+                UR • Maxillary Right
               </span>
               <span className="text-[10px] font-mono text-slate-400">#1 ➔ #8</span>
             </div>
@@ -1266,7 +878,7 @@ export function TeethChart({
             <div className="flex items-center justify-between pl-4">
               <span className="text-[10px] font-mono text-slate-400">#9 ➔ #16</span>
               <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono text-[11px] border border-blue-500/20">
-                {t('teeth.quadrant2', 'UL • Maxillary Left')}
+                UL • Maxillary Left
               </span>
             </div>
           </div>
@@ -1293,13 +905,13 @@ export function TeethChart({
             {/* SOLID HORIZONTAL OCCLUSAL CROSS LINE WITH 'Right' AND 'Left' */}
             <div className="relative flex items-center justify-between my-2">
               <span className="text-sm font-semibold text-slate-900 dark:text-white pl-1 shrink-0 select-none">
-                {t('teeth.patientRight', 'Right')}
+                Right
               </span>
               <div className="flex-1 h-[1.5px] bg-slate-900 dark:bg-slate-200 mx-3 relative flex items-center justify-center">
                 <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 ring-4 ring-white dark:ring-slate-900" />
               </div>
               <span className="text-sm font-semibold text-slate-900 dark:text-white pr-1 shrink-0 select-none">
-                {t('teeth.patientLeft', 'Left')}
+                Left
               </span>
             </div>
 
@@ -1325,7 +937,7 @@ export function TeethChart({
           <div className="grid grid-cols-[1fr_auto_1fr] items-center text-xs font-bold text-slate-600 dark:text-slate-300 px-2 pt-1">
             <div className="flex items-center justify-between pr-4">
               <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-mono text-[11px] border border-indigo-500/20">
-                {t('teeth.quadrant4', 'LR • Mandibular Right')}
+                LR • Mandibular Right
               </span>
               <span className="text-[10px] font-mono text-slate-400">#32 ➔ #25</span>
             </div>
@@ -1333,53 +945,40 @@ export function TeethChart({
             <div className="flex items-center justify-between pl-4">
               <span className="text-[10px] font-mono text-slate-400">#24 ➔ #17</span>
               <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 font-mono text-[11px] border border-purple-500/20">
-                {t('teeth.quadrant3', 'LL • Mandibular Left')}
+                LL • Mandibular Left
               </span>
             </div>
           </div>
 
-          </div>
         </div>
-      </>
-      )}
+      </div>
 
-      {/* LIVE HOVER TOOTH INSPECTOR BAR (Available across all modes) */}
-      <div className="mt-3 min-h-10 py-1.5 flex flex-wrap items-center justify-between px-4 rounded-2xl bg-slate-100 dark:bg-slate-800/80 text-xs text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-800 transition-all gap-2">
+      {/* LIVE HOVER TOOTH INSPECTOR BAR */}
+      <div className="h-9 flex items-center justify-between px-4 rounded-2xl bg-slate-100 dark:bg-slate-800/80 text-xs text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-800">
         {hoveredTooth ? (
-          <div className="flex items-center gap-2.5 truncate">
-            <span className="font-extrabold text-slate-900 dark:text-white text-sm">
+          <div className="flex items-center gap-2 truncate">
+            <span className="font-extrabold text-slate-900 dark:text-white">
               {hoveredTooth.name}
             </span>
-            {(() => {
-              const rData = REALISTIC_TEETH_DATA.find(t => t.num === hoveredTooth.universal);
-              return rData?.nameAr ? (
-                <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-xs border border-emerald-500/20">
-                  {rData.nameAr}
-                </span>
-              ) : null;
-            })()}
             <span className="text-slate-400">•</span>
             <span className="font-mono text-cyan-600 dark:text-cyan-400 font-bold">
               Universal #{hoveredTooth.universal} (FDI {hoveredTooth.fdi})
             </span>
             <span className="text-slate-400">•</span>
             <span className="text-slate-500 dark:text-slate-400 font-medium">
-              Quadrant {hoveredTooth.quadrant} • {hoveredTooth.isAnterior ? 'Anterior Aesthetic Zone' : 'Posterior Unit'}
+              Quadrant {hoveredTooth.quadrant} • {hoveredTooth.isAnterior ? 'Anterior Unit' : 'Posterior Unit'}
             </span>
           </div>
         ) : (
           <span className="text-slate-400 dark:text-slate-500 flex items-center gap-2">
-            <Info className="w-4 h-4 text-cyan-500 shrink-0" />
-            <span>Hover over any tooth to view anatomical root structure, quadrant position, and restoration status (مرر الفأرة فوق أي سن لفحص الجذور والتركيبات)</span>
+            <Info className="w-4 h-4 text-cyan-500" />
+            Hover over any tooth to view anatomical root structure, quadrant position, and restoration status
           </span>
         )}
 
         {hoveredTooth && activeSelected.includes(hoveredTooth.universal) && (
-          <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5 shrink-0 bg-emerald-500/10 px-2.5 py-1 rounded-xl border border-emerald-500/20">
-            <Check className="w-4 h-4 stroke-[3]" /> 
-            {localRestorations[hoveredTooth.universal] === 'implant' 
-              ? '🔩 Titanium Implant • زرعة تيتانيوم' 
-              : `Assigned: ${localRestorations[hoveredTooth.universal] || selectedTool}`}
+          <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5 shrink-0">
+            <Check className="w-4 h-4 stroke-[3]" /> Assigned: {toothRestorations[hoveredTooth.universal] || selectedTool}
           </span>
         )}
       </div>
@@ -1393,7 +992,7 @@ export function TeethChart({
               {[...activeSelected].sort((a, b) => a - b).map((num) => {
                 const t = ODONTO_DATABASE.find(item => item.universal === num);
                 const display = system === 'universal' ? `#${num}` : `FDI ${t?.fdi || num}`;
-                const res = localRestorations[num] || toothRestorations[num] || 'crown';
+                const res = toothRestorations[num] || selectedTool;
                 const resInfo = RESTORATION_TYPES.find(r => r.id === res);
 
                 return (
@@ -1405,23 +1004,14 @@ export function TeethChart({
                     <span className="text-[10px] text-cyan-600 dark:text-cyan-400 font-sans font-medium">
                       ({resInfo?.label || res})
                     </span>
-                    {!readonly && (
+                    {!readonly && handleToggle && (
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          const nextSelected = activeSelected.filter(n => n !== num);
-                          const nextRestorations = { ...localRestorations };
-                          delete nextRestorations[num];
-                          setInternalSelected(nextSelected);
-                          setLocalRestorations(nextRestorations);
-                          if (onSelectionChange) {
-                            onSelectionChange(nextSelected, nextRestorations);
-                          } else if (handleToggle) {
-                            handleToggle(num);
-                          }
+                          handleToggle(num);
                         }}
-                        className="hover:text-rose-500 ml-1 transition-colors cursor-pointer"
+                        className="hover:text-rose-500 ml-1 transition-colors"
                         title="Remove selection"
                       >
                         <X className="w-3 h-3" />
