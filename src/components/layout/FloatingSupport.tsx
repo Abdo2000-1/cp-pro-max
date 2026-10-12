@@ -37,22 +37,22 @@ export function FloatingSupport() {
 
   return (
     <>
-      {/* Floating Action Button (FAB) at bottom-right */}
-      <div className="fixed bottom-6 right-6 z-40 select-none">
+      {/* Sleek, Non-intrusive Floating Support FAB at bottom-right */}
+      <div className="fixed bottom-4 right-4 sm:bottom-5 sm:right-5 z-40 select-none">
         <motion.button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-gradient-to-r from-[#0284c7] to-[#0369a1] hover:from-[#0369a1] hover:to-[#0284c7] text-white shadow-xl hover:shadow-2xl hover:shadow-sky-500/25 border border-sky-400/40 backdrop-blur-md transition-all cursor-pointer group"
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.94 }}
+          className="flex items-center gap-1.5 h-9 px-3 rounded-full bg-gradient-to-r from-[#0284c7] to-[#0369a1] hover:from-[#0369a1] hover:to-[#0284c7] text-white shadow-lg hover:shadow-xl hover:shadow-sky-500/25 border border-sky-400/40 backdrop-blur-md transition-all cursor-pointer group"
           title="Need Assistance? Contact 3DDX Technical Support"
         >
-          <span className="relative flex h-2 w-2">
+          <span className="relative flex h-1.5 w-1.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
           </span>
-          <LifeBuoy className="w-4 h-4 group-hover:rotate-45 transition-transform duration-300" />
-          <span className="text-xs font-black tracking-tight pr-1">Support</span>
+          <LifeBuoy className="w-3.5 h-3.5 group-hover:rotate-45 transition-transform duration-300" />
+          <span className="text-[11px] font-bold tracking-tight">Support</span>
         </motion.button>
       </div>
 

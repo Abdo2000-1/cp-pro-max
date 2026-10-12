@@ -158,7 +158,7 @@ export function Layout() {
       {/* 3. Main Workspace Container - Optimized for 22" (1920x1080) Screens & Responsive */}
       <div className="flex flex-1 flex-col min-w-0 h-full overflow-hidden">
         {/* Content Outlet - Full wide width without horizontal scroll */}
-        <main className={`flex-1 w-full overflow-x-hidden overflow-y-auto p-3 sm:p-5 lg:p-6 custom-scrollbar ${navPosition === 'bottom' ? 'pb-24' : ''}`}>
+        <main className={`flex-1 w-full overflow-x-hidden overflow-y-auto p-3 sm:p-5 lg:p-6 custom-scrollbar ${navPosition === 'bottom' ? 'pb-28' : ''}`}>
           <div className="w-full max-w-[1920px] mx-auto min-w-0">
             <Outlet />
           </div>

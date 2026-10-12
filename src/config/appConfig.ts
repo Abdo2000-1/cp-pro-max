@@ -56,7 +56,20 @@ export interface AppConfiguration {
     datasetName: string;
     refreshIntervalSec: number;
   };
+  serviceProcedures: Record<string, string[]>;
 }
+
+export const DEFAULT_SERVICE_PROCEDURES: Record<string, string[]> = {
+  sg: ['implant', 'sleeve', 'anchor', 'bone_reduction', 'extraction'],
+  tp: ['implant', 'crown', 'bridge', 'veneer', 'sinus_lift', 'nerve_trace', 'extraction'],
+  conv: ['segmentation', 'implant', 'nerve_trace', 'extraction'],
+  mod: ['die_prep', 'analog', 'extraction'],
+  rep: ['impacted', 'pathology', 'sinus_lift', 'extraction'],
+  restTemp: ['temp_crown', 'temp_bridge', 'extraction'],
+  restFinal: ['crown', 'bridge', 'veneer', 'inlay', 'extraction'],
+  vr: ['smile_design', 'veneer', 'crown', 'extraction'],
+  ortho: ['attachment', 'ipr', 'extraction']
+};
 
 export const DEFAULT_APP_CONFIG: AppConfiguration = {
   branding: {
@@ -105,6 +118,7 @@ export const DEFAULT_APP_CONFIG: AppConfiguration = {
     datasetName: '3DDX_FY2026_Executive_Targets.pbix',
     refreshIntervalSec: 300,
   },
+  serviceProcedures: DEFAULT_SERVICE_PROCEDURES,
 };
 
 const STORAGE_KEY = '3ddx_cp_runtime_config_v1';
@@ -120,6 +134,7 @@ export function loadAppConfig(): AppConfiguration {
       theme: { ...DEFAULT_APP_CONFIG.theme, ...parsed.theme },
       features: { ...DEFAULT_APP_CONFIG.features, ...parsed.features },
       powerBi: { ...DEFAULT_APP_CONFIG.powerBi, ...parsed.powerBi },
+      serviceProcedures: parsed.serviceProcedures || DEFAULT_SERVICE_PROCEDURES,
     };
   } catch (e) {
     return DEFAULT_APP_CONFIG;

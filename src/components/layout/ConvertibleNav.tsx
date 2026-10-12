@@ -178,13 +178,13 @@ export function ConvertibleNav({
         {/* STRICT REQUIREMENT: ZERO PAGE LINKS IN TIER 1                     */}
         {/* ================================================================= */}
         <header
-          className={`w-full bg-white/80 dark:bg-[#070b14]/80 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 select-none z-50 ${
-            position === 'top' ? 'sticky top-0' : 'fixed bottom-12 left-0 right-0 border-t shadow-2xl'
+          className={`w-full bg-sky-50/75 dark:bg-[#071324]/75 backdrop-blur-md border-b border-sky-200/50 dark:border-sky-900/50 select-none z-50 ${
+            position === 'top' ? 'sticky top-0' : 'fixed bottom-0 left-0 right-0 border-t shadow-2xl'
           }`}
         >
           <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
             
-            {/* Left: Drag Handle & Brand Logo (Home link only) */}
+            {/* Left: Drag Handle & Brand Logo (Links to Home) */}
             <div className="flex items-center gap-3 shrink-0">
               {/* Hand Drag Handle: ONLY Repositioning Technique */}
               <div
@@ -198,7 +198,7 @@ export function ConvertibleNav({
                 <GripVertical size={18} className="group-hover:scale-110 transition-transform text-[#0284c7] dark:text-sky-400" />
               </div>
 
-              {/* Brand Logo (Home link only - No page links) */}
+              {/* Brand Logo (Links to Home - No redundant Home button) */}
               <NavLink
                 to="/dashboard"
                 className="flex items-center gap-2 group"
@@ -222,24 +222,7 @@ export function ConvertibleNav({
               </NavLink>
             </div>
 
-            {/* Center: Global Home Button (Utility only) */}
-            <div className="hidden md:flex items-center">
-              <NavLink
-                to="/dashboard"
-                className={({ isActive }) =>
-                  `flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                    isActive
-                      ? 'bg-slate-100 dark:bg-slate-800 text-sky-600 dark:text-sky-400'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`
-                }
-              >
-                <Home size={14} />
-                <span>Home</span>
-              </NavLink>
-            </div>
-
-            {/* Right: Language, Theme, & User Profile Dropdown (with Admin CMS) */}
+            {/* Right: Language, Theme, & User Profile Dropdown */}
             <div className="flex items-center gap-2 shrink-0">
               
               {/* Language Switcher */}
@@ -343,21 +326,6 @@ export function ConvertibleNav({
                       <span>Operator Profile & Credentials</span>
                     </button>
 
-                    {/* Best Practice: Admin CMS inside User Profile menu for Authorized Admins */}
-                    <NavLink
-                      to="/config-manager"
-                      onClick={() => setProfileDropdownOpen(false)}
-                      className="flex items-center justify-between p-2 rounded-xl text-xs font-bold bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800/60 hover:bg-sky-100 dark:hover:bg-sky-900/60 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Sliders size={15} className="text-sky-600 dark:text-sky-400" />
-                        <span>Admin CMS Engine</span>
-                      </div>
-                      <span className="px-1.5 py-0.2 rounded-md bg-sky-500 text-white text-[9px] font-black uppercase tracking-wider">
-                        Admin
-                      </span>
-                    </NavLink>
-
                     <NavLink
                       to="/settings"
                       onClick={() => setProfileDropdownOpen(false)}
@@ -386,13 +354,17 @@ export function ConvertibleNav({
 
         {/* ================================================================= */}
         {/* TIER 2: SECONDARY WORKSPACE SUB-NAVBAR                            */}
-        {/* Categorized spread menus with role-based items and actions         */}
+        {/* Lighter Ice-Blue Glassmorphic Tint, Fixed Dropdowns, Zero CMS Link */}
         {/* ================================================================= */}
-        <nav className="w-full bg-slate-50/90 dark:bg-[#060911]/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 select-none z-40 sticky top-14">
+        <nav
+          className={`w-full bg-sky-50/45 dark:bg-[#050f1c]/50 backdrop-blur-md border-b border-sky-100/40 dark:border-sky-950/40 select-none z-40 ${
+            position === 'top' ? 'sticky top-14' : 'fixed bottom-14 left-0 right-0 border-t shadow-xl'
+          }`}
+        >
           <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 h-11 flex items-center justify-between gap-4">
             
             {/* Categorized Spread Menus */}
-            <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto">
+            <div className="flex items-center gap-1 sm:gap-2 relative">
               
               {/* 1. Dashboard */}
               <NavLink
@@ -413,7 +385,11 @@ export function ConvertibleNav({
               <div className="relative" ref={ordersDropdownRef}>
                 <button
                   type="button"
-                  onClick={() => setOrdersDropdownOpen(!ordersDropdownOpen)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOrdersDropdownOpen(!ordersDropdownOpen);
+                    setOpsDropdownOpen(false);
+                  }}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     ordersDropdownOpen || ['/flow', '/order-details', '/edit-case'].includes(location.pathname)
                       ? 'bg-sky-50 dark:bg-sky-950/40 text-[#0284c7] dark:text-sky-400 border border-sky-200 dark:border-sky-800'
@@ -426,7 +402,7 @@ export function ConvertibleNav({
                 </button>
 
                 {ordersDropdownOpen && (
-                  <div className="absolute top-9 left-0 w-56 rounded-2xl bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-slate-800 shadow-xl p-1.5 z-50 animate-slide-up space-y-1">
+                  <div className={`absolute ${position === 'bottom' ? 'bottom-10' : 'top-10'} left-0 w-56 rounded-2xl bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-slate-800 shadow-2xl p-1.5 z-50 animate-slide-up space-y-1`}>
                     <NavLink
                       to="/flow"
                       onClick={() => setOrdersDropdownOpen(false)}
@@ -470,7 +446,11 @@ export function ConvertibleNav({
               <div className="relative" ref={opsDropdownRef}>
                 <button
                   type="button"
-                  onClick={() => setOpsDropdownOpen(!opsDropdownOpen)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpsDropdownOpen(!opsDropdownOpen);
+                    setOrdersDropdownOpen(false);
+                  }}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     opsDropdownOpen || ['/quarter-targets', '/task-47', '/task-31'].includes(location.pathname)
                       ? 'bg-sky-50 dark:bg-sky-950/40 text-[#0284c7] dark:text-sky-400 border border-sky-200 dark:border-sky-800'
@@ -483,7 +463,7 @@ export function ConvertibleNav({
                 </button>
 
                 {opsDropdownOpen && (
-                  <div className="absolute top-9 left-0 w-64 rounded-2xl bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-slate-800 shadow-xl p-1.5 z-50 animate-slide-up space-y-1">
+                  <div className={`absolute ${position === 'bottom' ? 'bottom-10' : 'top-10'} left-0 w-64 rounded-2xl bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-slate-800 shadow-2xl p-1.5 z-50 animate-slide-up space-y-1`}>
                     <NavLink
                       to="/quarter-targets"
                       onClick={() => setOpsDropdownOpen(false)}
@@ -522,25 +502,6 @@ export function ConvertibleNav({
                   </div>
                 )}
               </div>
-
-              {/* 4. Admin Console Shortcut for Authorized Users */}
-              <NavLink
-                to="/config-manager"
-                className={({ isActive }) =>
-                  `flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    isActive
-                      ? 'bg-sky-100 dark:bg-sky-900/60 text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-700'
-                      : 'text-slate-500 hover:text-sky-600 dark:hover:text-sky-400'
-                  }`
-                }
-                title="Open Global CMS Configuration"
-              >
-                <SlidersHorizontal size={13} />
-                <span>Admin Console</span>
-                <span className="px-1 py-0.2 rounded text-[8.5px] font-black uppercase bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                  CMS
-                </span>
-              </NavLink>
             </div>
 
             {/* Right: Primary Call to Action Button */}
@@ -568,9 +529,9 @@ export function ConvertibleNav({
   return (
     <>
       <aside
-        className={`hidden lg:flex flex-col h-screen shrink-0 bg-white/95 dark:bg-[#070b14]/95 backdrop-blur-md select-none transition-all duration-200 relative z-40 ${
+        className={`hidden lg:flex flex-col h-screen shrink-0 bg-sky-50/80 dark:bg-[#071324]/85 backdrop-blur-md select-none transition-all duration-200 relative z-40 ${
           position === 'left' ? 'border-r' : 'border-l order-last'
-        } border-slate-200/80 dark:border-slate-800/80 ${collapsed ? 'w-20' : 'w-64'}`}
+        } border-sky-200/50 dark:border-sky-900/50 ${collapsed ? 'w-20' : 'w-64'}`}
       >
         {/* Header & Logo */}
         <div className="flex h-14 items-center justify-between px-3 border-b border-slate-100 dark:border-slate-800 shrink-0">

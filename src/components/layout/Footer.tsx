@@ -10,7 +10,7 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="w-full bg-white/80 dark:bg-[#070b14]/80 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800/80 mt-auto py-5 px-4 sm:px-6 lg:px-8 text-xs select-none">
+    <footer className="w-full bg-sky-50/70 dark:bg-[#071324]/70 backdrop-blur-md border-t border-sky-200/50 dark:border-sky-900/50 mt-auto py-5 px-4 sm:px-6 lg:px-8 text-xs select-none">
       <div className="max-w-[1920px] mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
         
         {/* Brand, Logo & Left Section */}
@@ -65,8 +65,8 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Right: Circular Social Media Icons Matching Image 4 */}
-        <div className="flex items-center gap-2">
+        {/* Right: Circular Social Media Icons Matching Image 4 (Offset for Floating Support FAB) */}
+        <div className="flex items-center gap-2 pr-12 md:pr-14">
           {/* Facebook */}
           <a
             href="https://facebook.com"

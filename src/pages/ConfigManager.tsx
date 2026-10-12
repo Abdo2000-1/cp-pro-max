@@ -14,16 +14,19 @@ import {
   Sparkles,
   Layout,
   Layers,
-  BarChart3
+  BarChart3,
+  Activity,
+  Check
 } from 'lucide-react';
 import { useAppConfig } from '@/contexts/ConfigContext';
 import { sound } from '@/utils/sound';
+import { RESTORATION_TYPES, SERVICE_METADATA, RestorationType } from '@/components/ui/TeethChart';
 
 export default function ConfigManager() {
   const { config, saveConfig, resetConfig } = useAppConfig();
   const [formState, setFormState] = useState(config);
   const [savedNotification, setSavedNotification] = useState(false);
-  const [activeTab, setActiveTab] = useState<'branding' | 'theme' | 'links' | 'features' | 'powerbi'>('branding');
+  const [activeTab, setActiveTab] = useState<'branding' | 'theme' | 'links' | 'features' | 'powerbi' | 'dental'>('branding');
 
   const handleChange = (section: keyof typeof formState, field: string, value: any) => {
     setFormState(prev => ({
@@ -31,6 +34,32 @@ export default function ConfigManager() {
       [section]: {
         ...(prev as any)[section],
         [field]: value
+      }
+    }));
+  };
+
+  const handleToggleProcedure = (serviceId: string, procId: string) => {
+    setFormState(prev => {
+      const currentList = prev.serviceProcedures?.[serviceId] || [];
+      const updatedList = currentList.includes(procId)
+        ? currentList.filter(p => p !== procId)
+        : [...currentList, procId];
+      return {
+        ...prev,
+        serviceProcedures: {
+          ...prev.serviceProcedures,
+          [serviceId]: updatedList
+        }
+      };
+    });
+  };
+
+  const handleSetAllProceduresForService = (serviceId: string, selectAll: boolean) => {
+    setFormState(prev => ({
+      ...prev,
+      serviceProcedures: {
+        ...prev.serviceProcedures,
+        [serviceId]: selectAll ? RESTORATION_TYPES.map(r => r.id) : []
       }
     }));
   };
@@ -111,6 +140,7 @@ export default function ConfigManager() {
           { key: 'links', label: 'Navigation & Support Links', icon: Share2 },
           { key: 'features', label: 'Feature Flags', icon: Layout },
           { key: 'powerbi', label: 'Power BI Embedded Gateway', icon: BarChart3 },
+          { key: 'dental', label: 'Dental Services & Odontogram Matrix', icon: Activity },
         ].map(tab => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
@@ -424,6 +454,98 @@ export default function ConfigManager() {
                 />
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Section 6: Dental Services & Odontogram Matrix */}
+      {activeTab === 'dental' && (
+        <div className="p-6 rounded-3xl bg-white dark:bg-[#090e18] border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div>
+              <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                <Activity size={18} className="text-sky-500" />
+                <span>Dental Services & Odontogram Procedure Matrix</span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Configure which restoration and surgical tools are enabled for each clinical CAD/CAM service. Updates apply immediately across all Teeth Charts.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {Object.entries(SERVICE_METADATA).map(([srvKey, srvMeta]) => {
+              const activeProcs = formState.serviceProcedures?.[srvKey] || [];
+              return (
+                <div
+                  key={srvKey}
+                  className="p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-3"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/60 dark:border-slate-800/60 pb-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-black bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30">
+                        {srvMeta.code}
+                      </span>
+                      <div>
+                        <div className="text-xs font-black text-slate-900 dark:text-white">
+                          {srvMeta.name}
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          {srvMeta.nameAr} • {activeProcs.length} of {RESTORATION_TYPES.length} procedures enabled
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 self-start sm:self-auto">
+                      <button
+                        type="button"
+                        onClick={() => handleSetAllProceduresForService(srvKey, true)}
+                        className="px-2 py-1 rounded-lg text-[10px] font-bold text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/40 transition-colors"
+                      >
+                        Enable All
+                      </button>
+                      <span className="text-slate-300 dark:text-slate-700">|</span>
+                      <button
+                        type="button"
+                        onClick={() => handleSetAllProceduresForService(srvKey, false)}
+                        className="px-2 py-1 rounded-lg text-[10px] font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                      >
+                        Disable All
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Procedures Checkbox Pills */}
+                  <div className="flex flex-wrap gap-2">
+                    {RESTORATION_TYPES.map(proc => {
+                      const isEnabled = activeProcs.includes(proc.id);
+                      return (
+                        <button
+                          key={proc.id}
+                          type="button"
+                          onClick={() => handleToggleProcedure(srvKey, proc.id)}
+                          style={{
+                            borderColor: isEnabled ? proc.color : undefined
+                          }}
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                            isEnabled
+                              ? `${proc.bgColor} ${proc.textColor} ring-1 ring-current shadow-xs`
+                              : 'border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 opacity-60'
+                          }`}
+                        >
+                          <span
+                            className="w-2 h-2 rounded-full"
+                            style={{ backgroundColor: proc.color }}
+                          />
+                          <span>{proc.label}</span>
+                          {isEnabled && <Check size={11} className="ml-0.5" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
