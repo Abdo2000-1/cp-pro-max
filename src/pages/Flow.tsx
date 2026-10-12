@@ -1159,9 +1159,9 @@ export default function Flow() {
           </div>
         </div>
 
-        {/* Table Container - Responsive scrollable container allowing natural column expansion */}
-        <div className="w-full overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse table-fixed select-none">
+        {/* Table Container - Responsive horizontal scrolling on mobile/phone screens only */}
+        <div className="w-full overflow-x-auto sm:overflow-x-visible -webkit-overflow-scrolling-touch custom-scrollbar">
+          <table className="w-full min-w-[1050px] sm:min-w-full text-left text-xs border-collapse table-fixed select-none">
             <colgroup>
               {ALL_COLUMNS.filter((c) => visibleColumns.has(c.key)).map((col) => (
                 <col key={`col-${col.key}`} style={{ width: getColWidth(col) }} />
@@ -1510,8 +1510,8 @@ export default function Flow() {
 
                                   {/* Sub-Orders View Mode 1: Table Matrix */}
                                   {subOrderViewMode === 'matrix' ? (
-                                    <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-[#0b101d]">
-                                      <table className="w-full text-left text-xs border-collapse table-fixed select-none">
+                                    <div className="overflow-x-auto sm:overflow-x-visible -webkit-overflow-scrolling-touch custom-scrollbar border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-[#0b101d]">
+                                      <table className="w-full min-w-[1050px] sm:min-w-full text-left text-xs border-collapse table-fixed select-none">
                                         <colgroup>
                                           {ALL_COLUMNS.filter((c) => visibleColumns.has(c.key)).map((col) => (
                                             <col key={`sub-col-${col.key}`} style={{ width: getColWidth(col) }} />
