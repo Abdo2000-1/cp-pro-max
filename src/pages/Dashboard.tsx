@@ -59,7 +59,6 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<'powerbi' | 'telemetry'>('powerbi');
   const [selectedQuarter, setSelectedQuarter] = useState<'Q1' | 'Q2' | 'Q3' | 'Q4' | 'ALL'>('Q4');
   const [chartView, setChartView] = useState<'area' | 'bar'>('area');
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const urgentScrollRef = useRef<HTMLDivElement>(null);
 
@@ -264,82 +263,71 @@ export default function Dashboard() {
   const currentQData = QUARTER_DATA_MAP[selectedQuarter] || QUARTER_DATA_MAP.Q4;
 
   return (
-    <div className={`space-y-6 w-full min-w-0 select-none ${isFullscreen ? 'fixed inset-0 z-50 bg-slate-900 p-6 overflow-y-auto' : ''}`}>
+    <div className="space-y-4 w-full min-w-0 select-none">
       
-      {/* Top Header & Brand Switcher */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-[#070b14] p-4 sm:p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      {/* Top Header: Clean, Refined, Minimalist */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white dark:bg-[#070b14] p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-              CP PRO MAX Command Center
+            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+              Command Center
             </h1>
-            <span className="px-2 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-gradient-to-r from-[#0284c7] to-[#ea580c] text-white shadow-xs">
-              Power BI Live
+            <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800">
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
+              Live Analytics
             </span>
           </div>
-          <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-1 flex items-center">
-            <Calendar className="w-3.5 h-3.5 mr-1.5 text-[#0284c7]" />
-            {formatDate(new Date().toISOString())} • 3D Diagnostix Dental CAD/CAM & Co-Diagnostix Lab Intelligence
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center">
+            <Calendar className="w-3.5 h-3.5 mr-1 text-slate-400" />
+            {formatDate(new Date().toISOString())} • 3D Diagnostix Dental Intelligence
           </p>
         </div>
 
         {/* View Mode & Power BI Controls */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* Studio Tab Switcher */}
-          <div className="inline-flex rounded-2xl bg-slate-100 dark:bg-slate-900 p-1 border border-slate-200 dark:border-slate-800 text-xs font-bold">
+          <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-900 p-1 border border-slate-200/80 dark:border-slate-800 text-xs font-semibold">
             <button
               onClick={() => setActiveTab('powerbi')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                 activeTab === 'powerbi'
-                  ? 'bg-gradient-to-r from-[#0284c7] to-[#0369a1] text-white shadow-sm'
+                  ? 'bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              <BarChart3 size={15} />
+              <BarChart3 size={14} />
               <span>Power BI Analytics</span>
             </button>
             <button
               onClick={() => setActiveTab('telemetry')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                 activeTab === 'telemetry'
-                  ? 'bg-gradient-to-r from-[#ea580c] to-[#c2410c] text-white shadow-sm'
+                  ? 'bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              <Activity size={15} />
-              <span>CAD Production Queue</span>
+              <Activity size={14} />
+              <span>Production Queue</span>
             </button>
           </div>
 
           <button
-            onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-2 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors"
-            title={isFullscreen ? 'Exit Full Screen' : 'Power BI Full Screen Presentation'}
-          >
-            {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-          </button>
-
-          <button
             onClick={handleRefresh}
-            className="p-2 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors"
+            className="p-2 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors cursor-pointer"
             title="Refresh Power BI Metrics"
           >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-[#0284c7]' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-sky-500' : ''}`} />
           </button>
         </div>
       </div>
 
-      {/* RUSH CRITICAL ORDERS BAR */}
+      {/* SLEEK COMPACT URGENT TICKER (Best Practice: Subtle, Compact, Non-Intrusive) */}
       {urgentOrders.length > 0 && (
-        <div className="relative overflow-hidden rounded-2xl border border-rose-500/30 bg-rose-500/10 dark:bg-rose-950/30 px-3.5 py-2.5 flex items-center justify-between gap-3 shadow-xs">
-          <div className="flex items-center gap-2.5 shrink-0">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
-            </span>
-            <span className="text-xs font-black text-rose-900 dark:text-rose-200 flex items-center gap-1.5">
-              <ShieldAlert size={15} className="text-rose-500" />
-              <span>Critical Production Rush ({urgentOrders.length}):</span>
+        <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 px-3 py-1.5 flex items-center justify-between gap-3 text-xs shadow-2xs">
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+              {urgentOrders.length} Urgent Rush
             </span>
           </div>
 
@@ -353,12 +341,12 @@ export default function Dashboard() {
                 key={order.id}
                 type="button"
                 onClick={() => navigate(`/order-details?id=${order.id}`)}
-                className="shrink-0 flex items-center gap-2 px-2.5 py-1 rounded-xl bg-white/90 dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800 border border-rose-200 dark:border-rose-900/80 text-xs font-bold transition-all shadow-xs cursor-pointer"
+                className="shrink-0 flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/80 text-[11px] font-semibold text-slate-700 dark:text-slate-300 transition-all cursor-pointer"
               >
-                <span className="font-mono text-[#0284c7]">{order.orderNumber}</span>
-                <span className="text-slate-400">•</span>
-                <span className="text-slate-800 dark:text-slate-200 truncate max-w-[120px]">{order.patientName}</span>
-                <span className="px-1.5 py-0.2 rounded text-[10px] font-black bg-rose-500 text-white">
+                <span className="font-mono text-sky-600 dark:text-sky-400 font-bold">{order.orderNumber}</span>
+                <span className="text-slate-300 dark:text-slate-600">•</span>
+                <span className="truncate max-w-[110px]">{order.patientName}</span>
+                <span className="text-[10px] font-mono text-rose-600 dark:text-rose-400 font-bold">
                   Due {formatDate(order.dueDate)}
                 </span>
               </button>
@@ -368,15 +356,15 @@ export default function Dashboard() {
           <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={() => scrollUrgent('left')}
-              className="p-1 rounded-lg border border-rose-200 dark:border-rose-900 bg-white/70 dark:bg-slate-900/70 text-rose-600"
+              className="p-1 rounded-md border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 cursor-pointer"
             >
-              <ChevronLeft size={13} />
+              <ChevronLeft size={12} />
             </button>
             <button
               onClick={() => scrollUrgent('right')}
-              className="p-1 rounded-lg border border-rose-200 dark:border-rose-900 bg-white/70 dark:bg-slate-900/70 text-rose-600"
+              className="p-1 rounded-md border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 cursor-pointer"
             >
-              <ChevronRight size={13} />
+              <ChevronRight size={12} />
             </button>
           </div>
         </div>

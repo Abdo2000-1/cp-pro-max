@@ -32,6 +32,7 @@ import { useThemeContext } from '@/contexts/ThemeContext';
 import { useLanguage, LANGUAGES } from '@/contexts/LanguageContext';
 import { useStore } from '@/hooks/useStore';
 import { ProfileModal } from './ProfileModal';
+import { GlobalSearchModal } from './GlobalSearchModal';
 
 export type NavPosition = 'top' | 'left' | 'right' | 'bottom';
 
@@ -63,11 +64,24 @@ export function ConvertibleNav({
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [ordersDropdownOpen, setOrdersDropdownOpen] = useState(false);
   const [opsDropdownOpen, setOpsDropdownOpen] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   const langRef = useRef<HTMLDivElement>(null);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const ordersDropdownRef = useRef<HTMLDivElement>(null);
   const opsDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Global Ctrl+K / Cmd+K listener
+  useEffect(() => {
+    function handleGlobalKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchModalOpen((prev) => !prev);
+      }
+    }
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   const profile = useStore((s) => s.getProfile());
 
@@ -220,14 +234,18 @@ export function ConvertibleNav({
               </NavLink>
             </div>
 
-            {/* Center: Clean Minimalist Global Search Bar */}
+            {/* Center: Clean Minimalist Global Search Bar (Spotlight Powered) */}
             <div className="flex-1 max-w-md mx-2 sm:mx-6 hidden md:block">
-              <div className="relative group">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#0284c7] transition-colors pointer-events-none" />
+              <div
+                onClick={() => setIsSearchModalOpen(true)}
+                className="relative group cursor-pointer"
+              >
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-hover:text-[#0284c7] transition-colors pointer-events-none" />
                 <input
                   type="text"
-                  placeholder="Search orders, cases, patients, doctors..."
-                  className="w-full h-8.5 pl-9 pr-12 text-xs font-medium rounded-xl bg-white/80 dark:bg-slate-900/80 border border-sky-300/60 dark:border-sky-800/60 text-slate-900 dark:text-slate-100 placeholder-slate-400/80 focus:outline-none focus:ring-2 focus:ring-[#0284c7]/30 focus:border-[#0284c7] dark:focus:border-sky-500 transition-all shadow-xs"
+                  readOnly
+                  placeholder="Search orders, cases, patients, doctors... (⌘K)"
+                  className="w-full h-8.5 pl-9 pr-12 text-xs font-medium rounded-xl bg-white/80 dark:bg-slate-900/80 border border-sky-300/60 dark:border-sky-800/60 text-slate-900 dark:text-slate-100 placeholder-slate-400/80 cursor-pointer hover:border-[#0284c7] dark:hover:border-sky-400 transition-all shadow-xs"
                 />
                 <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
                   <kbd className="px-1.5 py-0.5 text-[9px] font-mono font-bold rounded bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700 shadow-2xs">
@@ -239,6 +257,15 @@ export function ConvertibleNav({
 
             {/* Right: Language, Theme, & User Profile Dropdown */}
             <div className="flex items-center gap-2 shrink-0">
+              {/* Mobile Search Button */}
+              <button
+                type="button"
+                onClick={() => setIsSearchModalOpen(true)}
+                className="md:hidden p-2 rounded-xl border border-slate-200/80 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                title="Deep Global Search"
+              >
+                <Search size={15} />
+              </button>
               
               {/* Language Switcher */}
               <div className="relative" ref={langRef}>
@@ -687,6 +714,9 @@ export function ConvertibleNav({
 
       {/* Interactive Profile Credentials Modal */}
       <ProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} />
+
+      {/* Enterprise Global Search Spotlight Modal */}
+      <GlobalSearchModal isOpen={isSearchModalOpen} onClose={() => setIsSearchModalOpen(false)} />
     </>
   );
 }

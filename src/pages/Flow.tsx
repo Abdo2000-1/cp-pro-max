@@ -362,7 +362,8 @@ export default function Flow() {
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [servicesFilter, setServicesFilter] = useState<ServiceFilterState>(DEFAULT_FILTERS);
   const [viewFilter, setViewFilter] = useState<'all' | 'multi-tp' | 'action-required'>('all');
-  const [showServiceFilters, setShowServiceFilters] = useState<boolean>(false);
+  const [showFilterModal, setShowFilterModal] = useState<boolean>(false);
+  const [selectedScanCenter, setSelectedScanCenter] = useState<string>('ALL');
 
   // Closed / Collapsed by default as requested: "وعايز مقفول بالافتراضي"
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
@@ -563,6 +564,14 @@ export default function Flow() {
   // Use complete 36-case dataset representing all sender tools, CaseXchange, CP, Connect, and clinical workflows
   const enrichedOrders: MasterWorkflowOrder[] = MASTER_WORKFLOW_ORDERS;
 
+  const availableScanCenters = useMemo(() => {
+    const s = new Set<string>();
+    enrichedOrders.forEach((o) => {
+      if (o.scanCenter) s.add(o.scanCenter);
+    });
+    return Array.from(s).sort();
+  }, [enrichedOrders]);
+
   // Pagination State
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
@@ -570,7 +579,7 @@ export default function Flow() {
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, viewFilter, servicesFilter]);
+  }, [search, viewFilter, servicesFilter, selectedScanCenter]);
 
   // Filtered orders according to search and view modes
   const filteredOrders = useMemo(() => {
@@ -584,6 +593,10 @@ export default function Flow() {
           order.scanCenter.toLowerCase().includes(q) ||
           order.services.some(s => s.title.toLowerCase().includes(q) || s.billTo.toLowerCase().includes(q));
         if (!matches) return false;
+      }
+
+      if (selectedScanCenter !== 'ALL' && order.scanCenter !== selectedScanCenter) {
+        return false;
       }
 
       if (viewFilter === 'multi-tp') {
@@ -619,7 +632,7 @@ export default function Flow() {
 
       return true;
     });
-  }, [enrichedOrders, search, viewFilter, servicesFilter, activeServicesCount]);
+  }, [enrichedOrders, search, viewFilter, servicesFilter, selectedScanCenter, activeServicesCount]);
 
   const [sortCol, setSortCol] = useState<string>('tl');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
@@ -715,145 +728,258 @@ export default function Flow() {
   return (
     <div className="space-y-4 w-full min-w-0">
       
-      {/* 1. Top Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white dark:bg-[#0b101d] p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="p-2 rounded-xl border border-sky-500/40 text-sky-600 dark:text-sky-400 bg-transparent">
-              <Layers size={20} />
-            </span>
-            <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
-              {t('nav.flow', 'Master Production Flow')}
-            </h1>
-            <span className="px-2 py-0.5 rounded-full text-xs font-bold border border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-transparent">
-              Live Queue ({filteredOrders.length})
-            </span>
+      {/* 1. Refined Minimalist Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-[#0b101d] p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 flex items-center justify-center text-sky-600 dark:text-sky-400">
+            <Layers size={17} />
           </div>
-          <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">
-            22 Columns Specification • Real-time Multi-Service Production Pipeline
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            onClick={() => navigate('/add-case')}
-            type="button"
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-sky-500/60 hover:bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold text-xs transition-all cursor-pointer bg-transparent"
-          >
-            <Zap size={14} />
-            <span>{t('action.newCase', 'New Case')}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 2. Encapsulated Service Modules Filter Accordion */}
-      <div className="bg-white dark:bg-[#0b101d] rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs overflow-hidden transition-all">
-        <div
-          onClick={() => setShowServiceFilters(!showServiceFilters)}
-          className="p-3.5 flex flex-wrap items-center justify-between gap-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/50 select-none"
-        >
-          <div className="flex items-center gap-2.5">
-            <span className="p-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800">
-              <SlidersHorizontal size={14} />
-            </span>
-            <div>
-              <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider block">
-                {t('action.filter', 'Filter by Clinical Service Modules')}
-              </span>
-              <span className="text-[10px] text-slate-400">
-                Click to expand/collapse 13 multi-department clinical filters
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
+                {t('nav.flow', 'Orders Flow')}
+              </h1>
+              <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                {filteredOrders.length} Cases
               </span>
             </div>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-sky-500/10 text-sky-600 border border-sky-500/30">
-              {activeServicesCount}/13 Active
-            </span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {showServiceFilters && (
-              <div className="flex items-center gap-2 text-xs" onClick={(e) => e.stopPropagation()}>
-                <button
-                  type="button"
-                  onClick={() => setAllServices(true)}
-                  className="text-sky-600 dark:text-sky-400 hover:underline font-bold text-[11px] cursor-pointer"
-                >
-                  Select All
-                </button>
-                <span className="text-slate-300">|</span>
-                <button
-                  type="button"
-                  onClick={() => setAllServices(false)}
-                  className="text-slate-500 hover:underline font-bold text-[11px] cursor-pointer"
-                >
-                  Clear All
-                </button>
-              </div>
-            )}
-
-            <ChevronDown
-              size={15}
-              className={`text-slate-400 transition-transform duration-200 ${
-                showServiceFilters ? 'rotate-180 text-sky-500' : ''
-              }`}
-            />
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Live multi-service production pipeline
+            </p>
           </div>
         </div>
 
-        {/* 4 Categorized Modules Dropdown Area */}
-        {showServiceFilters && (
-          <div className="p-4 pt-1 border-t border-slate-100 dark:border-slate-800 space-y-3 animate-slide-up">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-              {SERVICE_GROUPS.map((grp) => (
-                <div key={grp.category} className="p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800/80 space-y-1.5 bg-slate-50/50 dark:bg-slate-900/30">
-                  <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-                    {grp.category}
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {grp.items.map((item) => {
-                      const active = servicesFilter[item.key as keyof ServiceFilterState];
-                      return (
-                        <button
-                          key={item.key}
-                          type="button"
-                          onClick={() => toggleService(item.key as keyof ServiceFilterState)}
-                          className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
-                            active
-                              ? 'border-sky-500/60 text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40'
-                              : 'border-slate-300 dark:border-slate-700 text-slate-400 opacity-60 hover:opacity-100 bg-transparent'
-                          }`}
-                        >
-                          <span className="font-mono text-[9.5px] opacity-75">{item.code}</span>
-                          <span>{item.label}</span>
-                        </button>
-                      );
-                    })}
+        <button
+          onClick={() => navigate('/add-case')}
+          type="button"
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs transition-all cursor-pointer shadow-xs self-start sm:self-auto"
+        >
+          <Plus size={14} />
+          <span>{t('action.newCase', 'New Case')}</span>
+        </button>
+      </div>
+
+      {/* 2. ADVANCED FILTERS MODAL (Enterprise Modal Pattern) */}
+      {showFilterModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in"
+          onClick={() => setShowFilterModal(false)}
+        >
+          <div
+            className="relative w-full max-w-xl bg-white dark:bg-[#090e18] rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xl p-6 space-y-5 animate-scale-up overflow-hidden max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800 flex items-center justify-center">
+                  <Filter size={16} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    Advanced Production Filters
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Filter queue by clinical services, scan centers, and priority status
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowFilterModal(false)}
+                className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="space-y-4 overflow-y-auto flex-1 pr-1">
+              {/* Filter 1: Clinical Services Module Selection */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Clinical Service Modules ({activeServicesCount}/13 Active)
+                  </span>
+                  <div className="flex items-center gap-2 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setAllServices(true)}
+                      className="text-sky-600 dark:text-sky-400 hover:underline font-bold text-[11px] cursor-pointer"
+                    >
+                      Select All
+                    </button>
+                    <span className="text-slate-300">|</span>
+                    <button
+                      type="button"
+                      onClick={() => setAllServices(false)}
+                      className="text-slate-500 hover:underline font-bold text-[11px] cursor-pointer"
+                    >
+                      Clear All
+                    </button>
                   </div>
                 </div>
-              ))}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {SERVICE_GROUPS.map((grp) => (
+                    <div key={grp.category} className="p-3 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/30 space-y-1.5">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        {grp.category}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {grp.items.map((item) => {
+                          const active = servicesFilter[item.key as keyof ServiceFilterState];
+                          return (
+                            <button
+                              key={item.key}
+                              type="button"
+                              onClick={() => toggleService(item.key as keyof ServiceFilterState)}
+                              className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                                active
+                                  ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 shadow-2xs'
+                                  : 'border-slate-300 dark:border-slate-700 text-slate-400 opacity-60 hover:opacity-100 bg-transparent'
+                              }`}
+                            >
+                              <span className="font-mono text-[10px]">{item.code}</span>
+                              <span>{item.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Filter 2: Scan Center Facilities */}
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-2">
+                  Scan Center / Receiving Facility
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedScanCenter('ALL')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      selectedScanCenter === 'ALL'
+                        ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400'
+                        : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    All Scan Centers
+                  </button>
+                  {availableScanCenters.map((center) => (
+                    <button
+                      key={center}
+                      type="button"
+                      onClick={() => setSelectedScanCenter(center)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                        selectedScanCenter === center
+                          ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400'
+                          : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      {center}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Filter 3: Quick View Modes */}
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-2">
+                  Queue View Mode
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { id: 'all' as const, label: 'All Queue Orders' },
+                    { id: 'multi-tp' as const, label: 'Multi-TP (2+ Plans)' },
+                    { id: 'action-required' as const, label: '🚨 Action Required Only' },
+                  ].map((mode) => (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      onClick={() => setViewFilter(mode.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                        viewFilter === mode.id
+                          ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400'
+                          : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      {mode.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => {
+                  setAllServices(true);
+                  setSelectedScanCenter('ALL');
+                  setViewFilter('all');
+                  setSearch('');
+                }}
+                className="text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer"
+              >
+                Reset All Filters
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowFilterModal(false)}
+                className="px-5 py-2 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+              >
+                Apply Filters ({filteredOrders.length} Cases)
+              </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* 3. Search & Filter Bar */}
+      {/* 3. Search & Compact Filter Controls Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-[#0b101d] p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
-        <div className="relative w-full sm:w-80">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder={t('orders.searchPlaceholder', 'Filter by Order #, Patient, Doctor...')}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-8 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
-            >
-              <X size={12} />
-            </button>
-          )}
+        <div className="flex items-center gap-2 w-full sm:w-auto flex-1 max-w-md">
+          <div className="relative flex-1">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder={t('orders.searchPlaceholder', 'Filter by Order #, Patient, Doctor...')}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-8 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
+
+          {/* Sleek Filter Trigger Button Beside Search */}
+          <button
+            type="button"
+            onClick={() => setShowFilterModal(true)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shrink-0 ${
+              activeServicesCount < 13 || viewFilter !== 'all' || selectedScanCenter !== 'ALL'
+                ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 shadow-xs'
+                : 'border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Filter size={13} className={activeServicesCount < 13 || viewFilter !== 'all' || selectedScanCenter !== 'ALL' ? 'text-sky-500' : 'text-slate-400'} />
+            <span>Filters</span>
+            {activeServicesCount < 13 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-sky-600 text-white text-[9.5px] font-bold">
+                {activeServicesCount}/13
+              </span>
+            )}
+          </button>
         </div>
 
         {/* View Mode Filters */}
@@ -1035,7 +1161,12 @@ export default function Flow() {
 
         {/* Table Container - Responsive scrollable container allowing natural column expansion */}
         <div className="w-full overflow-x-auto">
-          <table className="w-full min-w-full text-left text-xs border-collapse table-fixed select-none">
+          <table className="w-full text-left text-xs border-collapse table-fixed select-none">
+            <colgroup>
+              {ALL_COLUMNS.filter((c) => visibleColumns.has(c.key)).map((col) => (
+                <col key={`col-${col.key}`} style={{ width: getColWidth(col) }} />
+              ))}
+            </colgroup>
             <thead>
               {/* DYNAMIC HEADERS FROM VISIBLE COLUMNS - PROPORTIONALLY RESIZED TO 100% */}
               <tr className="bg-slate-200/80 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-extrabold text-[10.5px]">
@@ -1044,7 +1175,7 @@ export default function Flow() {
                     key={col.key}
                     onClick={() => handleSort(col.key)}
                     style={{ width: getColWidth(col) }}
-                    className={`py-2.5 px-1.5 truncate cursor-pointer select-none transition-colors hover:bg-slate-300 dark:hover:bg-slate-700 relative group/th ${
+                    className={`py-2.5 px-1.5 truncate cursor-pointer select-none transition-colors hover:bg-slate-300 dark:hover:bg-slate-700 relative group/th max-w-0 overflow-hidden ${
                       col.align === 'center'
                         ? 'text-center'
                         : col.align === 'right'
@@ -1053,7 +1184,7 @@ export default function Flow() {
                     } ${sortCol === col.key ? 'text-sky-600 dark:text-sky-400 font-black' : ''}`}
                     title={`Click to sort by ${col.label} (Ascending/Descending) • Drag right border to resize`}
                   >
-                    <div className={`inline-flex items-center gap-1 ${col.align === 'center' ? 'justify-center' : col.align === 'right' ? 'justify-end' : 'justify-start'} w-full`}>
+                    <div className={`inline-flex items-center gap-1 ${col.align === 'center' ? 'justify-center' : col.align === 'right' ? 'justify-end' : 'justify-start'} w-full min-w-0 overflow-hidden`}>
                       <span className="truncate">{col.label}</span>
                       <span className="shrink-0 inline-flex">
                         {sortCol === col.key ? (
@@ -1109,8 +1240,8 @@ export default function Flow() {
                       >
                         {/* 1. # tl */}
                         {visibleColumns.has('tl') && (
-                          <td className="py-2.5 px-2 text-left whitespace-nowrap">
-                            <div className="flex items-center gap-1.5">
+                          <td className="py-2.5 px-2 text-left max-w-0 overflow-hidden">
+                            <div className="flex items-center gap-1.5 min-w-0">
                               <span
                                 onClick={(e) => toggleOrderExpand(order.id, e)}
                                 className={`p-0.5 rounded transition-transform duration-200 cursor-pointer shrink-0 ${
@@ -1122,11 +1253,11 @@ export default function Flow() {
                               >
                                 <ChevronRight size={14} className="stroke-[3]" />
                               </span>
-                              <div className="flex flex-col items-start leading-tight">
-                                <span className="font-mono font-black text-amber-600 dark:text-amber-500 text-[11px]">
+                              <div className="flex flex-col items-start leading-tight min-w-0 max-w-full overflow-hidden">
+                                <span className="font-mono font-black text-amber-600 dark:text-amber-500 text-[11px] truncate block max-w-full">
                                   {order.orderNum}
                                 </span>
-                                <span className={`inline-block px-1 py-0.2 rounded text-[7.5px] tracking-wider uppercase mt-0.5 ${getSourceBadgeStyle(order.source)}`}>
+                                <span className={`inline-block px-1 py-0.2 rounded text-[7.5px] tracking-wider uppercase mt-0.5 truncate max-w-full ${getSourceBadgeStyle(order.source)}`}>
                                   {order.source}
                                 </span>
                               </div>
@@ -1136,18 +1267,18 @@ export default function Flow() {
 
                         {/* 2. Scan Center tl */}
                         {visibleColumns.has('scanCenter') && (
-                          <td className="py-2.5 px-1.5 font-bold text-slate-800 dark:text-slate-200 truncate text-[11px]" title={order.scanCenter}>
-                            {order.scanCenter}
+                          <td className="py-2.5 px-1.5 font-bold text-slate-800 dark:text-slate-200 text-[11px] max-w-0 overflow-hidden" title={order.scanCenter}>
+                            <div className="truncate block w-full">{order.scanCenter}</div>
                           </td>
                         )}
 
                         {/* 3. Doctor tl */}
                         {visibleColumns.has('doctor') && (
-                          <td className="py-2.5 px-1.5 text-[11px]">
-                            <div className="font-bold text-slate-800 dark:text-slate-200 truncate" title={order.doctorName}>
+                          <td className="py-2.5 px-1.5 text-[11px] max-w-0 overflow-hidden">
+                            <div className="font-bold text-slate-800 dark:text-slate-200 truncate block w-full" title={order.doctorName}>
                               {order.doctorName}
                             </div>
-                            <div className="text-[9px] text-cyan-600 dark:text-cyan-400 font-bold truncate">
+                            <div className="text-[9px] text-cyan-600 dark:text-cyan-400 font-bold truncate block w-full">
                               {order.doctorSub}
                             </div>
                           </td>
@@ -1155,11 +1286,11 @@ export default function Flow() {
 
                         {/* 4. Patient Name tl */}
                         {visibleColumns.has('patient') && (
-                          <td className="py-2.5 px-1.5 text-[11px]">
-                            <div className="font-bold text-slate-900 dark:text-white truncate" title={order.patientName}>
+                          <td className="py-2.5 px-1.5 text-[11px] max-w-0 overflow-hidden">
+                            <div className="font-bold text-slate-900 dark:text-white truncate block w-full" title={order.patientName}>
                               {order.patientName}
                             </div>
-                            <div className="text-[9px] text-amber-600 dark:text-amber-500 font-bold truncate">
+                            <div className="text-[9px] text-amber-600 dark:text-amber-500 font-bold truncate block w-full">
                               {order.patientSub}
                             </div>
                           </td>
@@ -1167,14 +1298,14 @@ export default function Flow() {
 
                         {/* 5. Is Locked (?) */}
                         {visibleColumns.has('lock') && (
-                          <td className="py-2.5 px-1 text-center">
-                            <div className="flex flex-col items-center">
+                          <td className="py-2.5 px-1 text-center max-w-0 overflow-hidden">
+                            <div className="flex flex-col items-center truncate">
                               {order.isLocked ? (
-                                <span className="px-1.5 py-0.5 rounded text-[8px] font-bold border border-emerald-500/50 text-emerald-600 dark:text-emerald-400 bg-transparent">
+                                <span className="px-1.5 py-0.5 rounded text-[8px] font-bold border border-emerald-500/50 text-emerald-600 dark:text-emerald-400 bg-transparent truncate">
                                   Lock
                                 </span>
                               ) : (
-                                <span className="px-1.5 py-0.5 rounded text-[8px] font-bold border border-rose-500/50 text-rose-600 dark:text-rose-400 bg-transparent">
+                                <span className="px-1.5 py-0.5 rounded text-[8px] font-bold border border-rose-500/50 text-rose-600 dark:text-rose-400 bg-transparent truncate">
                                   Sales
                                 </span>
                               )}
@@ -1184,8 +1315,8 @@ export default function Flow() {
 
                         {/* 6. Notes */}
                         {visibleColumns.has('notes') && (
-                          <td className="py-2.5 px-1 text-center text-[10px] text-slate-700 dark:text-slate-300 font-medium">
-                            <span className="underline cursor-pointer truncate block" title={order.notes}>
+                          <td className="py-2.5 px-1 text-center text-[10px] text-slate-700 dark:text-slate-300 font-medium max-w-0 overflow-hidden">
+                            <span className="underline cursor-pointer truncate block w-full" title={order.notes}>
                               {order.notes}
                             </span>
                           </td>
@@ -1193,29 +1324,29 @@ export default function Flow() {
 
                         {/* 7. Archive Date */}
                         {visibleColumns.has('archive') && (
-                          <td className="py-2.5 px-1 text-center text-[10px] font-mono text-slate-600 dark:text-slate-400">
-                            <div className="flex items-center justify-center gap-0.5">
-                              <span>{order.archiveDate}</span>
-                              <ShoppingCart size={10} className="text-emerald-500 inline" />
+                          <td className="py-2.5 px-1 text-center text-[10px] font-mono text-slate-600 dark:text-slate-400 max-w-0 overflow-hidden">
+                            <div className="flex items-center justify-center gap-0.5 truncate w-full">
+                              <span className="truncate">{order.archiveDate}</span>
+                              <ShoppingCart size={10} className="text-emerald-500 inline shrink-0" />
                             </div>
                           </td>
                         )}
 
                         {/* 8. ... */}
                         {visibleColumns.has('more') && (
-                          <td className="py-2.5 px-0.5 text-center" onClick={(e) => { e.stopPropagation(); navigate(`/order-details?ID=${order.orderNum}`); }}>
+                          <td className="py-2.5 px-0.5 text-center max-w-0 overflow-hidden" onClick={(e) => { e.stopPropagation(); navigate(`/order-details?ID=${order.orderNum}`); }}>
                             <MoreHorizontal size={13} className="text-slate-400 hover:text-sky-500 mx-auto cursor-pointer" />
                           </td>
                         )}
 
-                        {/* 9. Order (SERVICE TAGS WITH LIVE HOVER TOOLTIP AS REQUESTED) */}
+                        {/* 9. Order (SERVICE TAGS WITH LIVE HOVER TOOLTIP) */}
                         {visibleColumns.has('order') && (
-                          <td className="py-2.5 px-1.5">
-                            <div className="flex items-center gap-1 flex-wrap">
+                          <td className="py-2.5 px-1.5 max-w-0 overflow-hidden">
+                            <div className="flex items-center gap-1 flex-nowrap overflow-hidden">
                               {order.services.map((sub, sIdx) => (
                                 <div
                                   key={sub.id || sIdx}
-                                  className="relative inline-block"
+                                  className="relative shrink-0"
                                   onMouseEnter={(e) => handleServiceHover(sub, e)}
                                   onMouseLeave={handleServiceLeave}
                                 >
@@ -1228,7 +1359,7 @@ export default function Flow() {
                               ))}
 
                               {!isExpanded && (
-                                <span className="text-[8.5px] text-slate-400 hover:text-sky-500 ml-0.5 font-bold cursor-pointer">
+                                <span className="text-[8.5px] text-slate-400 hover:text-sky-500 ml-0.5 font-bold cursor-pointer shrink-0">
                                   ▼
                                 </span>
                               )}
@@ -1238,102 +1369,106 @@ export default function Flow() {
 
                         {/* 10. Bill To */}
                         {visibleColumns.has('billTo') && (
-                          <td className="py-2.5 px-1.5 text-[10.5px] text-slate-600 dark:text-slate-400 truncate" title={primaryService?.billTo}>
-                            {primaryService?.billTo}
+                          <td className="py-2.5 px-1.5 text-[10.5px] text-slate-600 dark:text-slate-400 max-w-0 overflow-hidden" title={primaryService?.billTo}>
+                            <div className="truncate block w-full">{primaryService?.billTo}</div>
                           </td>
                         )}
 
                         {/* 11. Maxilla */}
                         {visibleColumns.has('max') && (
-                          <td className="py-2.5 px-1 text-center font-bold text-[10.5px] text-emerald-600 dark:text-emerald-400">
-                            {primaryService?.maxilla}
+                          <td className="py-2.5 px-1 text-center font-bold text-[10.5px] text-emerald-600 dark:text-emerald-400 max-w-0 overflow-hidden" title={primaryService?.maxilla}>
+                            <div className="truncate block w-full">{primaryService?.maxilla}</div>
                           </td>
                         )}
 
                         {/* 12. Mandible */}
                         {visibleColumns.has('mand') && (
-                          <td className="py-2.5 px-1 text-center font-bold text-[10.5px] text-emerald-600 dark:text-emerald-400">
-                            {primaryService?.mandible}
+                          <td className="py-2.5 px-1 text-center font-bold text-[10.5px] text-emerald-600 dark:text-emerald-400 max-w-0 overflow-hidden" title={primaryService?.mandible}>
+                            <div className="truncate block w-full">{primaryService?.mandible}</div>
                           </td>
                         )}
 
                         {/* 13. Format */}
                         {visibleColumns.has('format') && (
-                          <td className="py-2.5 px-1 text-center font-mono font-bold text-[10px] text-slate-700 dark:text-slate-300">
-                            {primaryService?.format}
+                          <td className="py-2.5 px-1 text-center font-mono font-bold text-[10px] text-slate-700 dark:text-slate-300 max-w-0 overflow-hidden" title={primaryService?.format}>
+                            <div className="truncate block w-full">{primaryService?.format}</div>
                           </td>
                         )}
 
                         {/* 14. Amount */}
                         {visibleColumns.has('amount') && (
-                          <td className="py-2.5 px-1.5 text-right font-mono font-black text-[11px] text-slate-900 dark:text-white">
-                            ${totalCaseAmount}.00
+                          <td className="py-2.5 px-1.5 text-right font-mono font-black text-[11px] text-slate-900 dark:text-white max-w-0 overflow-hidden" title={`$${totalCaseAmount}.00`}>
+                            <div className="truncate block w-full">${totalCaseAmount}.00</div>
                           </td>
                         )}
 
                         {/* 15. Vouchers */}
                         {visibleColumns.has('vouch') && (
-                          <td className="py-2.5 px-1 text-center font-mono text-[10px] text-slate-500">
-                            {primaryService?.vouchers}
+                          <td className="py-2.5 px-1 text-center font-mono text-[10px] text-slate-500 max-w-0 overflow-hidden" title={primaryService?.vouchers}>
+                            <div className="truncate block w-full">{primaryService?.vouchers}</div>
                           </td>
                         )}
 
                         {/* 16. Received Time */}
                         {visibleColumns.has('received') && (
-                          <td className="py-2.5 px-1.5 font-mono text-[9.5px] text-slate-600 dark:text-slate-400 truncate" title={primaryService?.receivedTime}>
-                            {primaryService?.receivedTime}
+                          <td className="py-2.5 px-1.5 font-mono text-[9.5px] text-slate-600 dark:text-slate-400 max-w-0 overflow-hidden" title={primaryService?.receivedTime}>
+                            <div className="truncate block w-full">{primaryService?.receivedTime}</div>
                           </td>
                         )}
 
                         {/* 17. Sent Time */}
                         {visibleColumns.has('sent') && (
-                          <td className="py-2.5 px-1 text-center font-mono text-[9.5px] text-slate-500 truncate">
-                            {primaryService?.sentTime}
+                          <td className="py-2.5 px-1 text-center font-mono text-[9.5px] text-slate-500 max-w-0 overflow-hidden" title={primaryService?.sentTime}>
+                            <div className="truncate block w-full">{primaryService?.sentTime}</div>
                           </td>
                         )}
 
                         {/* 18. Update Time */}
                         {visibleColumns.has('update') && (
-                          <td className="py-2.5 px-1 text-center font-mono text-[9.5px] text-slate-500 truncate">
-                            {primaryService?.updateTime}
+                          <td className="py-2.5 px-1 text-center font-mono text-[9.5px] text-slate-500 max-w-0 overflow-hidden" title={primaryService?.updateTime}>
+                            <div className="truncate block w-full">{primaryService?.updateTime}</div>
                           </td>
                         )}
 
                         {/* 19. Charged On */}
                         {visibleColumns.has('charged') && (
-                          <td className="py-2.5 px-1 text-center font-mono text-[9.5px] text-slate-500 truncate">
-                            {primaryService?.chargedOn}
+                          <td className="py-2.5 px-1 text-center font-mono text-[9.5px] text-slate-500 max-w-0 overflow-hidden" title={primaryService?.chargedOn}>
+                            <div className="truncate block w-full">{primaryService?.chargedOn}</div>
                           </td>
                         )}
 
                         {/* 20. Action */}
                         {visibleColumns.has('action') && (
-                          <td className="py-2.5 px-1 text-center" onClick={(e) => e.stopPropagation()}>
-                            {renderActionStatusBadge(
-                              hasActionAlert ? (alertService?.actionLabel || 'No Scans') : (primaryService?.actionLabel || 'In Progress'),
-                              hasActionAlert,
-                              alertService?.actionButtonText || 'Upload',
-                              (e) => {
-                                e.stopPropagation();
-                                navigate(`/order-details?ID=${order.orderNum}`);
-                              }
-                            )}
+                          <td className="py-2.5 px-1 text-center max-w-0 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                            <div className="overflow-hidden flex items-center justify-center">
+                              {renderActionStatusBadge(
+                                hasActionAlert ? (alertService?.actionLabel || 'No Scans') : (primaryService?.actionLabel || 'In Progress'),
+                                hasActionAlert,
+                                alertService?.actionButtonText || 'Upload',
+                                (e) => {
+                                  e.stopPropagation();
+                                  navigate(`/order-details?ID=${order.orderNum}`);
+                                }
+                              )}
+                            </div>
                           </td>
                         )}
 
                         {/* 21. Change Request */}
                         {visibleColumns.has('cr') && (
-                          <td className="py-2.5 px-1 text-center font-mono text-[10px] text-rose-600 font-bold">
-                            {primaryService?.changeRequest || '-'}
+                          <td className="py-2.5 px-1 text-center font-mono text-[10px] text-rose-600 font-bold max-w-0 overflow-hidden" title={primaryService?.changeRequest}>
+                            <div className="truncate block w-full">{primaryService?.changeRequest || '-'}</div>
                           </td>
                         )}
 
                         {/* 22. CS-Task */}
                         {visibleColumns.has('csTask') && (
-                          <td className="py-2.5 px-1 text-center" onClick={(e) => e.stopPropagation()}>
-                            <span className="text-slate-600 dark:text-slate-400 font-bold text-[10px] hover:text-sky-500 cursor-pointer">
-                              {primaryService?.csTask?.assignee ? primaryService.csTask.assignee : 'Assign'}
-                            </span>
+                          <td className="py-2.5 px-1 text-center max-w-0 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                            <div className="truncate block w-full">
+                              <span className="text-slate-600 dark:text-slate-400 font-bold text-[10px] hover:text-sky-500 cursor-pointer">
+                                {primaryService?.csTask?.assignee ? primaryService.csTask.assignee : 'Assign'}
+                              </span>
+                            </div>
                           </td>
                         )}
                       </tr>
@@ -1376,14 +1511,19 @@ export default function Flow() {
                                   {/* Sub-Orders View Mode 1: Table Matrix */}
                                   {subOrderViewMode === 'matrix' ? (
                                     <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-[#0b101d]">
-                                      <table className="w-full min-w-full text-left text-xs border-collapse table-fixed select-none">
+                                      <table className="w-full text-left text-xs border-collapse table-fixed select-none">
+                                        <colgroup>
+                                          {ALL_COLUMNS.filter((c) => visibleColumns.has(c.key)).map((col) => (
+                                            <col key={`sub-col-${col.key}`} style={{ width: getColWidth(col) }} />
+                                          ))}
+                                        </colgroup>
                                         <thead>
                                           <tr className="bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-extrabold text-[10px]">
                                             {ALL_COLUMNS.filter((c) => visibleColumns.has(c.key)).map((col) => (
                                               <th
                                                 key={`sub-th-${col.key}`}
                                                 style={{ width: getColWidth(col) }}
-                                                className={`py-2 px-1.5 truncate ${
+                                                className={`py-2 px-1.5 truncate max-w-0 overflow-hidden ${
                                                   col.align === 'center'
                                                     ? 'text-center'
                                                     : col.align === 'right'
@@ -1391,7 +1531,7 @@ export default function Flow() {
                                                     : 'text-left'
                                                 }`}
                                               >
-                                                {col.label}
+                                                <span className="truncate block w-full">{col.label}</span>
                                               </th>
                                             ))}
                                           </tr>
@@ -1403,47 +1543,47 @@ export default function Flow() {
                                               className="hover:bg-slate-50/80 dark:hover:bg-slate-900/40 text-xs font-medium transition-colors"
                                             >
                                               {visibleColumns.has('tl') && (
-                                                <td className="py-2 px-1 text-center font-mono text-[10px] text-slate-400">
-                                                  ↳ #{srvIdx + 1}
+                                                <td className="py-2 px-1 text-center font-mono text-[10px] text-slate-400 max-w-0 overflow-hidden">
+                                                  <div className="truncate block w-full">↳ #{srvIdx + 1}</div>
                                                 </td>
                                               )}
                                               {visibleColumns.has('scanCenter') && (
-                                                <td className="py-2 px-1.5 text-[10px] text-slate-400 truncate">
-                                                  {order.scanCenter}
+                                                <td className="py-2 px-1.5 text-[10px] text-slate-400 max-w-0 overflow-hidden" title={order.scanCenter}>
+                                                  <div className="truncate block w-full">{order.scanCenter}</div>
                                                 </td>
                                               )}
                                               {visibleColumns.has('doctor') && (
-                                                <td className="py-2 px-1.5 text-[10px] text-slate-400 truncate">
-                                                  {order.doctorName}
+                                                <td className="py-2 px-1.5 text-[10px] text-slate-400 max-w-0 overflow-hidden" title={order.doctorName}>
+                                                  <div className="truncate block w-full">{order.doctorName}</div>
                                                 </td>
                                               )}
                                               {visibleColumns.has('patient') && (
-                                                <td className="py-2 px-1.5 text-[10px] text-slate-400 truncate">
-                                                  {order.patientName}
+                                                <td className="py-2 px-1.5 text-[10px] text-slate-400 max-w-0 overflow-hidden" title={order.patientName}>
+                                                  <div className="truncate block w-full">{order.patientName}</div>
                                                 </td>
                                               )}
                                               {visibleColumns.has('lock') && (
-                                                <td className="py-2 px-1 text-center text-[10px] text-slate-400">
+                                                <td className="py-2 px-1 text-center text-[10px] text-slate-400 max-w-0 overflow-hidden">
                                                   -
                                                 </td>
                                               )}
                                               {visibleColumns.has('notes') && (
-                                                <td className="py-2 px-1 text-center text-[10px] text-slate-400 truncate">
-                                                  {order.notes}
+                                                <td className="py-2 px-1 text-center text-[10px] text-slate-400 max-w-0 overflow-hidden" title={order.notes}>
+                                                  <div className="truncate block w-full">{order.notes}</div>
                                                 </td>
                                               )}
                                               {visibleColumns.has('archive') && (
-                                                <td className="py-2 px-1 text-center text-[10px] font-mono text-slate-400">
-                                                  {order.archiveDate}
+                                                <td className="py-2 px-1 text-center text-[10px] font-mono text-slate-400 max-w-0 overflow-hidden">
+                                                  <div className="truncate block w-full">{order.archiveDate}</div>
                                                 </td>
                                               )}
                                               {visibleColumns.has('more') && (
-                                                <td className="py-2 px-0.5 text-center text-slate-400">•</td>
+                                                <td className="py-2 px-0.5 text-center text-slate-400 max-w-0 overflow-hidden">•</td>
                                               )}
                                               {visibleColumns.has('order') && (
-                                                <td className="py-2 px-1.5">
-                                                  <div className="flex items-center gap-1.5">
-                                                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-black border bg-transparent ${getServiceTagStyle(sub.typeCode)}`}>
+                                                <td className="py-2 px-1.5 max-w-0 overflow-hidden">
+                                                  <div className="flex items-center gap-1.5 overflow-hidden">
+                                                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-black border bg-transparent shrink-0 ${getServiceTagStyle(sub.typeCode)}`}>
                                                       {sub.typeCode}
                                                     </span>
                                                     <span className="font-bold text-slate-800 dark:text-slate-200 truncate">
@@ -1453,76 +1593,80 @@ export default function Flow() {
                                                 </td>
                                               )}
                                               {visibleColumns.has('billTo') && (
-                                                <td className="py-2 px-1.5 text-[10px] text-slate-500 truncate" title={sub.billTo}>
-                                                  {sub.billTo}
+                                                <td className="py-2 px-1.5 text-[10px] text-slate-500 max-w-0 overflow-hidden" title={sub.billTo}>
+                                                  <div className="truncate block w-full">{sub.billTo}</div>
                                                 </td>
                                               )}
                                               {visibleColumns.has('max') && (
-                                                <td className="py-2 px-1 text-center font-bold text-emerald-600 dark:text-emerald-400 text-[10px]">
-                                                  {sub.maxilla}
+                                                <td className="py-2 px-1 text-center font-bold text-emerald-600 dark:text-emerald-400 text-[10px] max-w-0 overflow-hidden" title={sub.maxilla}>
+                                                  <div className="truncate block w-full">{sub.maxilla}</div>
                                                 </td>
                                               )}
                                               {visibleColumns.has('mand') && (
-                                                <td className="py-2 px-1 text-center font-bold text-emerald-600 dark:text-emerald-400 text-[10px]">
-                                                  {sub.mandible}
+                                                <td className="py-2 px-1 text-center font-bold text-emerald-600 dark:text-emerald-400 text-[10px] max-w-0 overflow-hidden" title={sub.mandible}>
+                                                  <div className="truncate block w-full">{sub.mandible}</div>
                                                 </td>
                                               )}
                                               {visibleColumns.has('format') && (
-                                                <td className="py-2 px-1 text-center font-mono text-[10px] text-slate-600 dark:text-slate-400">
-                                                  {sub.format}
+                                                <td className="py-2 px-1 text-center font-mono text-[10px] text-slate-600 dark:text-slate-400 max-w-0 overflow-hidden" title={sub.format}>
+                                                  <div className="truncate block w-full">{sub.format}</div>
                                                 </td>
                                               )}
                                               {visibleColumns.has('amount') && (
-                                                <td className="py-2 px-1.5 text-right font-mono font-bold text-[10.5px] text-slate-900 dark:text-white">
-                                                  ${sub.amount}.00
+                                                <td className="py-2 px-1.5 text-right font-mono font-bold text-[10.5px] text-slate-900 dark:text-white max-w-0 overflow-hidden" title={`$${sub.amount}.00`}>
+                                                  <div className="truncate block w-full">${sub.amount}.00</div>
                                                 </td>
                                               )}
                                               {visibleColumns.has('vouch') && (
-                                                <td className="py-2 px-1 text-center font-mono text-[10px] text-slate-400">
-                                                  {sub.vouchers}
+                                                <td className="py-2 px-1 text-center font-mono text-[10px] text-slate-400 max-w-0 overflow-hidden">
+                                                  <div className="truncate block w-full">{sub.vouchers}</div>
                                                 </td>
                                               )}
                                               {visibleColumns.has('received') && (
-                                                <td className="py-2 px-1.5 font-mono text-[9px] text-slate-500 truncate">
-                                                  {sub.receivedTime}
+                                                <td className="py-2 px-1.5 font-mono text-[9px] text-slate-500 max-w-0 overflow-hidden" title={sub.receivedTime}>
+                                                  <div className="truncate block w-full">{sub.receivedTime}</div>
                                                 </td>
                                               )}
                                               {visibleColumns.has('sent') && (
-                                                <td className="py-2 px-1 text-center font-mono text-[9px] text-slate-400">
-                                                  {sub.sentTime}
+                                                <td className="py-2 px-1 text-center font-mono text-[9px] text-slate-400 max-w-0 overflow-hidden" title={sub.sentTime}>
+                                                  <div className="truncate block w-full">{sub.sentTime}</div>
                                                 </td>
                                               )}
                                               {visibleColumns.has('update') && (
-                                                <td className="py-2 px-1 text-center font-mono text-[9px] text-slate-400">
-                                                  {sub.updateTime}
+                                                <td className="py-2 px-1 text-center font-mono text-[9px] text-slate-400 max-w-0 overflow-hidden" title={sub.updateTime}>
+                                                  <div className="truncate block w-full">{sub.updateTime}</div>
                                                 </td>
                                               )}
                                               {visibleColumns.has('charged') && (
-                                                <td className="py-2 px-1 text-center font-mono text-[9px] text-slate-400">
-                                                  {sub.chargedOn}
+                                                <td className="py-2 px-1 text-center font-mono text-[9px] text-slate-400 max-w-0 overflow-hidden" title={sub.chargedOn}>
+                                                  <div className="truncate block w-full">{sub.chargedOn}</div>
                                                 </td>
                                               )}
                                               {visibleColumns.has('action') && (
-                                                <td className="py-2 px-1 text-center">
-                                                  {renderActionStatusBadge(
-                                                    sub.actionLabel,
-                                                    sub.hasActionAlert,
-                                                    sub.actionButtonText,
-                                                    (e) => {
-                                                      e.stopPropagation();
-                                                      navigate(`/order-details?ID=${order.orderNum}`);
-                                                    }
-                                                  )}
+                                                <td className="py-2 px-1 text-center max-w-0 overflow-hidden">
+                                                  <div className="overflow-hidden flex items-center justify-center">
+                                                    {renderActionStatusBadge(
+                                                      sub.actionLabel,
+                                                      sub.hasActionAlert,
+                                                      sub.actionButtonText,
+                                                      (e) => {
+                                                        e.stopPropagation();
+                                                        navigate(`/order-details?ID=${order.orderNum}`);
+                                                      }
+                                                    )}
+                                                  </div>
                                                 </td>
                                               )}
                                               {visibleColumns.has('cr') && (
-                                                <td className="py-2 px-1 text-center font-mono text-[10px] text-rose-600">
-                                                  {sub.changeRequest}
+                                                <td className="py-2 px-1 text-center font-mono text-[10px] text-rose-600 max-w-0 overflow-hidden" title={sub.changeRequest}>
+                                                  <div className="truncate block w-full">{sub.changeRequest || '-'}</div>
                                                 </td>
                                               )}
                                               {visibleColumns.has('csTask') && (
-                                                <td className="py-2 px-1 text-center text-[10px] text-slate-500">
-                                                  {sub.csTask.assignee ? `by ${sub.csTask.assignee}` : 'Assign'}
+                                                <td className="py-2 px-1 text-center text-[10px] text-slate-500 max-w-0 overflow-hidden">
+                                                  <div className="truncate block w-full">
+                                                    {sub.csTask.assignee ? `by ${sub.csTask.assignee}` : 'Assign'}
+                                                  </div>
                                                 </td>
                                               )}
                                             </tr>
