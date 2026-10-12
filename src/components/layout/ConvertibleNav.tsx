@@ -166,12 +166,11 @@ export function ConvertibleNav({
 
   const isVertical = position === 'left' || position === 'right';
 
-  // =========================================================================
-  // RENDER: TWO-TIER NAVIGATION SYSTEM (ENTERPRISE BEST PRACTICE)
-  // =========================================================================
   if (!isVertical) {
     return (
-      <div className={position === 'top' ? 'sticky top-0 z-50 w-full' : ''}>
+      <>
+        {/* Fixed Top 2-Tier Navigation Bar (100% Locked with Scroll) */}
+        <div className={position === 'top' ? 'fixed top-0 left-0 right-0 z-50 w-full shadow-sm' : ''}>
         {/* ================================================================= */}
         {/* TIER 1: FIXED TOP GLOBAL UTILITY BAR (STATIONARY ACROSS ALL PAGES) */}
         {/* Brand, Drag Handle, Centered Search, Language, Theme, Profile      */}
@@ -532,10 +531,16 @@ export function ConvertibleNav({
             </div>
           </div>
         </nav>
+      </div>
+
+        {/* DOM Flow Spacer when docked at top (56px Tier 1 + 44px Tier 2 = 100px) */}
+        {position === 'top' && (
+          <div className="h-[100px] w-full shrink-0 select-none pointer-events-none" aria-hidden="true" />
+        )}
 
         {/* Interactive Profile Credentials Modal */}
         <ProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} />
-      </div>
+      </>
     );
   }
 
