@@ -151,6 +151,30 @@ class SoundManager {
       playTone(783.99, 0.12);   // G5
     } catch {}
   }
+
+  /**
+   * Subtle alert tone for error / invalid inputs
+   */
+  public playError() {
+    if (!this.enabled) return;
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+      gain.gain.setValueAtTime(0.03, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.15);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.16);
+    } catch {}
+  }
 }
 
 export const sound = new SoundManager();

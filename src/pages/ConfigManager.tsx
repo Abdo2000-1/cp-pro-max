@@ -16,17 +16,26 @@ import {
   Layers,
   BarChart3,
   Activity,
-  Check
+  Check,
+  FileCode,
+  Download,
+  Copy,
+  Upload
 } from 'lucide-react';
 import { useAppConfig } from '@/contexts/ConfigContext';
 import { sound } from '@/utils/sound';
 import { RESTORATION_TYPES, SERVICE_METADATA, RestorationType } from '@/components/ui/TeethChart';
+import { configToYaml, downloadConfigFile } from '@/config/appConfig';
 
 export default function ConfigManager() {
   const { config, saveConfig, resetConfig } = useAppConfig();
   const [formState, setFormState] = useState(config);
   const [savedNotification, setSavedNotification] = useState(false);
-  const [activeTab, setActiveTab] = useState<'branding' | 'theme' | 'links' | 'features' | 'powerbi' | 'dental'>('branding');
+  const [activeTab, setActiveTab] = useState<'branding' | 'theme' | 'links' | 'features' | 'powerbi' | 'dental' | 'files'>('branding');
+  const [codeViewMode, setCodeViewMode] = useState<'json' | 'yaml'>('json');
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [importJsonText, setImportJsonText] = useState('');
+  const [importError, setImportError] = useState<string | null>(null);
 
   const handleChange = (section: keyof typeof formState, field: string, value: any) => {
     setFormState(prev => ({
@@ -104,7 +113,33 @@ export default function ConfigManager() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={() => {
+              downloadConfigFile(JSON.stringify(formState, null, 2), 'app.config.json', 'application/json');
+              sound.playClick();
+            }}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-2xl border border-sky-300 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-900/50 text-xs font-bold text-sky-700 dark:text-sky-300 transition-all cursor-pointer"
+            title="Download app.config.json file"
+          >
+            <Download size={13} />
+            <span>Export .JSON</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              downloadConfigFile(configToYaml(formState), 'app.config.yml', 'text/yaml');
+              sound.playClick();
+            }}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-xs font-bold text-amber-700 dark:text-amber-300 transition-all cursor-pointer"
+            title="Download app.config.yml file"
+          >
+            <Download size={13} />
+            <span>Export .YML</span>
+          </button>
+
           <button
             type="button"
             onClick={handleReset}
@@ -141,6 +176,7 @@ export default function ConfigManager() {
           { key: 'features', label: 'Feature Flags', icon: Layout },
           { key: 'powerbi', label: 'Power BI Embedded Gateway', icon: BarChart3 },
           { key: 'dental', label: 'Dental Services & Odontogram Matrix', icon: Activity },
+          { key: 'files', label: 'Real .JSON / .YML Config Files', icon: FileCode },
         ].map(tab => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
@@ -546,6 +582,244 @@ export default function ConfigManager() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Section 7: Live .JSON & .YML Source Files */}
+      {activeTab === 'files' && (
+        <div className="space-y-6">
+          {/* File Architecture Documentation Card */}
+          <div className="p-6 rounded-3xl bg-white dark:bg-[#090e18] border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div>
+                <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                  <Database size={18} className="text-sky-500" />
+                  Physical Configuration Architecture (Static & Runtime)
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  The application is powered by standard, valid <code className="text-sky-600 font-mono font-bold">.json</code> and <code className="text-amber-600 font-mono font-bold">.yml</code> files located in the repository root and public server directory.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    downloadConfigFile(JSON.stringify(formState, null, 2), 'app.config.json', 'application/json');
+                    sound.playClick();
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-sky-300 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-900 text-xs font-bold text-sky-700 dark:text-sky-300 transition-all cursor-pointer"
+                >
+                  <Download size={13} />
+                  <span>Download .JSON</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    downloadConfigFile(configToYaml(formState), 'app.config.yml', 'text/yaml');
+                    sound.playClick();
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900 text-xs font-bold text-amber-700 dark:text-amber-300 transition-all cursor-pointer"
+                >
+                  <Download size={13} />
+                  <span>Download .YML</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Path Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
+                <div className="flex items-center justify-between text-xs font-bold text-sky-600 dark:text-sky-400 mb-1">
+                  <span className="flex items-center gap-1.5">
+                    <FileCode size={14} />
+                    Compile-Time Build Defaults (.json)
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 font-mono">Bundled</span>
+                </div>
+                <code className="text-xs font-mono text-slate-800 dark:text-slate-200 block bg-white dark:bg-slate-950 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 select-all">
+                  src/config/app.config.json
+                </code>
+                <p className="text-[11px] text-slate-500 mt-1.5">
+                  Directly imported by Vite during compilation to provide initial state, types, and fallback configuration.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
+                <div className="flex items-center justify-between text-xs font-bold text-emerald-600 dark:text-emerald-400 mb-1">
+                  <span className="flex items-center gap-1.5">
+                    <Globe size={14} />
+                    Live Production Static HTTP (.json)
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-mono">Public / CDN</span>
+                </div>
+                <code className="text-xs font-mono text-slate-800 dark:text-slate-200 block bg-white dark:bg-slate-950 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 select-all">
+                  public/app.config.json
+                </code>
+                <p className="text-[11px] text-slate-500 mt-1.5">
+                  Hosted at runtime URL <span className="font-mono text-emerald-600">/app.config.json</span>. Can be mounted or edited in Docker/Vercel without rebuilding the bundle.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
+                <div className="flex items-center justify-between text-xs font-bold text-amber-600 dark:text-amber-400 mb-1">
+                  <span className="flex items-center gap-1.5">
+                    <FileCode size={14} />
+                    Human-Readable YAML Schema (.yml)
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-mono">Source</span>
+                </div>
+                <code className="text-xs font-mono text-slate-800 dark:text-slate-200 block bg-white dark:bg-slate-950 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 select-all">
+                  src/config/app.config.yml
+                </code>
+                <p className="text-[11px] text-slate-500 mt-1.5">
+                  Clean declarative YAML format for infrastructure engineers and Helm charts.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
+                <div className="flex items-center justify-between text-xs font-bold text-purple-600 dark:text-purple-400 mb-1">
+                  <span className="flex items-center gap-1.5">
+                    <Globe size={14} />
+                    Live Production Static HTTP (.yml)
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-mono">Public / CDN</span>
+                </div>
+                <code className="text-xs font-mono text-slate-800 dark:text-slate-200 block bg-white dark:bg-slate-950 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 select-all">
+                  public/app.config.yml
+                </code>
+                <p className="text-[11px] text-slate-500 mt-1.5">
+                  Hosted at runtime URL <span className="font-mono text-purple-600">/app.config.yml</span> for automated DevOps deployment pipelines.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Interactive Code Viewer and Importer */}
+          <div className="p-6 rounded-3xl bg-white dark:bg-[#090e18] border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Format:</span>
+                <div className="inline-flex rounded-xl p-1 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setCodeViewMode('json')}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      codeViewMode === 'json'
+                        ? 'bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-xs'
+                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    app.config.json
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCodeViewMode('yaml')}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      codeViewMode === 'yaml'
+                        ? 'bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 shadow-xs'
+                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    app.config.yml
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const text = codeViewMode === 'json' ? JSON.stringify(formState, null, 2) : configToYaml(formState);
+                    navigator.clipboard.writeText(text);
+                    setCopiedCode(true);
+                    sound.playClick();
+                    setTimeout(() => setCopiedCode(false), 2000);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 transition-all cursor-pointer"
+                >
+                  {copiedCode ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                  <span>{copiedCode ? 'Copied!' : 'Copy Code'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (codeViewMode === 'json') {
+                      downloadConfigFile(JSON.stringify(formState, null, 2), 'app.config.json', 'application/json');
+                    } else {
+                      downloadConfigFile(configToYaml(formState), 'app.config.yml', 'text/yaml');
+                    }
+                    sound.playClick();
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-bold hover:opacity-90 transition-all cursor-pointer"
+                >
+                  <Download size={13} />
+                  <span>Download File</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Code Content Display */}
+            <div className="relative">
+              <pre className="p-4 rounded-2xl bg-slate-950 text-slate-100 text-xs font-mono overflow-x-auto max-h-[460px] leading-relaxed border border-slate-800 select-all">
+                {codeViewMode === 'json' ? JSON.stringify(formState, null, 2) : configToYaml(formState)}
+              </pre>
+            </div>
+
+            {/* JSON Importer Box */}
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+              <details className="group cursor-pointer">
+                <summary className="text-xs font-bold text-sky-600 dark:text-sky-400 flex items-center gap-1.5 select-none hover:underline">
+                  <Upload size={14} />
+                  <span>Paste Custom JSON to Import Configuration</span>
+                </summary>
+                <div className="mt-3 space-y-3 pl-2 border-l-2 border-sky-500/30">
+                  <textarea
+                    rows={6}
+                    value={importJsonText}
+                    onChange={(e) => {
+                      setImportJsonText(e.target.value);
+                      setImportError(null);
+                    }}
+                    placeholder='Paste valid JSON here, e.g. { "branding": { "appName": "Custom Name" }, ... }'
+                    className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  />
+                  {importError && (
+                    <p className="text-xs font-bold text-rose-500">{importError}</p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        const parsed = JSON.parse(importJsonText);
+                        setFormState(prev => ({
+                          ...prev,
+                          ...parsed,
+                          branding: { ...prev.branding, ...parsed.branding },
+                          links: { ...prev.links, ...parsed.links },
+                          theme: { ...prev.theme, ...parsed.theme },
+                          features: { ...prev.features, ...parsed.features },
+                          powerBi: { ...prev.powerBi, ...parsed.powerBi },
+                          serviceProcedures: parsed.serviceProcedures || prev.serviceProcedures,
+                        }));
+                        setImportJsonText('');
+                        setImportError(null);
+                        sound.playSuccess();
+                        alert('Configuration successfully loaded into CMS form! Click "Save & Apply Configuration" to activate.');
+                      } catch (err: any) {
+                        setImportError('Invalid JSON format: ' + err.message);
+                        sound.playError();
+                      }
+                    }}
+                    className="px-4 py-2 rounded-xl bg-sky-600 text-white font-bold text-xs hover:bg-sky-700 transition-colors cursor-pointer"
+                  >
+                    Validate & Load JSON into Form
+                  </button>
+                </div>
+              </details>
+            </div>
           </div>
         </div>
       )}

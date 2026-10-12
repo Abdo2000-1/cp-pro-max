@@ -59,67 +59,10 @@ export interface AppConfiguration {
   serviceProcedures: Record<string, string[]>;
 }
 
-export const DEFAULT_SERVICE_PROCEDURES: Record<string, string[]> = {
-  sg: ['implant', 'sleeve', 'anchor', 'bone_reduction', 'extraction'],
-  tp: ['implant', 'crown', 'bridge', 'veneer', 'sinus_lift', 'nerve_trace', 'extraction'],
-  conv: ['segmentation', 'implant', 'nerve_trace', 'extraction'],
-  mod: ['die_prep', 'analog', 'extraction'],
-  rep: ['impacted', 'pathology', 'sinus_lift', 'extraction'],
-  restTemp: ['temp_crown', 'temp_bridge', 'extraction'],
-  restFinal: ['crown', 'bridge', 'veneer', 'inlay', 'extraction'],
-  vr: ['smile_design', 'veneer', 'crown', 'extraction'],
-  ortho: ['attachment', 'ipr', 'extraction']
-};
+import defaultAppConfigJson from './app.config.json';
 
-export const DEFAULT_APP_CONFIG: AppConfiguration = {
-  branding: {
-    appName: '3D Diagnostix CP PRO MAX',
-    shortName: '3DDX CP',
-    tagline: 'Enterprise Cloud Dental ERP & Clinical Dispatch Platform',
-    version: 'v4.5.2-prod',
-    buildNumber: '20261006.PROD',
-    releaseDate: 'October 2026',
-    copyrightHolder: '3D Diagnostix Inc. All rights reserved.',
-    logoLight: '/logo-3ddx-full.png',
-    logoDark: '/logo-3ddx-full.png',
-    logoIcon: '/logo-3ddx.png',
-  },
-  links: {
-    companyWebsite: 'https://3ddx.com',
-    supportEmail: 'support@3ddx.com',
-    supportPortal: 'https://support.3ddx.com',
-    documentationUrl: 'https://docs.3ddx.com',
-    privacyPolicyUrl: 'https://3ddx.com/privacy',
-    termsOfServiceUrl: 'https://3ddx.com/terms',
-    statusPageUrl: 'https://status.3ddx.com',
-    systemDiagnosticsUrl: 'https://diagnostics.3ddx.com',
-  },
-  theme: {
-    defaultTheme: 'light',
-    primaryColor: '#0284c7', // Sky-600
-    accentColor: '#ea580c',  // Orange-600
-    successColor: '#10b981', // Emerald-500
-    warningColor: '#f59e0b', // Amber-500
-    dangerColor: '#ef4444',  // Rose-500
-    fontFamily: 'Inter, system-ui, sans-serif',
-    borderRadius: '1rem',
-  },
-  features: {
-    enablePowerBIRealEmbed: true,
-    enableSoundEffects: true,
-    enableLiveTelemetry: true,
-    enableMultiLanguage: true,
-    enableTableExcelResize: true,
-    defaultPageSize: 10,
-  },
-  powerBi: {
-    defaultEmbedUrl: 'https://app.powerbi.com/view?r=eyJrIjoiNTRjMzI0MmQtNTA3YS00N2MwLWI0ZTctMGEyOGUwOGI0OTRhIiwidCI6IjI1ZDIwZjU1LWIxMGMtNDk5MS1hMTJlLWRlOWZkZDA2YTY0MCIsImMiOjZ9',
-    workspaceId: '3ddx-powerbi-workspace-live',
-    datasetName: '3DDX_FY2026_Executive_Targets.pbix',
-    refreshIntervalSec: 300,
-  },
-  serviceProcedures: DEFAULT_SERVICE_PROCEDURES,
-};
+export const DEFAULT_APP_CONFIG: AppConfiguration = defaultAppConfigJson as AppConfiguration;
+export const DEFAULT_SERVICE_PROCEDURES: Record<string, string[]> = defaultAppConfigJson.serviceProcedures;
 
 const STORAGE_KEY = '3ddx_cp_runtime_config_v1';
 
@@ -143,7 +86,7 @@ export function loadAppConfig(): AppConfiguration {
 
 export function saveAppConfig(newConfig: AppConfiguration): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newConfig));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newConfig, null, 2));
     window.dispatchEvent(new CustomEvent('app-config-updated', { detail: newConfig }));
   } catch (e) {
     console.error('Failed to save config to localStorage', e);
@@ -159,3 +102,83 @@ export function resetAppConfig(): AppConfiguration {
   }
   return DEFAULT_APP_CONFIG;
 }
+
+export function downloadConfigFile(content: string, filename: string, mimeType = 'application/json'): void {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export function configToYaml(config: AppConfiguration): string {
+  const lines: string[] = [
+    '# ==============================================================================',
+    '# 3DDX Enterprise Dental ERP & Clinical Dispatch Platform Configuration',
+    '# Production Runtime Configuration (YAML Format)',
+    '# Sourced from /public/app.config.yml and src/config/app.config.yml',
+    '# ==============================================================================',
+    '',
+    'branding:',
+    `  appName: ${JSON.stringify(config.branding.appName)}`,
+    `  shortName: ${JSON.stringify(config.branding.shortName)}`,
+    `  tagline: ${JSON.stringify(config.branding.tagline)}`,
+    `  version: ${JSON.stringify(config.branding.version)}`,
+    `  buildNumber: ${JSON.stringify(config.branding.buildNumber)}`,
+    `  releaseDate: ${JSON.stringify(config.branding.releaseDate)}`,
+    `  copyrightHolder: ${JSON.stringify(config.branding.copyrightHolder)}`,
+    `  logoLight: ${JSON.stringify(config.branding.logoLight)}`,
+    `  logoDark: ${JSON.stringify(config.branding.logoDark)}`,
+    `  logoIcon: ${JSON.stringify(config.branding.logoIcon)}`,
+    '',
+    'links:',
+    `  companyWebsite: ${JSON.stringify(config.links.companyWebsite)}`,
+    `  supportEmail: ${JSON.stringify(config.links.supportEmail)}`,
+    `  supportPortal: ${JSON.stringify(config.links.supportPortal)}`,
+    `  documentationUrl: ${JSON.stringify(config.links.documentationUrl)}`,
+    `  privacyPolicyUrl: ${JSON.stringify(config.links.privacyPolicyUrl)}`,
+    `  termsOfServiceUrl: ${JSON.stringify(config.links.termsOfServiceUrl)}`,
+    `  statusPageUrl: ${JSON.stringify(config.links.statusPageUrl)}`,
+    `  systemDiagnosticsUrl: ${JSON.stringify(config.links.systemDiagnosticsUrl)}`,
+    '',
+    'theme:',
+    `  defaultTheme: ${JSON.stringify(config.theme.defaultTheme)}`,
+    `  primaryColor: ${JSON.stringify(config.theme.primaryColor)}`,
+    `  accentColor: ${JSON.stringify(config.theme.accentColor)}`,
+    `  successColor: ${JSON.stringify(config.theme.successColor)}`,
+    `  warningColor: ${JSON.stringify(config.theme.warningColor)}`,
+    `  dangerColor: ${JSON.stringify(config.theme.dangerColor)}`,
+    `  fontFamily: ${JSON.stringify(config.theme.fontFamily)}`,
+    `  borderRadius: ${JSON.stringify(config.theme.borderRadius)}`,
+    '',
+    'features:',
+    `  enablePowerBIRealEmbed: ${config.features.enablePowerBIRealEmbed}`,
+    `  enableSoundEffects: ${config.features.enableSoundEffects}`,
+    `  enableLiveTelemetry: ${config.features.enableLiveTelemetry}`,
+    `  enableMultiLanguage: ${config.features.enableMultiLanguage}`,
+    `  enableTableExcelResize: ${config.features.enableTableExcelResize}`,
+    `  defaultPageSize: ${config.features.defaultPageSize}`,
+    '',
+    'powerBi:',
+    `  defaultEmbedUrl: ${JSON.stringify(config.powerBi.defaultEmbedUrl)}`,
+    `  workspaceId: ${JSON.stringify(config.powerBi.workspaceId)}`,
+    `  datasetName: ${JSON.stringify(config.powerBi.datasetName)}`,
+    `  refreshIntervalSec: ${config.powerBi.refreshIntervalSec}`,
+    '',
+    'serviceProcedures:'
+  ];
+
+  for (const [svc, procs] of Object.entries(config.serviceProcedures || {})) {
+    lines.push(`  ${svc}:`);
+    for (const proc of procs) {
+      lines.push(`    - ${proc}`);
+    }
+  }
+
+  return lines.join('\n') + '\n';
+}
+
