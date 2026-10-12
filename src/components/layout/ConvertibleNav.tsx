@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Layers,
   FilePlus2,
@@ -16,14 +15,18 @@ import {
   ChevronRight,
   Sun,
   Moon,
-  PanelLeftClose,
-  PanelRightClose,
   PanelTopClose,
-  PanelBottomClose,
   Check,
   ChevronDown,
-  Compass,
-  UserCheck
+  Shield,
+  Sliders,
+  SlidersHorizontal,
+  Home,
+  User,
+  LogOut,
+  ExternalLink,
+  Search,
+  Sparkles
 } from 'lucide-react';
 import { useThemeContext } from '@/contexts/ThemeContext';
 import { useLanguage, LANGUAGES } from '@/contexts/LanguageContext';
@@ -56,66 +59,28 @@ export function ConvertibleNav({
   const { language, setLanguage, currentOption, t } = useLanguage();
 
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
-  const [dockPickerOpen, setDockPickerOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [opsMenuOpen, setOpsMenuOpen] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [ordersDropdownOpen, setOrdersDropdownOpen] = useState(false);
+  const [opsDropdownOpen, setOpsDropdownOpen] = useState(false);
 
   const langRef = useRef<HTMLDivElement>(null);
-  const dockPickerRef = useRef<HTMLDivElement>(null);
-  const opsMenuRef = useRef<HTMLDivElement>(null);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+  const ordersDropdownRef = useRef<HTMLDivElement>(null);
+  const opsDropdownRef = useRef<HTMLDivElement>(null);
 
   const profile = useStore((s) => s.getProfile());
 
-  // 8 Target Pages from 3DDX CP (Strictly Clean - No colored badges per Image 3)
+  // 8 Target Pages from 3DDX CP (For vertical sidebar)
   const targetNavItems = [
-    {
-      id: 'dashboard',
-      label: t('nav.dashboard', 'Dashboard'),
-      path: '/dashboard',
-      icon: LayoutDashboard,
-    },
-    {
-      id: 'flow',
-      label: t('nav.flow', 'Master Orders Flow'),
-      path: '/flow',
-      icon: Layers,
-    },
-    {
-      id: 'addCase',
-      label: t('nav.addCase', 'Add New Case'),
-      path: '/add-case',
-      icon: FilePlus2,
-    },
-    {
-      id: 'orderDetails',
-      label: t('nav.orderDetails', 'Order Details'),
-      path: '/order-details',
-      icon: FileText,
-    },
-    {
-      id: 'quarterTargets',
-      label: t('nav.quarterTargets', 'Quarter Targets'),
-      path: '/quarter-targets',
-      icon: TrendingUp,
-    },
-    {
-      id: 'task47',
-      label: t('nav.task47', 'Task 47: Models'),
-      path: '/task-47',
-      icon: Boxes,
-    },
-    {
-      id: 'task31',
-      label: t('nav.task31', 'Task 31: Staff Targets'),
-      path: '/task-31',
-      icon: Users2,
-    },
-    {
-      id: 'editCase',
-      label: t('nav.editCase', 'Edit Case'),
-      path: '/edit-case',
-      icon: FileEdit,
-    },
+    { id: 'dashboard', label: t('nav.dashboard', 'Dashboard'), path: '/dashboard', icon: LayoutDashboard },
+    { id: 'flow', label: t('nav.flow', 'Master Orders Flow'), path: '/flow', icon: Layers },
+    { id: 'addCase', label: t('nav.addCase', 'Add New Case'), path: '/add-case', icon: FilePlus2 },
+    { id: 'orderDetails', label: t('nav.orderDetails', 'Order Details'), path: '/order-details', icon: FileText },
+    { id: 'quarterTargets', label: t('nav.quarterTargets', 'Quarter Targets'), path: '/quarter-targets', icon: TrendingUp },
+    { id: 'task47', label: t('nav.task47', 'Task 47: Models'), path: '/task-47', icon: Boxes },
+    { id: 'task31', label: t('nav.task31', 'Task 31: Staff Targets'), path: '/task-31', icon: Users2 },
+    { id: 'editCase', label: t('nav.editCase', 'Edit Case'), path: '/edit-case', icon: FileEdit },
   ];
 
   // Close menus on outside click
@@ -124,18 +89,21 @@ export function ConvertibleNav({
       if (langRef.current && !langRef.current.contains(e.target as Node)) {
         setLangDropdownOpen(false);
       }
-      if (dockPickerRef.current && !dockPickerRef.current.contains(e.target as Node)) {
-        setDockPickerOpen(false);
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(e.target as Node)) {
+        setProfileDropdownOpen(false);
       }
-      if (opsMenuRef.current && !opsMenuRef.current.contains(e.target as Node)) {
-        setOpsMenuOpen(false);
+      if (ordersDropdownRef.current && !ordersDropdownRef.current.contains(e.target as Node)) {
+        setOrdersDropdownOpen(false);
+      }
+      if (opsDropdownRef.current && !opsDropdownRef.current.contains(e.target as Node)) {
+        setOpsDropdownOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // HTML5 Drag Handlers
+  // HTML5 Drag Handlers (Single Repositioning Technique: Drag & Drop Only)
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('text/plain', position);
     e.dataTransfer.effectAllowed = 'move';
@@ -152,13 +120,11 @@ export function ConvertibleNav({
     setIsDraggingNav(true);
 
     const onPointerMove = (moveEvt: PointerEvent) => {
-      // Broadcast drag event or allow layout to catch position
       const clientX = moveEvt.clientX;
       const clientY = moveEvt.clientY;
       const winW = window.innerWidth;
       const winH = window.innerHeight;
 
-      // Check docking proximity
       if (clientY < 80) {
         window.dispatchEvent(new CustomEvent('nav-hover-zone', { detail: 'top' }));
       } else if (clientY > winH - 80) {
@@ -200,243 +166,80 @@ export function ConvertibleNav({
 
   const isVertical = position === 'left' || position === 'right';
 
-  // ==========================================
-  // RENDER: HORIZONTAL BAR (TOP OR BOTTOM)
-  // ==========================================
+  // =========================================================================
+  // RENDER: TWO-TIER NAVIGATION SYSTEM (ENTERPRISE BEST PRACTICE)
+  // =========================================================================
   if (!isVertical) {
     return (
       <>
+        {/* ================================================================= */}
+        {/* TIER 1: FIXED TOP GLOBAL UTILITY BAR (STATIONARY ACROSS ALL PAGES) */}
+        {/* Brand, Drag Handle, Home, Language, Theme, Profile + Admin CMS     */}
+        {/* STRICT REQUIREMENT: ZERO PAGE LINKS IN TIER 1                     */}
+        {/* ================================================================= */}
         <header
-          className={`w-full border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-[#070b14]/95 backdrop-blur-md shadow-xs select-none transition-all duration-200 z-40 ${
-            position === 'top' ? 'sticky top-0 border-b' : 'fixed bottom-0 left-0 right-0 border-t shadow-2xl'
+          className={`w-full bg-white/80 dark:bg-[#070b14]/80 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 select-none z-50 ${
+            position === 'top' ? 'sticky top-0' : 'fixed bottom-12 left-0 right-0 border-t shadow-2xl'
           }`}
         >
-          <div className="w-full max-w-[1920px] mx-auto px-3 sm:px-5 lg:px-6 h-16 flex items-center justify-between gap-2 lg:gap-4">
+          <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
             
-            {/* Left: Drag Handle, 4-Way Dock Quick Picker & Brand Logo */}
-            <div className="flex items-center gap-2 shrink-0">
-              {/* Hand Drag Handle: Works with Pointer & HTML5 */}
+            {/* Left: Drag Handle & Brand Logo (Home link only) */}
+            <div className="flex items-center gap-3 shrink-0">
+              {/* Hand Drag Handle: ONLY Repositioning Technique */}
               <div
                 draggable
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
                 onPointerDown={handlePointerDownDrag}
-                title={t('action.dragHandle', 'Click & drag with hand/mouse to dock at any edge (Top / Left / Right / Bottom)')}
-                className="flex items-center justify-center p-2 rounded-xl text-slate-400 hover:text-[#0284c7] dark:hover:text-sky-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-grab active:cursor-grabbing transition-colors group"
+                title="Drag & Drop handle to dock navigation at Top, Left, Right, or Bottom"
+                className="flex items-center justify-center p-1.5 rounded-xl text-slate-400 hover:text-[#0284c7] dark:hover:text-sky-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-grab active:cursor-grabbing transition-colors group"
               >
-                <GripVertical size={20} className="group-hover:scale-110 transition-transform text-[#0284c7] dark:text-sky-400" />
+                <GripVertical size={18} className="group-hover:scale-110 transition-transform text-[#0284c7] dark:text-sky-400" />
               </div>
 
-              {/* 4-Way Docking Quick Selector */}
-              <div className="relative" ref={dockPickerRef}>
-                <button
-                  type="button"
-                  onClick={() => setDockPickerOpen(!dockPickerOpen)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-[#0284c7] hover:bg-sky-50 dark:hover:bg-sky-950/40 border border-slate-200/80 dark:border-slate-800 transition-colors"
-                  title="Snap Navigation Dock"
-                >
-                  <Compass size={14} className="text-[#ea580c]" />
-                  <span className="capitalize hidden md:inline">{position}</span>
-                  <ChevronDown size={12} className="text-slate-400" />
-                </button>
-
-                {dockPickerOpen && (
-                  <div className="absolute top-10 left-0 w-48 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-1.5 z-50 animate-slide-up text-xs font-bold">
-                    <div className="text-[10px] text-slate-400 uppercase tracking-wider px-2 py-1">
-                      Snap Dock Position
-                    </div>
-                    <button
-                      onClick={() => { onChangePosition('top'); setDockPickerOpen(false); }}
-                      className={`w-full flex items-center gap-2 p-2 rounded-lg text-left ${(position as string) === 'top' ? 'bg-[#0284c7]/15 text-[#0284c7]' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-                    >
-                      <PanelTopClose size={14} />
-                      <span>Top Navbar</span>
-                    </button>
-                    <button
-                      onClick={() => { onChangePosition('left'); setDockPickerOpen(false); }}
-                      className={`w-full flex items-center gap-2 p-2 rounded-lg text-left ${(position as string) === 'left' ? 'bg-[#0284c7]/15 text-[#0284c7]' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-                    >
-                      <PanelLeftClose size={14} />
-                      <span>Left Sidebar (Collapsed)</span>
-                    </button>
-                    <button
-                      onClick={() => { onChangePosition('right'); setDockPickerOpen(false); }}
-                      className={`w-full flex items-center gap-2 p-2 rounded-lg text-left ${(position as string) === 'right' ? 'bg-[#0284c7]/15 text-[#0284c7]' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-                    >
-                      <PanelRightClose size={14} />
-                      <span>Right Sidebar (Collapsed)</span>
-                    </button>
-                    <button
-                      onClick={() => { onChangePosition('bottom'); setDockPickerOpen(false); }}
-                      className={`w-full flex items-center gap-2 p-2 rounded-lg text-left ${(position as string) === 'bottom' ? 'bg-[#0284c7]/15 text-[#0284c7]' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-                    >
-                      <PanelBottomClose size={14} />
-                      <span>Bottom Dock</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Official 3D Diagnostix Logo (Brand text removed to maximize space for links) */}
-              <NavLink to="/dashboard" className="flex items-center group mr-1" title="3D Diagnostix CP">
-                <div className="h-9 px-2.5 py-1 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center shadow-xs hover:border-[#0284c7] transition-colors">
+              {/* Brand Logo (Home link only - No page links) */}
+              <NavLink
+                to="/dashboard"
+                className="flex items-center gap-2 group"
+                title="3D Diagnostix Cloud ERP - Home"
+              >
+                <div className="h-8 px-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center shadow-xs group-hover:border-[#0284c7] transition-colors">
                   <img
                     src="/logo-3ddx-full.png"
                     alt="3D Diagnostix"
-                    className="h-6 w-auto object-contain"
+                    className="h-5 w-auto object-contain"
                   />
+                </div>
+                <div className="hidden sm:flex flex-col leading-none">
+                  <span className="text-xs font-black text-slate-900 dark:text-white tracking-tight uppercase">
+                    CP PRO MAX
+                  </span>
+                  <span className="text-[9px] font-bold text-sky-600 dark:text-sky-400">
+                    Clinical Platform
+                  </span>
                 </div>
               </NavLink>
             </div>
 
-            {/* Center: Clean & Focused Navigation (Primary Pages + Operations Dropdown) */}
-            <nav className="flex items-center gap-1 xl:gap-2 py-1">
+            {/* Center: Global Home Button (Utility only) */}
+            <div className="hidden md:flex items-center">
               <NavLink
                 to="/dashboard"
                 className={({ isActive }) =>
                   `flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                     isActive
-                      ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      ? 'bg-slate-100 dark:bg-slate-800 text-sky-600 dark:text-sky-400'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`
                 }
               >
-                <LayoutDashboard size={14} />
-                <span>Dashboard</span>
+                <Home size={14} />
+                <span>Home</span>
               </NavLink>
+            </div>
 
-              <NavLink
-                to="/flow"
-                className={({ isActive }) =>
-                  `flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                    isActive || location.pathname === '/orders'
-                      ? 'bg-gradient-to-r from-[#0284c7] to-[#0369a1] text-white shadow-xs'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`
-                }
-              >
-                <Layers size={14} />
-                <span>Workflow Queue</span>
-              </NavLink>
-
-              <NavLink
-                to="/add-case"
-                className={({ isActive }) =>
-                  `flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                    isActive
-                      ? 'bg-emerald-600 text-white shadow-xs'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`
-                }
-              >
-                <FilePlus2 size={14} />
-                <span>Add Case</span>
-              </NavLink>
-
-              {/* Operations & Analytics Dropdown Menu */}
-              <div className="relative" ref={opsMenuRef}>
-                <button
-                  type="button"
-                  onClick={() => setOpsMenuOpen(!opsMenuOpen)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
-                    opsMenuOpen || ['/quarter-targets', '/task-47', '/task-31', '/order-details', '/edit-case'].includes(location.pathname)
-                      ? 'border-[#0284c7]/60 text-[#0284c7] dark:text-sky-400 bg-sky-500/10'
-                      : 'border-transparent text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
-                  title="Open Operations & Clinical Modules Menu"
-                >
-                  <Boxes size={14} />
-                  <span>Operations & Analytics</span>
-                  <ChevronDown size={12} className={`transition-transform duration-200 ${opsMenuOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {opsMenuOpen && (
-                  <div className="absolute top-11 left-0 w-64 rounded-2xl bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-slate-800 shadow-2xl p-2 z-50 animate-slide-up space-y-1">
-                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider px-2.5 py-1">
-                      Analytics & Production Reports
-                    </div>
-                    
-                    <NavLink
-                      to="/quarter-targets"
-                      onClick={() => setOpsMenuOpen(false)}
-                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors text-slate-800 dark:text-slate-200"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
-                        <TrendingUp size={14} />
-                      </div>
-                      <div>
-                        <div className="text-slate-900 dark:text-white">Quarter Targets & Power BI</div>
-                        <div className="text-[10px] text-slate-400 font-normal">Executive metrics & live report</div>
-                      </div>
-                    </NavLink>
-
-                    <NavLink
-                      to="/task-47"
-                      onClick={() => setOpsMenuOpen(false)}
-                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors text-slate-800 dark:text-slate-200"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-                        <Boxes size={14} />
-                      </div>
-                      <div>
-                        <div className="text-slate-900 dark:text-white">Task 47: Models Report</div>
-                        <div className="text-[10px] text-slate-400 font-normal">Operator models & cost logs</div>
-                      </div>
-                    </NavLink>
-
-                    <NavLink
-                      to="/task-31"
-                      onClick={() => setOpsMenuOpen(false)}
-                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors text-slate-800 dark:text-slate-200"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                        <Users2 size={14} />
-                      </div>
-                      <div>
-                        <div className="text-slate-900 dark:text-white">Task 31: Staff Targets</div>
-                        <div className="text-[10px] text-slate-400 font-normal">Technician volume & bonus tiers</div>
-                      </div>
-                    </NavLink>
-
-                    <div className="border-t border-slate-100 dark:border-slate-800 my-1 pt-1" />
-
-                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider px-2.5 py-1">
-                      Case Inspection
-                    </div>
-
-                    <NavLink
-                      to="/order-details"
-                      onClick={() => setOpsMenuOpen(false)}
-                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors text-slate-800 dark:text-slate-200"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                        <FileText size={14} />
-                      </div>
-                      <div>
-                        <div className="text-slate-900 dark:text-white">Order Details Inspection</div>
-                        <div className="text-[10px] text-slate-400 font-normal">Deep order telemetry & notes</div>
-                      </div>
-                    </NavLink>
-
-                    <NavLink
-                      to="/edit-case"
-                      onClick={() => setOpsMenuOpen(false)}
-                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors text-slate-800 dark:text-slate-200"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-                        <FileEdit size={14} />
-                      </div>
-                      <div>
-                        <div className="text-slate-900 dark:text-white">Edit Clinical Case</div>
-                        <div className="text-[10px] text-slate-400 font-normal">Form revision & remake auth</div>
-                      </div>
-                    </NavLink>
-                  </div>
-                )}
-              </div>
-            </nav>
-
-            {/* Right: Language Switcher, Theme Toggle & Profile Button (No Search Bar) */}
+            {/* Right: Language, Theme, & User Profile Dropdown (with Admin CMS) */}
             <div className="flex items-center gap-2 shrink-0">
               
               {/* Language Switcher */}
@@ -444,7 +247,7 @@ export function ConvertibleNav({
                 <button
                   type="button"
                   onClick={() => setLangDropdownOpen(!langDropdownOpen)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 transition-colors"
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
                   title="Change System Language"
                 >
                   <span className="text-sm">{currentOption.flag}</span>
@@ -464,7 +267,7 @@ export function ConvertibleNav({
                           setLanguage(lang.code);
                           setLangDropdownOpen(false);
                         }}
-                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                           language === lang.code
                             ? 'bg-[#0284c7]/15 text-[#0284c7] dark:text-sky-300'
                             : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -489,62 +292,298 @@ export function ConvertibleNav({
                 title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
               >
                 {theme === 'dark' ? (
-                  <Sun size={18} className="text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
+                  <Sun size={17} className="text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
                 ) : (
-                  <Moon size={18} className="text-slate-700" />
+                  <Moon size={17} className="text-slate-700" />
                 )}
               </button>
 
-              {/* User Profile Avatar Button: Navigates to /profile */}
-              <button
-                type="button"
-                onClick={() => navigate('/profile')}
-                className="flex items-center gap-2 p-1 pl-1.5 pr-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-[#0284c7] dark:hover:border-sky-500 bg-slate-50/80 dark:bg-slate-900/80 transition-all cursor-pointer group"
-                title="View Operator Profile & Workstation Settings"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-tr from-[#0284c7] to-[#ea580c] text-xs font-black text-white shadow-xs group-hover:scale-105 transition-transform">
-                  {profile?.avatarInitials || '3D'}
-                </div>
-                <div className="flex flex-col text-left leading-tight hidden 2xl:flex">
-                  <span className="text-[11px] font-black text-slate-900 dark:text-white truncate max-w-[100px]">
-                    {profile?.firstName || 'Abdu M.'}
-                  </span>
-                  <span className="text-[9px] font-bold text-[#ea580c]">
-                    Technician
-                  </span>
-                </div>
-              </button>
+              {/* User Profile Dropdown Menu (Houses Admin CMS link for authorized users) */}
+              <div className="relative" ref={profileDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                  className="flex items-center gap-2 p-1 pl-1.5 pr-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800 hover:border-[#0284c7] dark:hover:border-sky-500 bg-slate-50/80 dark:bg-slate-900/80 transition-all cursor-pointer group"
+                  title="Operator Profile & Account Menu"
+                >
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-tr from-[#0284c7] to-[#ea580c] text-xs font-black text-white shadow-xs group-hover:scale-105 transition-transform">
+                    {profile?.avatarInitials || '3D'}
+                  </div>
+                  <div className="flex flex-col text-left leading-tight hidden xl:flex">
+                    <span className="text-[11px] font-black text-slate-900 dark:text-white truncate max-w-[100px]">
+                      {profile?.firstName || 'Abdu M.'}
+                    </span>
+                    <span className="text-[9px] font-bold text-[#ea580c]">
+                      Lead Specialist
+                    </span>
+                  </div>
+                  <ChevronDown size={12} className="text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200" />
+                </button>
+
+                {profileDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-slate-800 shadow-2xl p-2 z-50 animate-slide-up space-y-1">
+                    <div className="p-2 border-b border-slate-100 dark:border-slate-800/80 mb-1">
+                      <div className="font-extrabold text-xs text-slate-900 dark:text-white">
+                        {profile?.firstName ? `${profile.firstName} ${profile.lastName}` : 'Abdu Mohamed'}
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-mono">
+                        a.aladawy@3ddx.com • ID: 3DDX-9942
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProfileDropdownOpen(false);
+                        setIsProfileModalOpen(true);
+                      }}
+                      className="w-full flex items-center gap-2.5 p-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                    >
+                      <User size={15} className="text-sky-500" />
+                      <span>Operator Profile & Credentials</span>
+                    </button>
+
+                    {/* Best Practice: Admin CMS inside User Profile menu for Authorized Admins */}
+                    <NavLink
+                      to="/config-manager"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center justify-between p-2 rounded-xl text-xs font-bold bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800/60 hover:bg-sky-100 dark:hover:bg-sky-900/60 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Sliders size={15} className="text-sky-600 dark:text-sky-400" />
+                        <span>Admin CMS Engine</span>
+                      </div>
+                      <span className="px-1.5 py-0.2 rounded-md bg-sky-500 text-white text-[9px] font-black uppercase tracking-wider">
+                        Admin
+                      </span>
+                    </NavLink>
+
+                    <NavLink
+                      to="/settings"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    >
+                      <Shield size={15} className="text-emerald-500" />
+                      <span>Security & Preferences</span>
+                    </NavLink>
+
+                    <div className="border-t border-slate-100 dark:border-slate-800 my-1 pt-1" />
+
+                    <NavLink
+                      to="/login"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2.5 p-2 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                    >
+                      <LogOut size={15} />
+                      <span>Sign Out</span>
+                    </NavLink>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </header>
+
+        {/* ================================================================= */}
+        {/* TIER 2: SECONDARY WORKSPACE SUB-NAVBAR                            */}
+        {/* Categorized spread menus with role-based items and actions         */}
+        {/* ================================================================= */}
+        <nav className="w-full bg-slate-50/90 dark:bg-[#060911]/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 select-none z-40 sticky top-14">
+          <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 h-11 flex items-center justify-between gap-4">
+            
+            {/* Categorized Spread Menus */}
+            <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto">
+              
+              {/* 1. Dashboard */}
+              <NavLink
+                to="/dashboard"
+                className={({ isActive }) =>
+                  `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    isActive
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs border border-slate-200 dark:border-slate-700'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60'
+                  }`
+                }
+              >
+                <LayoutDashboard size={13} />
+                <span>Dashboard</span>
+              </NavLink>
+
+              {/* 2. Orders & Cases Spread Dropdown */}
+              <div className="relative" ref={ordersDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setOrdersDropdownOpen(!ordersDropdownOpen)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    ordersDropdownOpen || ['/flow', '/order-details', '/edit-case'].includes(location.pathname)
+                      ? 'bg-sky-50 dark:bg-sky-950/40 text-[#0284c7] dark:text-sky-400 border border-sky-200 dark:border-sky-800'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60'
+                  }`}
+                >
+                  <Layers size={13} />
+                  <span>Orders & Cases</span>
+                  <ChevronDown size={11} className={`transition-transform duration-200 ${ordersDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {ordersDropdownOpen && (
+                  <div className="absolute top-9 left-0 w-56 rounded-2xl bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-slate-800 shadow-xl p-1.5 z-50 animate-slide-up space-y-1">
+                    <NavLink
+                      to="/flow"
+                      onClick={() => setOrdersDropdownOpen(false)}
+                      className="flex items-center gap-2 p-2 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    >
+                      <Layers size={14} className="text-sky-500" />
+                      <div>
+                        <div>Workflow Queue</div>
+                        <div className="text-[10px] text-slate-400 font-normal">Master production queue</div>
+                      </div>
+                    </NavLink>
+
+                    <NavLink
+                      to="/order-details"
+                      onClick={() => setOrdersDropdownOpen(false)}
+                      className="flex items-center gap-2 p-2 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    >
+                      <FileText size={14} className="text-indigo-500" />
+                      <div>
+                        <div>Order Details</div>
+                        <div className="text-[10px] text-slate-400 font-normal">Deep telemetry & files</div>
+                      </div>
+                    </NavLink>
+
+                    <NavLink
+                      to="/edit-case"
+                      onClick={() => setOrdersDropdownOpen(false)}
+                      className="flex items-center gap-2 p-2 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    >
+                      <FileEdit size={14} className="text-purple-500" />
+                      <div>
+                        <div>Edit Case</div>
+                        <div className="text-[10px] text-slate-400 font-normal">Revisions & remakes</div>
+                      </div>
+                    </NavLink>
+                  </div>
+                )}
+              </div>
+
+              {/* 3. Operations & Analytics Spread Dropdown */}
+              <div className="relative" ref={opsDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setOpsDropdownOpen(!opsDropdownOpen)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    opsDropdownOpen || ['/quarter-targets', '/task-47', '/task-31'].includes(location.pathname)
+                      ? 'bg-sky-50 dark:bg-sky-950/40 text-[#0284c7] dark:text-sky-400 border border-sky-200 dark:border-sky-800'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60'
+                  }`}
+                >
+                  <Boxes size={13} />
+                  <span>Operations & Reports</span>
+                  <ChevronDown size={11} className={`transition-transform duration-200 ${opsDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {opsDropdownOpen && (
+                  <div className="absolute top-9 left-0 w-64 rounded-2xl bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-slate-800 shadow-xl p-1.5 z-50 animate-slide-up space-y-1">
+                    <NavLink
+                      to="/quarter-targets"
+                      onClick={() => setOpsDropdownOpen(false)}
+                      className="flex items-center gap-2 p-2 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    >
+                      <TrendingUp size={14} className="text-sky-500" />
+                      <div>
+                        <div>Quarter Targets & Power BI</div>
+                        <div className="text-[10px] text-slate-400 font-normal">DAX analytics & targets</div>
+                      </div>
+                    </NavLink>
+
+                    <NavLink
+                      to="/task-47"
+                      onClick={() => setOpsDropdownOpen(false)}
+                      className="flex items-center gap-2 p-2 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    >
+                      <Boxes size={14} className="text-emerald-500" />
+                      <div>
+                        <div>Task 47: Models Report</div>
+                        <div className="text-[10px] text-slate-400 font-normal">3D Model logs & units</div>
+                      </div>
+                    </NavLink>
+
+                    <NavLink
+                      to="/task-31"
+                      onClick={() => setOpsDropdownOpen(false)}
+                      className="flex items-center gap-2 p-2 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    >
+                      <Users2 size={14} className="text-amber-500" />
+                      <div>
+                        <div>Task 31: Staff Targets</div>
+                        <div className="text-[10px] text-slate-400 font-normal">Technician volume tiers</div>
+                      </div>
+                    </NavLink>
+                  </div>
+                )}
+              </div>
+
+              {/* 4. Admin Console Shortcut for Authorized Users */}
+              <NavLink
+                to="/config-manager"
+                className={({ isActive }) =>
+                  `flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    isActive
+                      ? 'bg-sky-100 dark:bg-sky-900/60 text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-700'
+                      : 'text-slate-500 hover:text-sky-600 dark:hover:text-sky-400'
+                  }`
+                }
+                title="Open Global CMS Configuration"
+              >
+                <SlidersHorizontal size={13} />
+                <span>Admin Console</span>
+                <span className="px-1 py-0.2 rounded text-[8.5px] font-black uppercase bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                  CMS
+                </span>
+              </NavLink>
+            </div>
+
+            {/* Right: Primary Call to Action Button */}
+            <div className="flex items-center gap-2 shrink-0">
+              <NavLink
+                to="/add-case"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs hover:shadow-sm transition-all"
+              >
+                <FilePlus2 size={13} />
+                <span>+ Add Case</span>
+              </NavLink>
+            </div>
+          </div>
+        </nav>
+
+        {/* Interactive Profile Credentials Modal */}
+        <ProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} />
       </>
     );
   }
 
-  // ==========================================
+  // =========================================================================
   // RENDER: VERTICAL SIDEBAR (LEFT OR RIGHT)
-  // ==========================================
+  // =========================================================================
   return (
     <>
       <aside
-        className={`hidden lg:flex flex-col h-screen shrink-0 bg-white dark:bg-[#070b14] select-none transition-all duration-200 relative z-40 ${
+        className={`hidden lg:flex flex-col h-screen shrink-0 bg-white/95 dark:bg-[#070b14]/95 backdrop-blur-md select-none transition-all duration-200 relative z-40 ${
           position === 'left' ? 'border-r' : 'border-l order-last'
         } border-slate-200/80 dark:border-slate-800/80 ${collapsed ? 'w-20' : 'w-64'}`}
       >
         {/* Header & Logo */}
-        <div className="flex h-16 items-center justify-between px-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+        <div className="flex h-14 items-center justify-between px-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
           {!collapsed ? (
             <div className="flex items-center gap-2 overflow-hidden">
               <img
                 src="/logo-3ddx-full.png"
                 alt="3DDX"
-                className="h-6 w-auto object-contain"
+                className="h-5 w-auto object-contain"
               />
-              <div className="flex flex-col min-w-0">
-                <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">
-                  CP PRO MAX
-                </span>
-              </div>
+              <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                CP PRO MAX
+              </span>
             </div>
           ) : (
             <div className="w-full flex justify-center">
@@ -567,7 +606,6 @@ export function ConvertibleNav({
 
         {/* Dock Switcher / Collapse Bar */}
         <div className={`flex items-center ${collapsed ? 'justify-center py-2' : 'justify-between px-3 py-1.5'} border-b border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/50`}>
-          {/* Toggle back to Top Navbar */}
           <button
             onClick={() => onChangePosition('top')}
             type="button"
@@ -578,7 +616,6 @@ export function ConvertibleNav({
             {!collapsed && <span>Dock Top</span>}
           </button>
 
-          {/* Collapse / Expand Toggle */}
           <button
             onClick={onToggleCollapse}
             type="button"
@@ -622,11 +659,9 @@ export function ConvertibleNav({
 
         {/* Footer: Profile, Language & Theme */}
         <div className={`p-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/60 ${collapsed ? 'flex flex-col items-center gap-2' : 'space-y-2'}`}>
-          
-          {/* Profile Trigger Button in Sidebar */}
           <button
             type="button"
-            onClick={() => setIsProfileOpen(true)}
+            onClick={() => setIsProfileModalOpen(true)}
             className={`w-full flex items-center ${collapsed ? 'justify-center p-1.5' : 'gap-2 px-2 py-1.5'} rounded-xl hover:bg-white dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-colors cursor-pointer`}
             title="Technician Profile"
           >
@@ -649,7 +684,7 @@ export function ConvertibleNav({
                 const nextIndex = (LANGUAGES.findIndex((l) => l.code === language) + 1) % LANGUAGES.length;
                 setLanguage(LANGUAGES[nextIndex].code);
               }}
-              className="flex items-center gap-1 p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-800 text-[11px] font-black"
+              className="flex items-center gap-1 p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-800 text-[11px] font-black cursor-pointer"
               title={`Language: ${currentOption.nativeName}`}
             >
               <span>{currentOption.flag}</span>
@@ -659,7 +694,7 @@ export function ConvertibleNav({
             <button
               onClick={toggleTheme}
               type="button"
-              className="p-1.5 rounded-lg text-slate-500 hover:bg-white dark:hover:bg-slate-800 hover:text-[#0284c7]"
+              className="p-1.5 rounded-lg text-slate-500 hover:bg-white dark:hover:bg-slate-800 hover:text-[#0284c7] cursor-pointer"
               title="Toggle Dark / Light Mode"
             >
               {theme === 'dark' ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} />}
@@ -669,7 +704,9 @@ export function ConvertibleNav({
       </aside>
 
       {/* Interactive Profile Credentials Modal */}
-      <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+      <ProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} />
     </>
   );
 }
+
+export default ConvertibleNav;

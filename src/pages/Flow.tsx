@@ -457,7 +457,7 @@ export default function Flow() {
       }
       animationFrameId = requestAnimationFrame(() => {
         const delta = moveEvent.clientX - startX;
-        const newWidth = Math.max(45, Math.round(startWidth + delta));
+        const newWidth = Math.max(75, Math.round(startWidth + delta));
         setColWidthOverrides(prev => {
           if (prev[key] === newWidth) return prev;
           return { ...prev, [key]: newWidth };
@@ -999,35 +999,37 @@ export default function Flow() {
               )}
             </div>
 
-            {/* Sub-order View Mode Toggle */}
-            <div className="flex items-center border border-slate-300 dark:border-slate-700 rounded-xl p-0.5 bg-transparent">
-              <button
-                type="button"
-                onClick={() => setSubOrderViewMode('matrix')}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                  subOrderViewMode === 'matrix'
-                    ? 'border border-sky-500/60 text-sky-600 dark:text-sky-400'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-                title="22-Column Specification Matrix Table"
-              >
-                <Table size={12} />
-                <span>Matrix</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setSubOrderViewMode('cards')}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                  subOrderViewMode === 'cards'
-                    ? 'border border-sky-500/60 text-sky-600 dark:text-sky-400'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-                title="22-Field Comprehensive Cards"
-              >
-                <LayoutGrid size={12} />
-                <span>Cards</span>
-              </button>
-            </div>
+            {/* Sub-order View Mode Toggle (Only visible when at least one order is expanded) */}
+            {expandedOrders.size > 0 && (
+              <div className="flex items-center border border-slate-300 dark:border-slate-700 rounded-xl p-0.5 bg-transparent animate-slide-up">
+                <button
+                  type="button"
+                  onClick={() => setSubOrderViewMode('matrix')}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                    subOrderViewMode === 'matrix'
+                      ? 'border border-sky-500/60 text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/30'
+                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  }`}
+                  title="Expanded 22-Column Table"
+                >
+                  <Table size={12} />
+                  <span>Table</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSubOrderViewMode('cards')}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                    subOrderViewMode === 'cards'
+                      ? 'border border-sky-500/60 text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/30'
+                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  }`}
+                  title="22-Field Comprehensive Cards"
+                >
+                  <LayoutGrid size={12} />
+                  <span>Cards</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

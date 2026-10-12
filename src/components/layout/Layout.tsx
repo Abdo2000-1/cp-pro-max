@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ConvertibleNav, NavPosition } from './ConvertibleNav';
 import { Footer } from './Footer';
+import { FloatingSupport } from './FloatingSupport';
 import { ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -165,6 +166,9 @@ export function Layout() {
         {/* Footer with dynamic version, branding, and links */}
         <Footer />
       </div>
+
+      {/* 4. Non-intrusive Floating Support FAB & Modal (Bottom-Right) */}
+      <FloatingSupport />
 
     </div>
   );
