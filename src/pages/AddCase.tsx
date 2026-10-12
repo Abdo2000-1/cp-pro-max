@@ -558,31 +558,6 @@ export default function AddCase() {
                         }}
                       />
                     </div>
-
-                    <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/60 text-xs font-mono flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-bold text-slate-700 dark:text-slate-300">Selected Sites:</span>
-                        {selectedTeeth.length > 0 ? (
-                          selectedTeeth.sort((a,b)=>a-b).map(t => (
-                            <span key={t} className="px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-bold border border-cyan-500/20">
-                              #{t} ({toothProcedures[t] || 'crown'})
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-slate-400 font-normal">None</span>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedTeeth([]);
-                          setToothProcedures({});
-                        }}
-                        className="text-rose-500 hover:underline font-bold"
-                      >
-                        Reset Teeth
-                      </button>
-                    </div>
                   </div>
                 )}
 
