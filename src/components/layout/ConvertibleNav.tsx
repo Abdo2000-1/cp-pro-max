@@ -567,6 +567,9 @@ export function ConvertibleNav({
 
         {/* Interactive Profile Credentials Modal */}
         <ProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} />
+
+        {/* Enterprise Global Search Spotlight Modal */}
+        <GlobalSearchModal isOpen={isSearchModalOpen} onClose={() => setIsSearchModalOpen(false)} />
       </>
     );
   }
