@@ -788,41 +788,41 @@ export interface TeethChartProps {
 }
 
 export const UPPER_ARCH_POSITIONS: Record<number, { left: number; top: number; rot: number }> = {
-  1:  { left: 46,  top: 60, rot: -16 }, // Wisdom: root tilted backward, crown flared inward
-  2:  { left: 88,  top: 54, rot: -13 }, // 2nd Molar
-  3:  { left: 134, top: 46, rot: -9  }, // 1st Molar
-  4:  { left: 182, top: 38, rot: -6  }, // 2nd Premolar
-  5:  { left: 232, top: 30, rot: -4  }, // 1st Premolar
-  6:  { left: 284, top: 22, rot: -2  }, // Canine
-  7:  { left: 334, top: 16, rot: -1  }, // Lateral Incisor
-  8:  { left: 374, top: 14, rot: 0   }, // Central Incisor
-  9:  { left: 412, top: 14, rot: 0   }, // Central Incisor
-  10: { left: 452, top: 16, rot: 1   }, // Lateral Incisor
-  11: { left: 502, top: 22, rot: 2   }, // Canine
-  12: { left: 554, top: 30, rot: 4   }, // 1st Premolar
-  13: { left: 604, top: 38, rot: 6   }, // 2nd Premolar
-  14: { left: 652, top: 46, rot: 9   }, // 1st Molar
-  15: { left: 698, top: 54, rot: 13  }, // 2nd Molar
-  16: { left: 740, top: 60, rot: 16  }, // Wisdom
+  1:  { left: 38,  top: 32, rot: 14  }, // 3rd Molar: outer wing, gentle slope
+  2:  { left: 74,  top: 27, rot: 12  }, // 2nd Molar
+  3:  { left: 112, top: 22, rot: 10  }, // 1st Molar
+  4:  { left: 152, top: 17, rot: 8   }, // 2nd Premolar
+  5:  { left: 194, top: 12, rot: 6   }, // 1st Premolar
+  6:  { left: 236, top: 8,  rot: 4   }, // Canine
+  7:  { left: 278, top: 5,  rot: 2   }, // Lateral Incisor
+  8:  { left: 320, top: 3,  rot: 0   }, // Central Incisor (Midline Left)
+  9:  { left: 362, top: 3,  rot: 0   }, // Central Incisor (Midline Right)
+  10: { left: 404, top: 5,  rot: -2  }, // Lateral Incisor
+  11: { left: 446, top: 8,  rot: -4  }, // Canine
+  12: { left: 488, top: 12, rot: -6  }, // 1st Premolar
+  13: { left: 530, top: 17, rot: -8  }, // 2nd Premolar
+  14: { left: 570, top: 22, rot: -10 }, // 1st Molar
+  15: { left: 608, top: 27, rot: -12 }, // 2nd Molar
+  16: { left: 644, top: 32, rot: -14 }, // 3rd Molar
 };
 
 export const LOWER_ARCH_POSITIONS: Record<number, { left: number; top: number; rot: number }> = {
-  32: { left: 46,  top: 172, rot: 16  }, // Wisdom: roots tilted backward/distally
-  31: { left: 88,  top: 178, rot: 13  }, // 2nd Molar
-  30: { left: 134, top: 186, rot: 9   }, // 1st Molar
-  29: { left: 182, top: 194, rot: 6   }, // 2nd Premolar
-  28: { left: 232, top: 202, rot: 4   }, // 1st Premolar
-  27: { left: 284, top: 210, rot: 2   }, // Canine
-  26: { left: 334, top: 216, rot: 1   }, // Lateral Incisor
-  25: { left: 374, top: 218, rot: 0   }, // Central Incisor
-  24: { left: 412, top: 218, rot: 0   }, // Central Incisor
-  23: { left: 452, top: 216, rot: -1  }, // Lateral Incisor
-  22: { left: 502, top: 210, rot: -2  }, // Canine
-  21: { left: 554, top: 202, rot: -4  }, // 1st Premolar
-  20: { left: 604, top: 194, rot: -6  }, // 2nd Premolar
-  19: { left: 652, top: 186, rot: -9  }, // 1st Molar
-  18: { left: 698, top: 178, rot: -13 }, // 2nd Molar
-  17: { left: 740, top: 172, rot: -16 }, // Wisdom
+  32: { left: 38,  top: 144, rot: -14 }, // 3rd Molar
+  31: { left: 74,  top: 149, rot: -12 }, // 2nd Molar
+  30: { left: 112, top: 154, rot: -10 }, // 1st Molar
+  29: { left: 152, top: 159, rot: -8  }, // 2nd Premolar
+  28: { left: 194, top: 164, rot: -6  }, // 1st Premolar
+  27: { left: 236, top: 168, rot: -4  }, // Canine
+  26: { left: 278, top: 171, rot: -2  }, // Lateral Incisor
+  25: { left: 320, top: 173, rot: 0   }, // Central Incisor (Midline Left)
+  24: { left: 362, top: 173, rot: 0   }, // Central Incisor (Midline Right)
+  23: { left: 404, top: 171, rot: 2   }, // Lateral Incisor
+  22: { left: 446, top: 168, rot: 4   }, // Canine
+  21: { left: 488, top: 164, rot: 6   }, // 1st Premolar
+  20: { left: 530, top: 159, rot: 8   }, // 2nd Premolar
+  19: { left: 570, top: 154, rot: 10  }, // 1st Molar
+  18: { left: 608, top: 149, rot: 12  }, // 2nd Molar
+  17: { left: 644, top: 144, rot: 14  }, // 3rd Molar
 };
 
 export function TeethChart({
@@ -1060,7 +1060,7 @@ export function TeethChart({
         onClick={() => handleToothClick(tooth)}
         onMouseEnter={() => setHoveredTooth(tooth)}
         onMouseLeave={() => setHoveredTooth(null)}
-        className="group relative flex flex-col items-center justify-center cursor-pointer select-none transition-transform duration-150 hover:scale-115 active:scale-95"
+        className="group relative flex flex-col items-center justify-center cursor-pointer select-none transition-transform duration-150 hover:scale-110 active:scale-95"
         style={{
           background: 'transparent',
           border: 'none',
@@ -1068,24 +1068,11 @@ export function TeethChart({
           outline: 'none',
         }}
       >
-        {/* Upper tooth: clean subtle number above root apex */}
-        {arch === 'upper' && (
-          <span 
-            className="text-[10px] font-mono font-bold leading-none mb-1 transition-colors select-none"
-            style={{
-              color: isSelected ? activeColor : undefined,
-              opacity: isSelected ? 1 : 0.6
-            }}
-          >
-            {displayNum}
-          </span>
-        )}
-
         {/* Clinical Tooth Silhouette - highlights tooth boundaries directly */}
         <div 
-          className="w-8 sm:w-9 h-14 sm:h-15 flex items-center justify-center transition-all duration-200"
+          className="relative w-9 h-16 sm:w-10 sm:h-18 flex items-center justify-center transition-all duration-200"
           style={{
-            filter: isSelected ? `drop-shadow(0 0 6px ${activeColor})` : 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))'
+            filter: isSelected ? `drop-shadow(0 0 7px ${activeColor})` : 'drop-shadow(0 1px 2px rgba(0,0,0,0.06))'
           }}
         >
           <ClinicalToothSilhouette
@@ -1093,20 +1080,24 @@ export function TeethChart({
             isSelected={isSelected}
             restoration={assignedRes}
           />
-        </div>
 
-        {/* Lower tooth: clean subtle number below root apex */}
-        {arch === 'lower' && (
-          <span 
-            className="text-[10px] font-mono font-bold leading-none mt-1 transition-colors select-none"
+          {/* Number Badge: Circular pill placed on the tooth crown matching Image 2 exactly */}
+          <div
+            className={`absolute z-10 w-4.5 h-4.5 rounded-full flex items-center justify-center text-[9px] font-mono font-bold tracking-tighter shadow-xs border transition-all ${
+              arch === 'upper' ? 'bottom-1' : 'top-1'
+            } ${
+              isSelected
+                ? 'bg-slate-900 text-white border-white dark:bg-white dark:text-slate-900 shadow-sm'
+                : 'bg-emerald-600/90 text-white border-white/80 dark:border-slate-800'
+            }`}
             style={{
-              color: isSelected ? activeColor : undefined,
-              opacity: isSelected ? 1 : 0.6
+              backgroundColor: isSelected ? activeColor : undefined,
+              borderColor: isSelected ? '#ffffff' : undefined
             }}
           >
             {displayNum}
-          </span>
-        )}
+          </div>
+        </div>
       </div>
     );
   };
@@ -1531,19 +1522,19 @@ export function TeethChart({
               
               {/* Parabolic Canvas Sized Appropriately to Visible Arches */}
               <div 
-                className={`relative w-[810px] mx-auto select-none transition-all ${
-                  visibleArch === 'both' ? 'h-[295px]' : 'h-[155px]'
+                className={`relative w-[720px] mx-auto select-none transition-all ${
+                  visibleArch === 'both' ? 'h-[250px]' : 'h-[135px]'
                 }`}
               >
                 {/* Anatomical Guide Curves & Occlusal Plane */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-30">
-                  {/* Upper Natural Parabolic Arch Guide: curves up at anterior, drops at posterior molars */}
+                <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-25">
+                  {/* Upper Natural Parabolic Arch Guide: curves gently down from anterior to molars */}
                   {(visibleArch === 'both' || visibleArch === 'upper') && (
                     <path
-                      d="M 48 85 Q 405 15 760 85"
+                      d="M 45 42 Q 360 8 675 42"
                       fill="none"
                       stroke="#06b6d4"
-                      strokeWidth="2"
+                      strokeWidth="1.8"
                       strokeDasharray="4 4"
                     />
                   )}
@@ -1552,34 +1543,44 @@ export function TeethChart({
                   {visibleArch === 'both' && (
                     <>
                       <line
-                        x1="30"
-                        y1="135"
-                        x2="780"
-                        y2="135"
+                        x1="25"
+                        y1="125"
+                        x2="695"
+                        y2="125"
                         stroke="#64748b"
                         strokeWidth="1"
                         strokeDasharray="3 3"
                       />
-                      <circle cx="405" cy="135" r="3" fill="#06b6d4" />
+                      <line
+                        x1="360"
+                        y1="10"
+                        x2="360"
+                        y2="240"
+                        stroke="#64748b"
+                        strokeWidth="1"
+                        strokeDasharray="3 3"
+                        opacity="0.5"
+                      />
+                      <circle cx="360" cy="125" r="3" fill="#06b6d4" />
                     </>
                   )}
 
                   {/* Lower Natural Parabolic Arch Guide */}
                   {visibleArch === 'both' && (
                     <path
-                      d="M 48 185 Q 405 255 760 185"
+                      d="M 45 208 Q 360 242 675 208"
                       fill="none"
                       stroke="#6366f1"
-                      strokeWidth="2"
+                      strokeWidth="1.8"
                       strokeDasharray="4 4"
                     />
                   )}
                   {visibleArch === 'lower' && (
                     <path
-                      d="M 48 40 Q 405 110 760 40"
+                      d="M 45 90 Q 360 124 675 90"
                       fill="none"
                       stroke="#6366f1"
-                      strokeWidth="2"
+                      strokeWidth="1.8"
                       strokeDasharray="4 4"
                     />
                   )}
