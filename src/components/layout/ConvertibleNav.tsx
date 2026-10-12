@@ -16,6 +16,9 @@ import {
   Sun,
   Moon,
   PanelTopClose,
+  PanelBottomClose,
+  PanelLeftClose,
+  PanelRightClose,
   Check,
   ChevronDown,
   Shield,
@@ -26,7 +29,8 @@ import {
   LogOut,
   ExternalLink,
   Search,
-  Sparkles
+  Sparkles,
+  Move
 } from 'lucide-react';
 import { useThemeContext } from '@/contexts/ThemeContext';
 import { useLanguage, LANGUAGES } from '@/contexts/LanguageContext';
@@ -65,11 +69,13 @@ export function ConvertibleNav({
   const [ordersDropdownOpen, setOrdersDropdownOpen] = useState(false);
   const [opsDropdownOpen, setOpsDropdownOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [posDropdownOpen, setPosDropdownOpen] = useState(false);
 
   const langRef = useRef<HTMLDivElement>(null);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const ordersDropdownRef = useRef<HTMLDivElement>(null);
   const opsDropdownRef = useRef<HTMLDivElement>(null);
+  const posRef = useRef<HTMLDivElement>(null);
 
   // Global Ctrl+K / Cmd+K listener
   useEffect(() => {
@@ -111,6 +117,9 @@ export function ConvertibleNav({
       }
       if (opsDropdownRef.current && !opsDropdownRef.current.contains(e.target as Node)) {
         setOpsDropdownOpen(false);
+      }
+      if (posRef.current && !posRef.current.contains(e.target as Node)) {
+        setPosDropdownOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -196,18 +205,67 @@ export function ConvertibleNav({
         >
           <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
             
-            {/* Left: Drag Handle & Brand Logo (Links to Home) */}
-            <div className="flex items-center gap-3 shrink-0">
-              {/* Hand Drag Handle: ONLY Repositioning Technique */}
+            {/* Left: Drag Handle, Quick Dock Menu & Brand Logo */}
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Hand Drag Handle: Drag & Drop anywhere */}
               <div
                 draggable
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
                 onPointerDown={handlePointerDownDrag}
-                title="Drag & Drop handle to dock navigation at Top, Left, Right, or Bottom"
-                className="flex items-center justify-center p-1.5 rounded-xl text-slate-400 hover:text-[#0284c7] dark:hover:text-sky-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-grab active:cursor-grabbing transition-colors group"
+                title="Click & Drag with mouse to dock navigation anywhere (Top, Left, Right, Bottom)"
+                className="flex items-center justify-center p-1.5 rounded-xl text-slate-500 hover:text-[#0284c7] dark:hover:text-sky-400 hover:bg-white/80 dark:hover:bg-slate-800 cursor-grab active:cursor-grabbing transition-colors group border border-transparent hover:border-sky-300/60 dark:hover:border-sky-700/60 shadow-2xs"
               >
                 <GripVertical size={18} className="group-hover:scale-110 transition-transform text-[#0284c7] dark:text-sky-400" />
+              </div>
+
+              {/* Quick Dock Position Selector Dropdown Menu */}
+              <div className="relative" ref={posRef}>
+                <button
+                  type="button"
+                  onClick={() => setPosDropdownOpen(!posDropdownOpen)}
+                  className="flex items-center gap-1 px-2 py-1.5 rounded-xl border border-sky-300/60 dark:border-sky-800/60 hover:bg-white/90 dark:hover:bg-slate-800/90 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer shadow-2xs group"
+                  title="Choose navigation dock position directly from menu"
+                >
+                  <Move size={13} className="text-[#0284c7] dark:text-sky-400 group-hover:rotate-45 transition-transform" />
+                  <span className="hidden sm:inline capitalize text-[11px] font-extrabold">{position}</span>
+                  <ChevronDown size={11} className={`text-slate-400 transition-transform duration-200 ${posDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {posDropdownOpen && (
+                  <div className={`absolute left-0 ${position === 'bottom' ? 'bottom-full mb-2' : 'top-full mt-2'} w-52 rounded-2xl bg-white dark:bg-[#0c1222] border border-sky-200/80 dark:border-sky-800/80 shadow-2xl p-1.5 z-50 animate-slide-up space-y-1`}>
+                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider px-2 py-1">
+                      Dock Navbar Position
+                    </div>
+
+                    {[
+                      { pos: 'top' as const, label: 'Top Navbar (Fixed)', icon: PanelTopClose },
+                      { pos: 'bottom' as const, label: 'Bottom Taskbar', icon: PanelBottomClose },
+                      { pos: 'left' as const, label: 'Left Sidebar', icon: PanelLeftClose },
+                      { pos: 'right' as const, label: 'Right Sidebar', icon: PanelRightClose },
+                    ].map((item) => (
+                      <button
+                        key={item.pos}
+                        type="button"
+                        onClick={() => {
+                          onChangePosition(item.pos);
+                          setPosDropdownOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          position === item.pos
+                            ? 'bg-[#0284c7]/15 text-[#0284c7] dark:text-sky-300 border border-sky-300/50 dark:border-sky-700/50'
+                            : 'text-slate-700 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-slate-800/80'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <item.icon size={14} className={position === item.pos ? 'text-[#0284c7]' : 'text-slate-400'} />
+                          <span>{item.label}</span>
+                        </div>
+                        {position === item.pos && <Check size={13} className="text-[#0284c7]" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Brand Logo (Links to Home - No redundant Home button) */}
@@ -618,21 +676,47 @@ export function ConvertibleNav({
 
         {/* Dock Switcher / Collapse Bar */}
         <div className={`flex items-center ${collapsed ? 'justify-center py-2' : 'justify-between px-3 py-1.5'} border-b border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/50`}>
-          <button
-            onClick={() => onChangePosition('top')}
-            type="button"
-            title="Dock as Top Navbar"
-            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-[#0284c7] hover:bg-white dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800"
-          >
-            <PanelTopClose size={12} className="text-[#0284c7]" />
-            {!collapsed && <span>Dock Top</span>}
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => onChangePosition('top')}
+              type="button"
+              title="Dock as Top Navbar"
+              className="flex items-center gap-1 px-1.5 py-1 rounded-lg text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-[#0284c7] hover:bg-white dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 cursor-pointer"
+            >
+              <PanelTopClose size={12} className="text-[#0284c7]" />
+              {!collapsed && <span>Top</span>}
+            </button>
+
+            {!collapsed && (
+              <>
+                <button
+                  onClick={() => onChangePosition('bottom')}
+                  type="button"
+                  title="Dock as Bottom Taskbar"
+                  className="flex items-center gap-1 px-1.5 py-1 rounded-lg text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-[#ea580c] hover:bg-white dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 cursor-pointer"
+                >
+                  <PanelBottomClose size={12} className="text-[#ea580c]" />
+                  <span>Bottom</span>
+                </button>
+
+                <button
+                  onClick={() => onChangePosition(position === 'left' ? 'right' : 'left')}
+                  type="button"
+                  title={position === 'left' ? 'Move to Right' : 'Move to Left'}
+                  className="flex items-center gap-1 px-1.5 py-1 rounded-lg text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-sky-600 hover:bg-white dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 cursor-pointer"
+                >
+                  {position === 'left' ? <PanelRightClose size={12} /> : <PanelLeftClose size={12} />}
+                  <span>{position === 'left' ? 'Right' : 'Left'}</span>
+                </button>
+              </>
+            )}
+          </div>
 
           <button
             onClick={onToggleCollapse}
             type="button"
             title={collapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
-            className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
           >
             {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
           </button>
