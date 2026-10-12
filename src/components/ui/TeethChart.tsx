@@ -788,41 +788,41 @@ export interface TeethChartProps {
 }
 
 export const UPPER_ARCH_POSITIONS: Record<number, { left: number; top: number; rot: number }> = {
-  1:  { left: 38,  top: 32, rot: 14  }, // 3rd Molar: outer wing, gentle slope
-  2:  { left: 74,  top: 27, rot: 12  }, // 2nd Molar
-  3:  { left: 112, top: 22, rot: 10  }, // 1st Molar
-  4:  { left: 152, top: 17, rot: 8   }, // 2nd Premolar
-  5:  { left: 194, top: 12, rot: 6   }, // 1st Premolar
-  6:  { left: 236, top: 8,  rot: 4   }, // Canine
-  7:  { left: 278, top: 5,  rot: 2   }, // Lateral Incisor
-  8:  { left: 320, top: 3,  rot: 0   }, // Central Incisor (Midline Left)
-  9:  { left: 362, top: 3,  rot: 0   }, // Central Incisor (Midline Right)
-  10: { left: 404, top: 5,  rot: -2  }, // Lateral Incisor
-  11: { left: 446, top: 8,  rot: -4  }, // Canine
-  12: { left: 488, top: 12, rot: -6  }, // 1st Premolar
-  13: { left: 530, top: 17, rot: -8  }, // 2nd Premolar
-  14: { left: 570, top: 22, rot: -10 }, // 1st Molar
-  15: { left: 608, top: 27, rot: -12 }, // 2nd Molar
-  16: { left: 644, top: 32, rot: -14 }, // 3rd Molar
+  1:  { left: 48,  top: 18, rot: 24 },
+  2:  { left: 88,  top: 26, rot: 20 },
+  3:  { left: 132, top: 36, rot: 16 },
+  4:  { left: 180, top: 46, rot: 13 },
+  5:  { left: 230, top: 56, rot: 9 },
+  6:  { left: 282, top: 64, rot: 6 },
+  7:  { left: 332, top: 70, rot: 3 },
+  8:  { left: 372, top: 72, rot: 0 },
+  9:  { left: 410, top: 72, rot: 0 },
+  10: { left: 450, top: 70, rot: -3 },
+  11: { left: 500, top: 64, rot: -6 },
+  12: { left: 552, top: 56, rot: -9 },
+  13: { left: 602, top: 46, rot: -13 },
+  14: { left: 650, top: 36, rot: -16 },
+  15: { left: 694, top: 26, rot: -20 },
+  16: { left: 734, top: 18, rot: -24 },
 };
 
 export const LOWER_ARCH_POSITIONS: Record<number, { left: number; top: number; rot: number }> = {
-  32: { left: 38,  top: 144, rot: -14 }, // 3rd Molar
-  31: { left: 74,  top: 149, rot: -12 }, // 2nd Molar
-  30: { left: 112, top: 154, rot: -10 }, // 1st Molar
-  29: { left: 152, top: 159, rot: -8  }, // 2nd Premolar
-  28: { left: 194, top: 164, rot: -6  }, // 1st Premolar
-  27: { left: 236, top: 168, rot: -4  }, // Canine
-  26: { left: 278, top: 171, rot: -2  }, // Lateral Incisor
-  25: { left: 320, top: 173, rot: 0   }, // Central Incisor (Midline Left)
-  24: { left: 362, top: 173, rot: 0   }, // Central Incisor (Midline Right)
-  23: { left: 404, top: 171, rot: 2   }, // Lateral Incisor
-  22: { left: 446, top: 168, rot: 4   }, // Canine
-  21: { left: 488, top: 164, rot: 6   }, // 1st Premolar
-  20: { left: 530, top: 159, rot: 8   }, // 2nd Premolar
-  19: { left: 570, top: 154, rot: 10  }, // 1st Molar
-  18: { left: 608, top: 149, rot: 12  }, // 2nd Molar
-  17: { left: 644, top: 144, rot: 14  }, // 3rd Molar
+  32: { left: 48,  top: 210, rot: -24 },
+  31: { left: 88,  top: 202, rot: -20 },
+  30: { left: 132, top: 192, rot: -16 },
+  29: { left: 180, top: 182, rot: -13 },
+  28: { left: 230, top: 172, rot: -9 },
+  27: { left: 282, top: 164, rot: -6 },
+  26: { left: 332, top: 158, rot: -3 },
+  25: { left: 372, top: 156, rot: 0 },
+  24: { left: 410, top: 156, rot: 0 },
+  23: { left: 450, top: 158, rot: 3 },
+  22: { left: 500, top: 164, rot: 6 },
+  21: { left: 552, top: 172, rot: 9 },
+  20: { left: 602, top: 182, rot: 13 },
+  19: { left: 650, top: 192, rot: 16 },
+  18: { left: 694, top: 202, rot: 20 },
+  17: { left: 734, top: 210, rot: 24 },
 };
 
 export function TeethChart({
@@ -1060,7 +1060,7 @@ export function TeethChart({
         onClick={() => handleToothClick(tooth)}
         onMouseEnter={() => setHoveredTooth(tooth)}
         onMouseLeave={() => setHoveredTooth(null)}
-        className="group relative flex flex-col items-center justify-center cursor-pointer select-none transition-transform duration-150 hover:scale-110 active:scale-95"
+        className="group relative flex flex-col items-center justify-center cursor-pointer select-none transition-transform duration-150 hover:scale-115 active:scale-95"
         style={{
           background: 'transparent',
           border: 'none',
@@ -1068,11 +1068,24 @@ export function TeethChart({
           outline: 'none',
         }}
       >
+        {/* Upper tooth: clean subtle number above root apex */}
+        {arch === 'upper' && (
+          <span 
+            className="text-[10px] font-mono font-bold leading-none mb-1 transition-colors select-none"
+            style={{
+              color: isSelected ? activeColor : undefined,
+              opacity: isSelected ? 1 : 0.6
+            }}
+          >
+            {displayNum}
+          </span>
+        )}
+
         {/* Clinical Tooth Silhouette - highlights tooth boundaries directly */}
         <div 
-          className="relative w-9 h-16 sm:w-10 sm:h-18 flex items-center justify-center transition-all duration-200"
+          className="w-8 sm:w-9 h-14 sm:h-15 flex items-center justify-center transition-all duration-200"
           style={{
-            filter: isSelected ? `drop-shadow(0 0 7px ${activeColor})` : 'drop-shadow(0 1px 2px rgba(0,0,0,0.06))'
+            filter: isSelected ? `drop-shadow(0 0 6px ${activeColor})` : 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))'
           }}
         >
           <ClinicalToothSilhouette
@@ -1080,24 +1093,20 @@ export function TeethChart({
             isSelected={isSelected}
             restoration={assignedRes}
           />
+        </div>
 
-          {/* Number Badge: Circular pill placed on the tooth crown matching Image 2 exactly */}
-          <div
-            className={`absolute z-10 w-4.5 h-4.5 rounded-full flex items-center justify-center text-[9px] font-mono font-bold tracking-tighter shadow-xs border transition-all ${
-              arch === 'upper' ? 'bottom-1' : 'top-1'
-            } ${
-              isSelected
-                ? 'bg-slate-900 text-white border-white dark:bg-white dark:text-slate-900 shadow-sm'
-                : 'bg-emerald-600/90 text-white border-white/80 dark:border-slate-800'
-            }`}
+        {/* Lower tooth: clean subtle number below root apex */}
+        {arch === 'lower' && (
+          <span 
+            className="text-[10px] font-mono font-bold leading-none mt-1 transition-colors select-none"
             style={{
-              backgroundColor: isSelected ? activeColor : undefined,
-              borderColor: isSelected ? '#ffffff' : undefined
+              color: isSelected ? activeColor : undefined,
+              opacity: isSelected ? 1 : 0.6
             }}
           >
             {displayNum}
-          </div>
-        </div>
+          </span>
+        )}
       </div>
     );
   };
@@ -1105,15 +1114,11 @@ export function TeethChart({
   const renderToothCard = (tooth: ToothOdontoData, arch: 'upper' | 'lower') => {
     const isSelected = activeSelected.includes(tooth.universal);
     const assignedRes = isSelected 
-      ? ((localRestorations[tooth.universal] || toothRestorations[tooth.universal] || 'crown') as RestorationType) 
+      ? ((localRestorations[tooth.universal] || toothRestorations[tooth.universal] || selectedTool) as RestorationType) 
       : undefined;
-    const displayNum = system === 'universal' ? tooth.universal : tooth.fdi;
-
-    // Distinctive border and highlight based on individual tooth's assigned category
     const resConfig = assignedRes ? RESTORATION_TYPES.find(r => r.id === assignedRes) : null;
-    const activeBorderClass = resConfig 
-      ? `${resConfig.bgColor} ring-2 ring-current ${resConfig.textColor} shadow-md` 
-      : 'bg-cyan-500/10 ring-2 ring-cyan-400 shadow-md';
+    const activeColor = resConfig?.color || '#00d8fe';
+    const displayNum = system === 'universal' ? tooth.universal : tooth.fdi;
 
     return (
       <div
@@ -1121,43 +1126,59 @@ export function TeethChart({
         onClick={() => handleToothClick(tooth)}
         onMouseEnter={() => setHoveredTooth(tooth)}
         onMouseLeave={() => setHoveredTooth(null)}
-        className={`group relative flex flex-col items-center justify-between p-1 rounded-xl cursor-pointer transition-all duration-150 select-none ${
-          isSelected
-            ? activeBorderClass
-            : 'hover:bg-slate-100/80 dark:hover:bg-slate-800/60'
-        }`}
+        className="group relative flex flex-col items-center justify-between cursor-pointer select-none transition-transform duration-150 hover:scale-105 active:scale-95"
       >
-        {/* Upper teeth: Silhouette first, then number directly below it (meeting occlusal cross) */}
+        {/* Upper teeth: Silhouette first, then number directly below it touching occlusal cross */}
         {arch === 'upper' && (
           <>
-            <div className="w-8 sm:w-10 h-22 sm:h-26 flex items-center justify-center transition-transform group-hover:scale-105">
+            <div 
+              className="w-full h-22 sm:h-26 flex items-center justify-center transition-all duration-200"
+              style={{
+                filter: isSelected ? `drop-shadow(0 0 7px ${activeColor})` : 'drop-shadow(0 1px 2px rgba(0,0,0,0.06))'
+              }}
+            >
               <ClinicalToothSilhouette
                 toothNumber={tooth.universal}
                 isSelected={isSelected}
                 restoration={assignedRes}
               />
             </div>
-            <span className={`text-[12px] font-mono font-bold px-1.5 py-0.5 mt-0.5 rounded transition-colors ${
-              isSelected
-                ? 'bg-cyan-500 text-slate-950 font-black shadow-xs'
-                : 'text-slate-800 dark:text-slate-200 group-hover:text-cyan-600 dark:group-hover:text-cyan-400'
-            }`}>
+            <span
+              className={`text-[11px] sm:text-xs font-mono font-bold px-1.5 py-0.5 mt-1 rounded-md transition-all ${
+                isSelected
+                  ? 'text-white font-black shadow-xs'
+                  : 'text-slate-800 dark:text-slate-200 group-hover:text-cyan-500'
+              }`}
+              style={{
+                backgroundColor: isSelected ? activeColor : undefined
+              }}
+            >
               {displayNum}
             </span>
           </>
         )}
 
-        {/* Lower teeth: Number first (meeting occlusal cross), then Silhouette below it */}
+        {/* Lower teeth: Number first touching occlusal cross, then Silhouette below it */}
         {arch === 'lower' && (
           <>
-            <span className={`text-[12px] font-mono font-bold px-1.5 py-0.5 mb-0.5 rounded transition-colors ${
-              isSelected
-                ? 'bg-indigo-500 text-white font-black shadow-xs'
-                : 'text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400'
-            }`}>
+            <span
+              className={`text-[11px] sm:text-xs font-mono font-bold px-1.5 py-0.5 mb-1 rounded-md transition-all ${
+                isSelected
+                  ? 'text-white font-black shadow-xs'
+                  : 'text-slate-800 dark:text-slate-200 group-hover:text-cyan-500'
+              }`}
+              style={{
+                backgroundColor: isSelected ? activeColor : undefined
+              }}
+            >
               {displayNum}
             </span>
-            <div className="w-8 sm:w-10 h-22 sm:h-26 flex items-center justify-center transition-transform group-hover:scale-105">
+            <div 
+              className="w-full h-22 sm:h-26 flex items-center justify-center transition-all duration-200"
+              style={{
+                filter: isSelected ? `drop-shadow(0 0 7px ${activeColor})` : 'drop-shadow(0 1px 2px rgba(0,0,0,0.06))'
+              }}
+            >
               <ClinicalToothSilhouette
                 toothNumber={tooth.universal}
                 isSelected={isSelected}
@@ -1419,15 +1440,14 @@ export function TeethChart({
             
             {/* 1. TOP QUADRANT LABELS (Only if Upper or Both visible) */}
             {(visibleArch === 'both' || visibleArch === 'upper') && (
-              <div className="grid grid-cols-[1fr_auto_1fr] items-center text-xs font-bold text-slate-600 dark:text-slate-300 px-2 pb-1">
-                <div className="flex items-center justify-between pr-4">
+              <div className="grid grid-cols-2 gap-4 text-xs font-bold text-slate-600 dark:text-slate-300 px-2 pb-1">
+                <div className="flex items-center justify-between pr-2">
                   <span className="px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-mono text-[11px] border border-cyan-500/20">
                     UR • Maxillary Right
                   </span>
                   <span className="text-[10px] font-mono text-slate-400">#1 ➔ #8</span>
                 </div>
-                <div className="w-8 flex justify-center text-slate-400 font-mono text-xs">│</div>
-                <div className="flex items-center justify-between pl-4">
+                <div className="flex items-center justify-between pl-2">
                   <span className="text-[10px] font-mono text-slate-400">#9 ➔ #16</span>
                   <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono text-[11px] border border-blue-500/20">
                     UL • Maxillary Left
@@ -1439,50 +1459,41 @@ export function TeethChart({
             {/* 2. THE 4-QUADRANT CROSS CANVAS */}
             <div className="relative border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-6 bg-slate-50/50 dark:bg-slate-900/40 shadow-inner">
               
+              {/* Continuous Vertical Midline crossing entire height right through the center */}
+              <div className="absolute left-1/2 top-4 bottom-4 w-[1.5px] -translate-x-1/2 bg-slate-900 dark:bg-slate-200 z-10 pointer-events-none" />
+
               {/* UPPER ROW: TEETH THEN NUMBERS DIRECTLY BELOW */}
               {(visibleArch === 'both' || visibleArch === 'upper') && (
-                <div className="grid grid-cols-[1fr_auto_1fr] items-end pb-2">
-                  <div className="grid grid-cols-8 gap-0.5 sm:gap-1">
+                <div className="grid grid-cols-2 gap-4 pb-1">
+                  <div className="grid grid-cols-8 gap-0.5">
                     {upperRight.map(t => renderToothCard(t, 'upper'))}
                   </div>
-
-                  {/* Vertical Midline */}
-                  <div className="w-8 h-full flex items-center justify-center">
-                    <div className="w-[1.5px] h-full bg-slate-900 dark:bg-slate-200 rounded-full" />
-                  </div>
-
-                  <div className="grid grid-cols-8 gap-0.5 sm:gap-1">
+                  <div className="grid grid-cols-8 gap-0.5">
                     {upperLeft.map(t => renderToothCard(t, 'upper'))}
                   </div>
                 </div>
               )}
 
               {/* OCCLUSAL CROSS LINE WITH 'Right' AND 'Left' */}
-              <div className="relative flex items-center justify-between my-2">
-                <span className="text-sm font-semibold text-slate-900 dark:text-white pl-1 shrink-0 select-none">
+              <div className="relative flex items-center justify-between my-1.5 z-20">
+                <span className="text-sm font-bold tracking-wide text-slate-900 dark:text-white pl-1 shrink-0 select-none">
                   Right
                 </span>
                 <div className="flex-1 h-[1.5px] bg-slate-900 dark:bg-slate-200 mx-3 relative flex items-center justify-center">
                   <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 ring-4 ring-white dark:ring-slate-900" />
                 </div>
-                <span className="text-sm font-semibold text-slate-900 dark:text-white pr-1 shrink-0 select-none">
+                <span className="text-sm font-bold tracking-wide text-slate-900 dark:text-white pr-1 shrink-0 select-none">
                   Left
                 </span>
               </div>
 
               {/* LOWER ROW: NUMBERS DIRECTLY ABOVE THEN TEETH BELOW */}
               {(visibleArch === 'both' || visibleArch === 'lower') && (
-                <div className="grid grid-cols-[1fr_auto_1fr] items-start pt-2">
-                  <div className="grid grid-cols-8 gap-0.5 sm:gap-1">
+                <div className="grid grid-cols-2 gap-4 pt-1">
+                  <div className="grid grid-cols-8 gap-0.5">
                     {lowerRight.map(t => renderToothCard(t, 'lower'))}
                   </div>
-
-                  {/* Vertical Midline */}
-                  <div className="w-8 h-full flex items-center justify-center">
-                    <div className="w-[1.5px] h-full bg-slate-900 dark:bg-slate-200 rounded-full" />
-                  </div>
-
-                  <div className="grid grid-cols-8 gap-0.5 sm:gap-1">
+                  <div className="grid grid-cols-8 gap-0.5">
                     {lowerLeft.map(t => renderToothCard(t, 'lower'))}
                   </div>
                 </div>
@@ -1492,15 +1503,14 @@ export function TeethChart({
 
             {/* 3. BOTTOM QUADRANT LABELS (Only if Lower or Both visible) */}
             {(visibleArch === 'both' || visibleArch === 'lower') && (
-              <div className="grid grid-cols-[1fr_auto_1fr] items-center text-xs font-bold text-slate-600 dark:text-slate-300 px-2 pt-1">
-                <div className="flex items-center justify-between pr-4">
+              <div className="grid grid-cols-2 gap-4 text-xs font-bold text-slate-600 dark:text-slate-300 px-2 pt-1">
+                <div className="flex items-center justify-between pr-2">
                   <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-mono text-[11px] border border-indigo-500/20">
                     LR • Mandibular Right
                   </span>
                   <span className="text-[10px] font-mono text-slate-400">#32 ➔ #25</span>
                 </div>
-                <div className="w-8 flex justify-center text-slate-400 font-mono text-xs">│</div>
-                <div className="flex items-center justify-between pl-4">
+                <div className="flex items-center justify-between pl-2">
                   <span className="text-[10px] font-mono text-slate-400">#24 ➔ #17</span>
                   <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 font-mono text-[11px] border border-purple-500/20">
                     LL • Mandibular Left
@@ -1522,19 +1532,19 @@ export function TeethChart({
               
               {/* Parabolic Canvas Sized Appropriately to Visible Arches */}
               <div 
-                className={`relative w-[720px] mx-auto select-none transition-all ${
-                  visibleArch === 'both' ? 'h-[250px]' : 'h-[135px]'
+                className={`relative w-[810px] mx-auto select-none transition-all ${
+                  visibleArch === 'both' ? 'h-[295px]' : 'h-[155px]'
                 }`}
               >
                 {/* Anatomical Guide Curves & Occlusal Plane */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-25">
-                  {/* Upper Natural Parabolic Arch Guide: curves gently down from anterior to molars */}
+                <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-30">
+                  {/* Upper Parabolic Arch Guide */}
                   {(visibleArch === 'both' || visibleArch === 'upper') && (
                     <path
-                      d="M 45 42 Q 360 8 675 42"
+                      d="M 50 18 Q 405 92 760 18"
                       fill="none"
                       stroke="#06b6d4"
-                      strokeWidth="1.8"
+                      strokeWidth="2"
                       strokeDasharray="4 4"
                     />
                   )}
@@ -1543,44 +1553,44 @@ export function TeethChart({
                   {visibleArch === 'both' && (
                     <>
                       <line
-                        x1="25"
-                        y1="125"
-                        x2="695"
-                        y2="125"
+                        x1="30"
+                        y1="140"
+                        x2="780"
+                        y2="140"
                         stroke="#64748b"
                         strokeWidth="1"
                         strokeDasharray="3 3"
                       />
                       <line
-                        x1="360"
+                        x1="405"
                         y1="10"
-                        x2="360"
-                        y2="240"
+                        x2="405"
+                        y2="280"
                         stroke="#64748b"
                         strokeWidth="1"
                         strokeDasharray="3 3"
                         opacity="0.5"
                       />
-                      <circle cx="360" cy="125" r="3" fill="#06b6d4" />
+                      <circle cx="405" cy="140" r="3" fill="#06b6d4" />
                     </>
                   )}
 
-                  {/* Lower Natural Parabolic Arch Guide */}
+                  {/* Lower Parabolic Arch Guide */}
                   {visibleArch === 'both' && (
                     <path
-                      d="M 45 208 Q 360 242 675 208"
+                      d="M 50 262 Q 405 188 760 262"
                       fill="none"
                       stroke="#6366f1"
-                      strokeWidth="1.8"
+                      strokeWidth="2"
                       strokeDasharray="4 4"
                     />
                   )}
                   {visibleArch === 'lower' && (
                     <path
-                      d="M 45 90 Q 360 124 675 90"
+                      d="M 50 117 Q 405 43 760 117"
                       fill="none"
                       stroke="#6366f1"
-                      strokeWidth="1.8"
+                      strokeWidth="2"
                       strokeDasharray="4 4"
                     />
                   )}
