@@ -171,15 +171,14 @@ export function ConvertibleNav({
   // =========================================================================
   if (!isVertical) {
     return (
-      <>
+      <div className={position === 'top' ? 'sticky top-0 z-50 w-full' : ''}>
         {/* ================================================================= */}
         {/* TIER 1: FIXED TOP GLOBAL UTILITY BAR (STATIONARY ACROSS ALL PAGES) */}
-        {/* Brand, Drag Handle, Home, Language, Theme, Profile + Admin CMS     */}
-        {/* STRICT REQUIREMENT: ZERO PAGE LINKS IN TIER 1                     */}
+        {/* Brand, Drag Handle, Centered Search, Language, Theme, Profile      */}
         {/* ================================================================= */}
         <header
-          className={`w-full bg-sky-50/75 dark:bg-[#071324]/75 backdrop-blur-md border-b border-sky-200/50 dark:border-sky-900/50 select-none z-50 ${
-            position === 'top' ? 'sticky top-0' : 'fixed bottom-0 left-0 right-0 border-t shadow-2xl'
+          className={`w-full bg-sky-100/90 dark:bg-[#0a1b32]/92 backdrop-blur-md border-b border-sky-300/60 dark:border-sky-800/60 shadow-xs select-none z-50 ${
+            position === 'top' ? 'relative' : 'fixed bottom-0 left-0 right-0 border-t shadow-2xl'
           }`}
         >
           <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
@@ -220,6 +219,23 @@ export function ConvertibleNav({
                   </span>
                 </div>
               </NavLink>
+            </div>
+
+            {/* Center: Clean Minimalist Global Search Bar */}
+            <div className="flex-1 max-w-md mx-2 sm:mx-6 hidden md:block">
+              <div className="relative group">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#0284c7] transition-colors pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Search orders, cases, patients, doctors..."
+                  className="w-full h-8.5 pl-9 pr-12 text-xs font-medium rounded-xl bg-white/80 dark:bg-slate-900/80 border border-sky-300/60 dark:border-sky-800/60 text-slate-900 dark:text-slate-100 placeholder-slate-400/80 focus:outline-none focus:ring-2 focus:ring-[#0284c7]/30 focus:border-[#0284c7] dark:focus:border-sky-500 transition-all shadow-xs"
+                />
+                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+                  <kbd className="px-1.5 py-0.5 text-[9px] font-mono font-bold rounded bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700 shadow-2xs">
+                    ⌘K
+                  </kbd>
+                </div>
+              </div>
             </div>
 
             {/* Right: Language, Theme, & User Profile Dropdown */}
@@ -357,8 +373,8 @@ export function ConvertibleNav({
         {/* Lighter Ice-Blue Glassmorphic Tint, Fixed Dropdowns, Zero CMS Link */}
         {/* ================================================================= */}
         <nav
-          className={`w-full bg-sky-50/45 dark:bg-[#050f1c]/50 backdrop-blur-md border-b border-sky-100/40 dark:border-sky-950/40 select-none z-40 ${
-            position === 'top' ? 'sticky top-14' : 'fixed bottom-14 left-0 right-0 border-t shadow-xl'
+          className={`w-full bg-sky-50/75 dark:bg-[#071526]/80 backdrop-blur-md border-b border-sky-200/50 dark:border-sky-900/50 shadow-xs select-none z-40 ${
+            position === 'top' ? 'relative' : 'fixed bottom-14 left-0 right-0 border-t shadow-xl'
           }`}
         >
           <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 h-11 flex items-center justify-between gap-4">
@@ -519,7 +535,7 @@ export function ConvertibleNav({
 
         {/* Interactive Profile Credentials Modal */}
         <ProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} />
-      </>
+      </div>
     );
   }
 
@@ -529,9 +545,9 @@ export function ConvertibleNav({
   return (
     <>
       <aside
-        className={`hidden lg:flex flex-col h-screen shrink-0 bg-sky-50/80 dark:bg-[#071324]/85 backdrop-blur-md select-none transition-all duration-200 relative z-40 ${
+        className={`hidden lg:flex flex-col h-screen shrink-0 bg-sky-100/90 dark:bg-[#0a1b32]/92 backdrop-blur-md select-none transition-all duration-200 relative z-40 ${
           position === 'left' ? 'border-r' : 'border-l order-last'
-        } border-sky-200/50 dark:border-sky-900/50 ${collapsed ? 'w-20' : 'w-64'}`}
+        } border-sky-300/60 dark:border-sky-800/60 shadow-xs ${collapsed ? 'w-20' : 'w-64'}`}
       >
         {/* Header & Logo */}
         <div className="flex h-14 items-center justify-between px-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
@@ -618,8 +634,8 @@ export function ConvertibleNav({
           })}
         </div>
 
-        {/* Footer: Profile, Language & Theme */}
-        <div className={`p-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/60 ${collapsed ? 'flex flex-col items-center gap-2' : 'space-y-2'}`}>
+        {/* Footer: Profile, Language & Theme - strictly aligned to the bottom at all times */}
+        <div className={`mt-auto shrink-0 p-2 border-t border-sky-200/60 dark:border-sky-800/60 bg-sky-50/70 dark:bg-slate-950/70 ${collapsed ? 'flex flex-col items-center gap-2' : 'space-y-2'}`}>
           <button
             type="button"
             onClick={() => setIsProfileModalOpen(true)}

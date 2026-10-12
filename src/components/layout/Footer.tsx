@@ -10,7 +10,7 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="w-full bg-sky-50/70 dark:bg-[#071324]/70 backdrop-blur-md border-t border-sky-200/50 dark:border-sky-900/50 mt-auto py-5 px-4 sm:px-6 lg:px-8 text-xs select-none">
+    <footer className="w-full bg-sky-100/90 dark:bg-[#0a1b32]/92 backdrop-blur-md border-t border-sky-300/60 dark:border-sky-800/60 shadow-xs mt-auto py-5 px-4 sm:px-6 lg:px-8 text-xs select-none">
       <div className="max-w-[1920px] mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
         
         {/* Brand, Logo & Left Section */}

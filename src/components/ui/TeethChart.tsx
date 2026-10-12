@@ -305,7 +305,7 @@ function ClinicalToothSilhouette({
 }) {
   const resInfo = RESTORATION_TYPES.find(r => r.id === restoration);
   const strokeColor = isSelected ? (resInfo?.color || '#00d8fe') : 'currentColor';
-  const crownFill = isSelected ? (resInfo ? `${resInfo.color}25` : 'rgba(0,216,254,0.18)') : 'none';
+  const crownFill = isSelected ? (resInfo ? `${resInfo.color}55` : 'rgba(0,216,254,0.35)') : 'none';
   const isImplant = Boolean(isSelected && (restoration === 'implant' || restoration === 'analog'));
   const isExtraction = Boolean(isSelected && restoration === 'extraction');
   const isSleeve = Boolean(isSelected && restoration === 'sleeve');
@@ -788,41 +788,41 @@ export interface TeethChartProps {
 }
 
 export const UPPER_ARCH_POSITIONS: Record<number, { left: number; top: number; rot: number }> = {
-  1:  { left: 45,  top: 195, rot: 16 },
-  2:  { left: 80,  top: 155, rot: 14 },
-  3:  { left: 120, top: 118, rot: 12 },
-  4:  { left: 165, top: 85,  rot: 10 },
-  5:  { left: 215, top: 58,  rot: 7 },
-  6:  { left: 270, top: 38,  rot: 5 },
-  7:  { left: 325, top: 25,  rot: 2 },
-  8:  { left: 375, top: 20,  rot: 0 },
-  9:  { left: 425, top: 20,  rot: 0 },
-  10: { left: 475, top: 25,  rot: -2 },
-  11: { left: 530, top: 38,  rot: -5 },
-  12: { left: 585, top: 58,  rot: -7 },
-  13: { left: 635, top: 85,  rot: -10 },
-  14: { left: 680, top: 118, rot: -12 },
-  15: { left: 720, top: 155, rot: -14 },
-  16: { left: 755, top: 195, rot: -16 },
+  1:  { left: 48,  top: 18, rot: 24 },
+  2:  { left: 88,  top: 26, rot: 20 },
+  3:  { left: 132, top: 36, rot: 16 },
+  4:  { left: 180, top: 46, rot: 13 },
+  5:  { left: 230, top: 56, rot: 9 },
+  6:  { left: 282, top: 64, rot: 6 },
+  7:  { left: 332, top: 70, rot: 3 },
+  8:  { left: 372, top: 72, rot: 0 },
+  9:  { left: 410, top: 72, rot: 0 },
+  10: { left: 450, top: 70, rot: -3 },
+  11: { left: 500, top: 64, rot: -6 },
+  12: { left: 552, top: 56, rot: -9 },
+  13: { left: 602, top: 46, rot: -13 },
+  14: { left: 650, top: 36, rot: -16 },
+  15: { left: 694, top: 26, rot: -20 },
+  16: { left: 734, top: 18, rot: -24 },
 };
 
 export const LOWER_ARCH_POSITIONS: Record<number, { left: number; top: number; rot: number }> = {
-  32: { left: 45,  top: 35,  rot: -16 },
-  31: { left: 80,  top: 75,  rot: -14 },
-  30: { left: 120, top: 112, rot: -12 },
-  29: { left: 165, top: 145, rot: -10 },
-  28: { left: 215, top: 172, rot: -7 },
-  27: { left: 270, top: 192, rot: -5 },
-  26: { left: 325, top: 205, rot: -2 },
-  25: { left: 375, top: 210, rot: 0 },
-  24: { left: 425, top: 210, rot: 0 },
-  23: { left: 475, top: 205, rot: 2 },
-  22: { left: 530, top: 192, rot: 5 },
-  21: { left: 585, top: 172, rot: 7 },
-  20: { left: 635, top: 145, rot: 10 },
-  19: { left: 680, top: 112, rot: 12 },
-  18: { left: 720, top: 75,  rot: 14 },
-  17: { left: 755, top: 35,  rot: 16 },
+  32: { left: 48,  top: 210, rot: -24 },
+  31: { left: 88,  top: 202, rot: -20 },
+  30: { left: 132, top: 192, rot: -16 },
+  29: { left: 180, top: 182, rot: -13 },
+  28: { left: 230, top: 172, rot: -9 },
+  27: { left: 282, top: 164, rot: -6 },
+  26: { left: 332, top: 158, rot: -3 },
+  25: { left: 372, top: 156, rot: 0 },
+  24: { left: 410, top: 156, rot: 0 },
+  23: { left: 450, top: 158, rot: 3 },
+  22: { left: 500, top: 164, rot: 6 },
+  21: { left: 552, top: 172, rot: 9 },
+  20: { left: 602, top: 182, rot: 13 },
+  19: { left: 650, top: 192, rot: 16 },
+  18: { left: 694, top: 202, rot: 20 },
+  17: { left: 734, top: 210, rot: 24 },
 };
 
 export function TeethChart({
@@ -1037,6 +1037,78 @@ export function TeethChart({
     setInternalSelected(nextSelected);
     setLocalRestorations(nextRestorations);
     onSelectionChange?.(nextSelected, nextRestorations);
+  };
+
+  /**
+   * Anatomical Arch Tooth Renderer:
+   * - ZERO rectangular bounding boxes or border rings (conforms strictly to tooth silhouette)
+   * - Highlights the tooth silhouette itself with vibrant clinical fill and contour drop-shadow
+   * - Ultra-clean minimal number label without visual clutter
+   */
+  const renderAnatomicalToothCell = (tooth: ToothOdontoData, arch: 'upper' | 'lower') => {
+    const isSelected = activeSelected.includes(tooth.universal);
+    const assignedRes = isSelected 
+      ? ((localRestorations[tooth.universal] || toothRestorations[tooth.universal] || selectedTool) as RestorationType) 
+      : undefined;
+    const resConfig = assignedRes ? RESTORATION_TYPES.find(r => r.id === assignedRes) : null;
+    const displayNum = system === 'universal' ? tooth.universal : tooth.fdi;
+    const activeColor = resConfig?.color || '#00d8fe';
+
+    return (
+      <div
+        key={tooth.universal}
+        onClick={() => handleToothClick(tooth)}
+        onMouseEnter={() => setHoveredTooth(tooth)}
+        onMouseLeave={() => setHoveredTooth(null)}
+        className="group relative flex flex-col items-center justify-center cursor-pointer select-none transition-transform duration-150 hover:scale-115 active:scale-95"
+        style={{
+          background: 'transparent',
+          border: 'none',
+          boxShadow: 'none',
+          outline: 'none',
+        }}
+      >
+        {/* Upper tooth: clean subtle number above root apex */}
+        {arch === 'upper' && (
+          <span 
+            className="text-[10px] font-mono font-bold leading-none mb-1 transition-colors select-none"
+            style={{
+              color: isSelected ? activeColor : undefined,
+              opacity: isSelected ? 1 : 0.6
+            }}
+          >
+            {displayNum}
+          </span>
+        )}
+
+        {/* Clinical Tooth Silhouette - highlights tooth boundaries directly */}
+        <div 
+          className="w-8 sm:w-9 h-14 sm:h-15 flex items-center justify-center transition-all duration-200"
+          style={{
+            filter: isSelected ? `drop-shadow(0 0 6px ${activeColor})` : 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))'
+          }}
+        >
+          <ClinicalToothSilhouette
+            toothNumber={tooth.universal}
+            isSelected={isSelected}
+            restoration={assignedRes}
+          />
+        </div>
+
+        {/* Lower tooth: clean subtle number below root apex */}
+        {arch === 'lower' && (
+          <span 
+            className="text-[10px] font-mono font-bold leading-none mt-1 transition-colors select-none"
+            style={{
+              color: isSelected ? activeColor : undefined,
+              opacity: isSelected ? 1 : 0.6
+            }}
+          >
+            {displayNum}
+          </span>
+        )}
+      </div>
+    );
   };
 
   const renderToothCard = (tooth: ToothOdontoData, arch: 'upper' | 'lower') => {
@@ -1450,51 +1522,80 @@ export function TeethChart({
         </div>
       )}
 
-      {/* MODE 2: REALISTIC ANATOMICAL DENTAL ARCH (Parabolic Mouth Curvature) */}
+      {/* MODE 2: REALISTIC ANATOMICAL DENTAL ARCH (Ultra-Compact Natural Mouth Curvature) */}
       {viewLayoutMode === 'anatomical' && (
-        <div className="py-6 overflow-x-auto custom-scrollbar">
-          <div className="min-w-[820px] max-w-4xl mx-auto space-y-4">
-            
-            {/* UPPER ARCH (MAXILLA) */}
-            {(visibleArch === 'both' || visibleArch === 'upper') && (
-              <div className="border border-slate-200 dark:border-slate-800 rounded-3xl p-5 bg-slate-50/50 dark:bg-slate-900/40 shadow-inner">
-                <div className="flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-300 pb-2 border-b border-slate-200/60 dark:border-slate-800/60">
-                  <span className="px-2.5 py-0.5 rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-mono text-[11px] border border-cyan-500/20">
-                    UR • Maxillary Right (#1–#8)
-                  </span>
-                  <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-100 font-black text-xs uppercase tracking-wider">
-                    <span>Upper Dental Arch (Maxilla)</span>
-                    <span className="text-[10px] text-slate-400 font-normal">Natural Parabolic Curvature</span>
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono text-[11px] border border-blue-500/20">
-                    UL • Maxillary Left (#9–#16)
-                  </span>
-                </div>
-
-                {/* Parabolic Canvas for Upper Arch */}
-                <div className="relative h-[300px] w-[810px] mx-auto select-none">
-                  {/* Subtle Parabolic Guide Curve */}
-                  <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-40">
+        <div className="py-2 overflow-x-auto custom-scrollbar">
+          <div className="min-w-[820px] max-w-4xl mx-auto">
+            {/* Single Unified Dental Mouth Canvas */}
+            <div className="relative border border-slate-200/90 dark:border-slate-800/90 rounded-3xl p-4 bg-slate-50/50 dark:bg-slate-900/40 shadow-inner">
+              
+              {/* Parabolic Canvas Sized Appropriately to Visible Arches */}
+              <div 
+                className={`relative w-[810px] mx-auto select-none transition-all ${
+                  visibleArch === 'both' ? 'h-[295px]' : 'h-[155px]'
+                }`}
+              >
+                {/* Anatomical Guide Curves & Occlusal Plane */}
+                <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-30">
+                  {/* Upper Parabolic Arch Guide */}
+                  {(visibleArch === 'both' || visibleArch === 'upper') && (
                     <path
-                      d="M 65 240 Q 405 10 745 240"
+                      d="M 50 18 Q 405 92 760 18"
                       fill="none"
                       stroke="#06b6d4"
                       strokeWidth="2"
-                      strokeDasharray="6 6"
+                      strokeDasharray="4 4"
                     />
-                    <line
-                      x1="405"
-                      y1="10"
-                      x2="405"
-                      y2="280"
-                      stroke="#06b6d4"
-                      strokeWidth="1.5"
-                      strokeDasharray="3 3"
-                    />
-                  </svg>
+                  )}
 
-                  {/* Upper Teeth in Natural Parabolic Arc */}
-                  {[...upperRight, ...upperLeft].map((tooth) => {
+                  {/* Occlusal Contact Midline (When both arches visible) */}
+                  {visibleArch === 'both' && (
+                    <>
+                      <line
+                        x1="30"
+                        y1="140"
+                        x2="780"
+                        y2="140"
+                        stroke="#64748b"
+                        strokeWidth="1"
+                        strokeDasharray="3 3"
+                      />
+                      <circle cx="405" cy="140" r="3" fill="#06b6d4" />
+                    </>
+                  )}
+
+                  {/* Lower Parabolic Arch Guide */}
+                  {visibleArch === 'both' && (
+                    <path
+                      d="M 50 262 Q 405 188 760 262"
+                      fill="none"
+                      stroke="#6366f1"
+                      strokeWidth="2"
+                      strokeDasharray="4 4"
+                    />
+                  )}
+                  {visibleArch === 'lower' && (
+                    <path
+                      d="M 50 117 Q 405 43 760 117"
+                      fill="none"
+                      stroke="#6366f1"
+                      strokeWidth="2"
+                      strokeDasharray="4 4"
+                    />
+                  )}
+                </svg>
+
+                {/* Patient Orientation Indicators */}
+                <div className="absolute top-1 left-2 flex items-center gap-1 text-[10px] font-mono font-bold text-slate-400">
+                  <span>UR (Right)</span>
+                </div>
+                <div className="absolute top-1 right-2 flex items-center gap-1 text-[10px] font-mono font-bold text-slate-400">
+                  <span>UL (Left)</span>
+                </div>
+
+                {/* Upper Teeth in Natural Parabolic Arc */}
+                {(visibleArch === 'both' || visibleArch === 'upper') && (
+                  [...upperRight, ...upperLeft].map((tooth) => {
                     const pos = UPPER_ARCH_POSITIONS[tooth.universal];
                     if (!pos) return null;
                     return (
@@ -1508,92 +1609,36 @@ export function TeethChart({
                           transformOrigin: 'center center'
                         }}
                       >
-                        {renderToothCard(tooth, 'upper')}
+                        {renderAnatomicalToothCell(tooth, 'upper')}
                       </div>
                     );
-                  })}
-                </div>
-              </div>
-            )}
+                  })
+                )}
 
-            {/* OCCLUSAL CONTACT MIDLINE (When both arches visible) */}
-            {visibleArch === 'both' && (
-              <div className="relative flex items-center justify-between my-2">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 pl-2 shrink-0 select-none">
-                  Right Patient Quadrants
-                </span>
-                <div className="flex-1 h-[1.5px] bg-slate-300 dark:bg-slate-700 mx-4 relative flex items-center justify-center">
-                  <span className="px-3 py-0.5 rounded-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-[10px] font-bold text-slate-500">
-                    Occlusal Plane & Anterior Smile Zone
-                  </span>
-                </div>
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 pr-2 shrink-0 select-none">
-                  Left Patient Quadrants
-                </span>
-              </div>
-            )}
-
-            {/* LOWER ARCH (MANDIBLE) */}
-            {(visibleArch === 'both' || visibleArch === 'lower') && (
-              <div className="border border-slate-200 dark:border-slate-800 rounded-3xl p-5 bg-slate-50/50 dark:bg-slate-900/40 shadow-inner">
-                <div className="flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-300 pb-2 border-b border-slate-200/60 dark:border-slate-800/60">
-                  <span className="px-2.5 py-0.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-mono text-[11px] border border-indigo-500/20">
-                    LR • Mandibular Right (#32–#25)
-                  </span>
-                  <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-100 font-black text-xs uppercase tracking-wider">
-                    <span>Lower Dental Arch (Mandible)</span>
-                    <span className="text-[10px] text-slate-400 font-normal">Natural Parabolic Curvature</span>
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 font-mono text-[11px] border border-purple-500/20">
-                    LL • Mandibular Left (#24–#17)
-                  </span>
-                </div>
-
-                {/* Parabolic Canvas for Lower Arch */}
-                <div className="relative h-[300px] w-[810px] mx-auto select-none">
-                  {/* Subtle Parabolic Guide Curve */}
-                  <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-40">
-                    <path
-                      d="M 65 60 Q 405 290 745 60"
-                      fill="none"
-                      stroke="#6366f1"
-                      strokeWidth="2"
-                      strokeDasharray="6 6"
-                    />
-                    <line
-                      x1="405"
-                      y1="20"
-                      x2="405"
-                      y2="290"
-                      stroke="#6366f1"
-                      strokeWidth="1.5"
-                      strokeDasharray="3 3"
-                    />
-                  </svg>
-
-                  {/* Lower Teeth in Natural Parabolic Arc */}
-                  {[...lowerRight, ...lowerLeft].map((tooth) => {
+                {/* Lower Teeth in Natural Parabolic Arc */}
+                {(visibleArch === 'both' || visibleArch === 'lower') && (
+                  [...lowerRight, ...lowerLeft].map((tooth) => {
                     const pos = LOWER_ARCH_POSITIONS[tooth.universal];
                     if (!pos) return null;
+                    const yOffset = visibleArch === 'lower' ? -145 : 0;
                     return (
                       <div
                         key={tooth.universal}
                         style={{
                           position: 'absolute',
                           left: `${pos.left}px`,
-                          top: `${pos.top}px`,
+                          top: `${pos.top + yOffset}px`,
                           transform: `rotate(${pos.rot}deg)`,
                           transformOrigin: 'center center'
                         }}
                       >
-                        {renderToothCard(tooth, 'lower')}
+                        {renderAnatomicalToothCell(tooth, 'lower')}
                       </div>
                     );
-                  })}
-                </div>
+                  })
+                )}
               </div>
-            )}
-
+            </div>
           </div>
         </div>
       )}
