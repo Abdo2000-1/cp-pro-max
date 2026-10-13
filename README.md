@@ -22,8 +22,8 @@
 
 | Role | Name | Title & Responsibility | Contact / Profile |
 | :--- | :--- | :--- | :--- |
-| **Lead Software Engineer** | **Abdo Al Adawy** | Full-Stack Architecture, 3D WebGL Integration & Platform Implementation | [@Abdo2000-1](https://github.com/Abdo2000-1) |
-| **Technical Supervisor** | **Eng. Aya Adel** | Project Supervision, Architecture Review & Clinical Delivery Compliance | Clinical Systems Lead |
+| **Front End Engineer** | **Abdo Al Adawy** | Full-Stack Architecture, 3D WebGL Integration & Platform Implementation | [@Abdo2000-1](https://github.com/Abdo2000-1) |
+| **Technical Lead** | **Eng. Aya Adel** | Project Supervision, Architecture Review & Clinical Delivery Compliance | Clinical Systems Lead |
 
 ---
 
