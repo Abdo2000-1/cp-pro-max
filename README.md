@@ -182,7 +182,8 @@ cp-pro-max/
 
 ## 👥 Credits & Contact
 
-* **Lead Software Engineer**: **Abdo Al Adawy** — [GitHub](https://github.com/Abdo2000-1)
+
 * **Technical Supervisor**: **Eng. Aya Adel**
+* **Front end Engineer**: **Abdo Al Adawy** — [GitHub](https://github.com/Abdo2000-1)
 * **Project**: **CP PRO MAX** (Dental SaaS Web Platform)
 * **License**: Private & Proprietary — All Rights Reserved.
