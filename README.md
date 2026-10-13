@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="docs/assets/images/cp_pro_max_hero_animation.svg" alt="CP PRO MAX - Dental SaaS Platform Banner" width="100%" />
-</p>
+
 
 <div align="center">
 
