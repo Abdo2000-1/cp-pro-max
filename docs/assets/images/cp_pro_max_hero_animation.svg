@@ -1,0 +1,155 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 380" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradients -->
+    <linearGradient id="cpBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#030712" />
+      <stop offset="50%" stop-color="#0b132b" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+
+    <linearGradient id="cpCyanGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06b6d4" />
+      <stop offset="50%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#8b5cf6" />
+    </linearGradient>
+
+    <linearGradient id="cpGoldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+
+    <!-- Glowing Filters -->
+    <filter id="cpGlowCyan" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <filter id="cpGlowBadge" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <!-- Grid Pattern -->
+    <pattern id="cpGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(56, 189, 248, 0.06)" stroke-width="1" />
+    </pattern>
+  </defs>
+
+  <style>
+    @keyframes cpPulseGlow {
+      0%, 100% { opacity: 0.6; transform: scale(1); }
+      50% { opacity: 0.95; transform: scale(1.02); }
+    }
+    @keyframes cpScanLine {
+      0% { transform: translateY(0); opacity: 0.1; }
+      50% { opacity: 0.7; }
+      100% { transform: translateY(380px); opacity: 0.1; }
+    }
+    @keyframes cpFloatCenter {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-7px); }
+    }
+    .pulse-glow { animation: cpPulseGlow 4s ease-in-out infinite; transform-origin: center; }
+    .scan-line { animation: cpScanLine 6s linear infinite; }
+    .float-center { animation: cpFloatCenter 3s ease-in-out infinite; }
+    .tech-font { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "JetBrains Mono", sans-serif; }
+  </style>
+
+  <!-- Deep Enterprise Canvas -->
+  <rect width="1200" height="380" fill="url(#cpBgGrad)" />
+  <rect width="1200" height="380" fill="url(#cpGrid)" />
+
+  <!-- Animated Laser Scan Line -->
+  <line x1="0" y1="0" x2="1200" y2="0" stroke="#00d8fe" stroke-width="2" opacity="0.4" class="scan-line" filter="url(#cpGlowCyan)" />
+
+  <!-- Ambient Light Orbs -->
+  <circle cx="150" cy="190" r="140" fill="#06b6d4" opacity="0.08" filter="url(#cpGlowCyan)" />
+  <circle cx="1060" cy="190" r="150" fill="#8b5cf6" opacity="0.08" filter="url(#cpGlowCyan)" />
+
+  <!-- LEFT: ENTERPRISE MEDICAL LOGO / CAD PORTAL -->
+  <g transform="translate(135, 190)" class="float-center">
+    <!-- Orbital Gears & Data Rings -->
+    <circle cx="0" cy="0" r="95" fill="none" stroke="rgba(56, 189, 248, 0.25)" stroke-width="1.5" stroke-dasharray="10 6" />
+    <circle cx="0" cy="0" r="72" fill="none" stroke="rgba(139, 92, 246, 0.35)" stroke-width="1.5" />
+    <ellipse cx="0" cy="0" rx="88" ry="32" fill="none" stroke="url(#cpCyanGrad)" stroke-width="2" opacity="0.75" transform="rotate(-30)" />
+    
+    <!-- Central CP Hub Diamond -->
+    <polygon points="0,-48 42,0 0,48 -42,0" fill="rgba(15, 23, 42, 0.9)" stroke="url(#cpCyanGrad)" stroke-width="2.5" filter="url(#cpGlowCyan)" />
+    
+    <!-- Core Medical Cross & Tech Icon -->
+    <rect x="-6" y="-22" width="12" height="44" rx="3" fill="#38bdf8" />
+    <rect x="-22" y="-6" width="44" height="12" rx="3" fill="#38bdf8" />
+    <circle cx="0" cy="0" r="8" fill="#ffffff" />
+    
+    <!-- Orbiting Satellite Badges -->
+    <circle cx="0" cy="-72" r="7" fill="#10b981" filter="url(#cpGlowBadge)" />
+    <circle cx="62" cy="36" r="6" fill="#8b5cf6" filter="url(#cpGlowBadge)" />
+    <circle cx="-62" cy="36" r="6" fill="#f59e0b" filter="url(#cpGlowBadge)" />
+  </g>
+
+  <!-- CENTER: HERO TITLE & PLATFORM IDENTITY -->
+  <g transform="translate(320, 105)">
+    <!-- Top Enterprise Badge Pill -->
+    <rect x="0" y="0" width="370" height="28" rx="14" fill="rgba(6, 182, 212, 0.12)" stroke="rgba(6, 182, 212, 0.4)" stroke-width="1" />
+    <circle cx="14" cy="14" r="5" fill="#00d8fe" filter="url(#cpGlowCyan)" />
+    <text x="28" y="19" fill="#38bdf8" font-size="11" font-weight="800" letter-spacing="1.5" class="tech-font">ENTERPRISE DENTAL SAAS PLATFORM • CP PRO MAX</text>
+
+    <!-- Main Title -->
+    <text x="0" y="70" fill="#ffffff" font-size="40" font-weight="900" letter-spacing="-0.5" class="tech-font">
+      CP PRO MAX
+    </text>
+    <text x="0" y="108" fill="url(#cpCyanGrad)" font-size="25" font-weight="800" letter-spacing="0.5" class="tech-font">
+      Comprehensive Dental Clinic &amp; Lab Management SaaS
+    </text>
+
+    <!-- Subtitle Description -->
+    <text x="0" y="140" fill="#94a3b8" font-size="14.5" font-weight="500" class="tech-font">
+      End-to-End Clinical Workflows • 3D Biomechanical Odontogram • PowerBI Analytics • Multi-Tenant
+    </text>
+
+    <!-- Author & Supervisor Attribution Pill -->
+    <g transform="translate(0, 168)">
+      <rect x="0" y="0" width="580" height="42" rx="10" fill="rgba(15, 23, 42, 0.85)" stroke="rgba(148, 163, 184, 0.25)" stroke-width="1" />
+      
+      <!-- Lead Engineer -->
+      <circle cx="20" cy="21" r="8" fill="#38bdf8" />
+      <text x="36" y="26" fill="#f1f5f9" font-size="13" font-weight="700" class="tech-font">
+        Lead Engineer: <tspan fill="#38bdf8">Abdo Al Adawy</tspan>
+      </text>
+
+      <line x1="290" y1="8" x2="290" y2="34" stroke="rgba(148, 163, 184, 0.3)" stroke-width="1" />
+
+      <!-- Supervisor -->
+      <circle cx="314" cy="21" r="8" fill="#a855f7" />
+      <text x="330" y="26" fill="#f1f5f9" font-size="13" font-weight="700" class="tech-font">
+        Supervisor: <tspan fill="#c084fc">Eng. Aya Adel</tspan>
+      </text>
+    </g>
+  </g>
+
+  <!-- RIGHT: 4 PILLARS QUICK MODULE STATS -->
+  <g transform="translate(930, 70)">
+    <!-- Card 1: Clinical Workflows -->
+    <rect x="0" y="0" width="230" height="54" rx="12" fill="rgba(255, 255, 255, 0.04)" stroke="rgba(56, 189, 248, 0.2)" stroke-width="1" />
+    <text x="18" y="24" fill="#38bdf8" font-size="13" font-weight="800" class="tech-font">Orders &amp; Clinical Cases</text>
+    <text x="18" y="43" fill="#64748b" font-size="11" font-weight="600" class="tech-font">Realtime Stages • Kanban Boards</text>
+
+    <!-- Card 2: 3D Teeth Chart Engine -->
+    <rect x="0" y="64" width="230" height="54" rx="12" fill="rgba(255, 255, 255, 0.04)" stroke="rgba(16, 185, 129, 0.2)" stroke-width="1" />
+    <text x="18" y="88" fill="#10b981" font-size="13" font-weight="800" class="tech-font">3D Odontogram Engine</text>
+    <text x="18" y="107" fill="#64748b" font-size="11" font-weight="600" class="tech-font">Interactive 2D/3D Arch • WebGL</text>
+
+    <!-- Card 3: Business Analytics -->
+    <rect x="0" y="128" width="230" height="54" rx="12" fill="rgba(255, 255, 255, 0.04)" stroke="rgba(251, 191, 36, 0.2)" stroke-width="1" />
+    <text x="18" y="152" fill="#fbbf24" font-size="13" font-weight="800" class="tech-font">PowerBI &amp; Billing Reports</text>
+    <text x="18" y="171" fill="#64748b" font-size="11" font-weight="600" class="tech-font">Quarter Targets • Lab Invoices</text>
+
+    <!-- Card 4: Multi-Clinic Ecosystem -->
+    <rect x="0" y="192" width="230" height="54" rx="12" fill="rgba(255, 255, 255, 0.04)" stroke="rgba(168, 85, 247, 0.2)" stroke-width="1" />
+    <text x="18" y="216" fill="#c084fc" font-size="13" font-weight="800" class="tech-font">Clinics &amp; Scan Centers</text>
+    <text x="18" y="235" fill="#64748b" font-size="11" font-weight="600" class="tech-font">Doctors • Patients • Roles &amp; ACL</text>
+  </g>
+
+  <!-- Bottom Accent Line -->
+  <rect x="0" y="374" width="1200" height="6" fill="url(#cpCyanGrad)" />
+</svg>
